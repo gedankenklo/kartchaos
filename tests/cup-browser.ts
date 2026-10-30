@@ -1,0 +1,7 @@
+import {createState,nextRoundState,finish} from '../src/sim';
+import {cupPresentation} from '../src/cupView';
+import {championshipOrder} from '../src/championship';
+import {DriverPortrait} from '../src/characters';
+let state=createState({arena:'fortress',humans:1,bots:5,difficulty:'normal',duration:120,championship:true,drivers:[4]}),portraits:DriverPortrait[]=[];
+function render(){portraits.forEach(p=>p.dispose());portraits=[];const cup=state.championship!,view=cupPresentation(state,[0]);document.body.innerHTML=`<div class="modal-backdrop"><section class="modal results-modal cup-results"><div class="eyebrow">CHAOS CUP · ${cup.round}/4</div><h2>${cup.completed?'THE CUP PODIUM.':'FOUR ARENAS. ONE CUP.'}</h2>${view.podium}${view.cupTable}<button id="round" class="solid-button">${cup.completed?'New cup':'Complete round '+cup.round}</button></section></div>`;document.querySelector('#round')!.addEventListener('click',()=>{if(state.phase==='finished')state=nextRoundState(state);else{state.phase='playing';state.karts.forEach((k,i)=>{k.balloons=i===(state.championship!.round===2?2:0)?3:0;});finish(state);}render();});if(cup.completed)championshipOrder(cup).slice(0,3).forEach((row,i)=>{const p=new DriverPortrait(document.querySelector<HTMLElement>('#podium'+i)!,row.driver,true);p.celebrating=true;portraits.push(p);});}
+render();let previous=performance.now();function frame(now:number){for(const p of portraits)p.render(Math.min(.05,(now-previous)/1000),now/1000);previous=now;requestAnimationFrame(frame);}requestAnimationFrame(frame);
