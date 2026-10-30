@@ -172,7 +172,17 @@ export function botGoal(s:State,k:Kart){
  if(!k.item&&!k.roulette&&boxes[0]&&(distance(k,boxes[0])<55||distance(k,foe)>35))return {goal:boxes[0],foe,tactic:'rearm'};
  const lead={x:foe.x+foe.vx*.28,z:foe.z+foe.vz*.28,y:foe.y};return {goal:clearPath(s.config.arena,foe,lead)?lead:foe,foe,tactic:'attack'};
 }
+const botRecovery=new WeakMap<Kart,{remaining:number;heading:number;reverse:boolean}>();
 export function botInput(s:State,k:Kart):Input {
+ let recovery=botRecovery.get(k);
+ if(!recovery&&k.stuck>.8){
+  // Commit to an escape instead of cancelling reverse as soon as the kart moves.
+  const safe=(angle:number,length:number)=>clearPath(s.config.arena,k,{x:k.x+Math.sin(angle)*length,z:k.z+Math.cos(angle)*length,y:k.y});
+  const headings=Array.from({length:16},(_,i)=>k.angle+(i+1)*Math.PI/8).filter(a=>safe(a,9));
+  const heading=headings.sort((a,b)=>Math.abs(angleDiff(a,k.angle))-Math.abs(angleDiff(b,k.angle)))[0]??k.angle+Math.PI;
+  recovery={remaining:2.6,heading,reverse:safe(k.angle+Math.PI,6)};botRecovery.set(k,recovery);routes.delete(k);k.stuck=0;
+ }
+ if(recovery){const backing=recovery.reverse&&recovery.remaining>1.5,error=angleDiff(recovery.heading,k.angle);return {gas:backing?-1:.65,steer:clamp(error*1.8,-1,1)*(backing?-1:1),drift:false,hop:false,fire:false};}
  const {goal,foe,tactic}=botGoal(s,k);if(foe===k)return idle();const wp=waypoint(s,k,goal);let desired=Math.atan2(wp.x-k.x,wp.z-k.z);
  for(const o of obstacles(s.config.arena))if(distance(k,o)<o.r+5)desired+=angleDiff(Math.atan2(o.x-k.x,o.z-k.z),k.angle)>0?-.7:.7;
  for(const hazard of s.shots){if(Math.abs(hazard.y-k.y)>3)continue;const d=distance(k,hazard);if(hazard.kind==='mine'&&(hazard.age??0)<MINE_ARM_TIME)continue;if(d< (hazard.kind==='mine'?8:10)&&Math.abs(angleDiff(Math.atan2(hazard.x-k.x,hazard.z-k.z),k.angle))<.9)desired+=angleDiff(Math.atan2(hazard.x-k.x,hazard.z-k.z),k.angle)>0?-.85:.85;}
@@ -180,7 +190,7 @@ export function botInput(s:State,k:Kart):Input {
  const pace=diff==='easy'?.65:diff==='hard'?1:.85,ahead=Math.max(7,Math.abs(k.speed)*.65),edge=s.config.arena==='sky'&&ground('sky',k.x+Math.sin(k.angle)*ahead,k.z+Math.cos(k.angle)*ahead)< -10;
  const throttle=Math.min(pace,clamp(1-Math.abs(error)*.7,.28,1),edge?.16:1);
  const fire=!!k.item&&(k.item==='shield'&&(range<24||k.balloons===1)||k.item==='boost'&&(tactic==='retreat'||aim<.45&&range<38&&visible)||k.item==='mine'&&range<14&&(aim>1.6||tactic==='retreat')||k.item==='pulse'&&range<8&&sameLevel||(k.item==='bolt'||k.item==='seeker')&&visible&&sameLevel&&aim<(k.item==='seeker'?.85:.25)&&range<50);
- return {gas:k.stuck>1.3?-1:throttle,steer:clamp(error*1.8,-1,1)*(k.stuck>1.3?-1:1),drift:s.config.arena!=='sky'&&Math.abs(error)>.5&&Math.abs(k.speed)>10,hop:false,fire};
+ return {gas:throttle,steer:clamp(error*1.8,-1,1),drift:s.config.arena!=='sky'&&Math.abs(error)>.5&&Math.abs(k.speed)>10,hop:false,fire};
 }
 export function drive(s:State,k:Kart,input:Input,dt:number) {
  if(k.balloons<=0)return;
@@ -237,7 +247,7 @@ export function drive(s:State,k:Kart,input:Input,dt:number) {
  }else if(input.fire&&!k.fireHeld)useItem(s,k);
  k.fireHeld=input.fire;
  if(Math.hypot(k.x-oldX,k.z-oldZ)<dt&&Math.abs(input.gas)>.1)k.stuck+=dt;else k.stuck=Math.max(0,k.stuck-dt);
- if(k.bot&&k.stuck>2.2){k.angle+=1.4;k.stuck=0;}
+ const recovery=botRecovery.get(k);if(recovery){recovery.remaining-=dt;k.stuck=0;if(recovery.remaining<=0){botRecovery.delete(k);routes.delete(k);}}
 }
 // Collision impulse is independent of tire traction, so shoves persist through steering.
 export function collideKarts(s:State){
