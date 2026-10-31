@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "arenas": {
+    "fortress": [],
+    "sky": [],
+    "neon": [],
+    "yard": [],
+    "depot": [],
+    "quarry": [],
+    "castle": [],
+    "beach": [],
+    "stadium": [],
+    "title": [],
+    "pause": []
+  }
+}

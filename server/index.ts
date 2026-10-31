@@ -7,7 +7,7 @@ import {createState,nextRoundState,step,idle,nextRoundConfig,normalizeSpeedClass
 interface Peer {token:string;socket:WebSocket|null;count:number;drivers:number[];ids:number[];ready:boolean;inputs:Record<number,Input>;seq:number;lastInput:number;disconnected:number;alive:boolean;}
 interface Room {code:string;config:Config;peers:Peer[];state:State|null;host:string;}
 const rooms=new Map<string,Room>(),root=resolve('dist');
-const mime:Record<string,string>={'.html':'text/html','.js':'text/javascript','.css':'text/css','.png':'image/png','.svg':'image/svg+xml','.ico':'image/x-icon'};
+const mime:Record<string,string>={'.html':'text/html','.js':'text/javascript','.css':'text/css','.png':'image/png','.svg':'image/svg+xml','.ico':'image/x-icon','.mp3':'audio/mpeg','.json':'application/json'};
 const server=createServer(async(req,res)=>{try{if(req.url==='/health'){res.writeHead(200,{'Content-Type':'application/json'});res.end('{"ok":true}');return;}
  const path=resolve(root,'.'+decodeURIComponent((req.url??'/').split('?')[0]));if(path!==root&&!path.startsWith(root+'/')&&!path.startsWith(root+'\\'))throw Error('path');let file=path;if((await stat(file)).isDirectory())file=resolve(file,'index.html');const body=await readFile(file);res.writeHead(200,{'Content-Type':mime[extname(file)]??'application/octet-stream'});res.end(body);
  }catch{res.writeHead(404);res.end('Not found');}});
@@ -61,3 +61,4 @@ setInterval(()=>{tick++;for(const [code,room] of rooms){
 }},1000/60);
 setInterval(()=>{for(const room of rooms.values())for(const p of room.peers)if(p.socket){if(!p.alive){p.socket.terminate();continue;}p.alive=false;p.socket.ping();}},10000);
 server.listen(Number(process.env.PORT)||3000,'0.0.0.0',()=>console.log(`KART CHAOS 64 server on http://localhost:${process.env.PORT||3000}`));
+

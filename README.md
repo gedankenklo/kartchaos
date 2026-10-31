@@ -123,3 +123,12 @@ Music now has 27 original arrangements, three per arena. Auto rotates arrangemen
 Stadium bowl and floor repair: pitch stripes, field markings, and the center circle are now painted into a single mipmapped turf surface, with no stacked floor decals. Beach boardwalk grain and plank seams are painted on the existing deck top faces; the almost coplanar cap panels and stripes have been removed in Original and Soft Toon. Stadium seating now rises through twelve tiers to a roof rim at 32 m, with more than 3,000 instanced spectators and 44 m floodlights. Thirty-two perimeter boards use an atlas of eight fictional sponsors: Turbo Juice, Bubble Co., Rook Racing, Mango Fizz, Plum Power, Pitstop 64, Neon Tires, and Chaos Club. Decorative stands, spectators and signs stay outside the playable pitch and do not obstruct the chase camera. Owned painted textures and stadium materials are released on map/style changes.
 
 Preview depth fix: the overhead arena camera now fits its near and far clipping planes to the complete padded arena bounds on each view angle. This restores precision between the distant turf, foundation, thin trim and crowd surfaces during preview rotation. The close-up driving cameras retain their existing settings. Tests cover stadium corners across the orbit and separation of the pitch from its foundation in a 24-bit depth buffer.
+
+## Custom MP3 soundtrack (v1.2.0)
+
+Add MP3s directly to `public/music/<arena>/` and rebuild. Arena folders are fortress,
+sky, neon, yard, depot, quarry, castle, beach and stadium. Files are discovered by
+`scripts/scan-music.mjs` automatically before development or production builds.
+In Auto music mode, each arena plays its MP3s in filename order on repeat. Empty
+folders or failed MP3s fall back to generated music. Explicit generated-track
+selections still override Auto. See `public/music/README.md` for the folder mapping.

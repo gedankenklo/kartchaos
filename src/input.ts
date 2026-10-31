@@ -10,12 +10,14 @@ export class Controls {
  }
  gamepad(player:number){
   const pads=Array.from(navigator.getGamepads?.()??[]),assigned=this.pads[player];
+  if(assigned===-2)return undefined;
   if(assigned>=0)return pads[assigned]??undefined;
   const reserved=new Set(this.pads.filter(index=>index>=0));
   const automatic=pads.filter((pad):pad is Gamepad=>!!pad&&pad.connected!==false&&!reserved.has(pad.index));
-  const slot=this.pads.slice(0,player).filter(index=>index<0).length;
+  const slot=this.pads.slice(0,player).filter(index=>index===-1).length;
   return automatic[slot];
  }
+ assignPad(player:number,index:number){if(index>=0)for(let i=0;i<this.pads.length;i++)if(i!==player&&this.pads[i]===index)this.pads[i]=-1;this.pads[player]=index;this.blockPads();}
  read(player:number):Input {
   const b=this.bindings[player]??defaults[0],key=(i:number)=>this.keys.has(b[i]);
   const fireTap=this.taps.delete(b[6]),hopTap=this.taps.delete(b[5]);
