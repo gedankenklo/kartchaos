@@ -21,7 +21,8 @@ export const idle = ():Input => ({gas:0,steer:0,drift:false,fire:false,hop:false
 export interface Kart {id:number; driver:number; name:string; bot:boolean; x:number; z:number; y:number; angle:number; vx:number; vz:number; vy:number; speed:number; steering:number; yawRate:number; reverseTime:number; driftSide:number; driftSlip:number; pushX:number; pushZ:number; bumpCooldown:number; balloons:number; inv:number; item:Item|null; roulette:number; rouletteSeed:number; rouletteStop:boolean; itemFlash:number; boost:number; ram:number; shield:number; drift:number; cooldown:number; hopHeld:boolean; fireHeld:boolean; target:number; stuck:number; kills:number; damage:number; hits:number; eliminatedAt?:number; }
 export interface Shot {id:number; owner:number; kind:'bolt'|'seeker'|'mine'; x:number; z:number; y:number; angle:number; life:number; age?:number; bounces?:number; }
 export interface Box {x:number; z:number; y:number; respawn:number;}
-export interface Event {id:number; type:'goal'|'eliminated'|'hit'|'fire'|'pickup'|'boost'|'win'|'fall'|'bump'|'itemready'|'shockwave'|'crash'|'ricochet'; x:number; y:number; z:number; player:number;source?:number;blocked?:boolean;team?:'blue'|'orange';}
+export type HitCause='bolt'|'seeker'|'mine'|'ram'|'pulse'|'fall'|'lava'|'ring'|'timeout';
+export interface Event {id:number; type:'goal'|'eliminated'|'hit'|'fire'|'pickup'|'boost'|'win'|'fall'|'bump'|'itemready'|'shockwave'|'crash'|'ricochet'; x:number; y:number; z:number; player:number;source?:number;blocked?:boolean;remaining?:number;cause?:HitCause;fromX?:number;fromZ?:number;team?:'blue'|'orange';}
 export interface Config {arena:Arena; humans:number; bots:number; difficulty:'easy'|'normal'|'hard'; duration:number;speedClass?:50|100|150;drivers?:number[];shuffleMaps?:boolean;mapQueue?:Arena[];championship?:boolean;}
 export interface State {config:Config; championship?:Championship; ball?:Football; karts:Kart[]; shots:Shot[]; boxes:Box[]; time:number; countdown:number; phase:'countdown'|'playing'|'finished'; winner:number|null; tick:number; seed:number; serial:number; events:Event[];}
 export const clamp=(v:number,a:number,b:number)=>Math.max(a,Math.min(b,v));
@@ -107,10 +108,10 @@ export function watchedKart(s:State,id:number,preferred?:number){return s.karts[
 export function cycleSpectator(s:State,id:number,preferred:number|undefined,direction:number){const current=watchedKart(s,id,preferred),alive=s.karts.filter(k=>k.balloons>0);if(s.karts[id]?.balloons>0||!alive.length)return current?.id;const index=alive.findIndex(k=>k.id===current?.id);return alive[(index+(direction<0?-1:1)+alive.length)%alive.length].id;}
 function random(s:State){s.seed=(Math.imul(1664525,s.seed)+1013904223)>>>0;return s.seed/4294967296;}
 function emit(s:State,type:Event['type'],k:Kart,detail:Partial<Event>={}){s.events.push({id:++s.serial,type,x:k.x,y:k.y,z:k.z,player:k.id,...detail});if(s.events.length>24)s.events.shift();}
-export function damage(s:State,k:Kart,owner:number) {
+export function damage(s:State,k:Kart,owner:number,detail:Pick<Event,'cause'|'fromX'|'fromZ'>={}) {
  if(s.phase!=='playing'||k.balloons<=0||k.inv>0)return false;
- if(k.shield>0){k.shield=0;k.inv=.6;emit(s,'hit',k,{source:owner,blocked:true});return false;}
- k.balloons--;k.damage++;k.inv=2.2;k.speed*=.35;k.vy=3;emit(s,'hit',k,{source:owner,blocked:false});if(owner!==k.id&&s.karts[owner])s.karts[owner].hits=(s.karts[owner].hits??0)+1;
+ if(k.shield>0){k.shield=0;k.inv=.6;emit(s,'hit',k,{...detail,source:owner,blocked:true,remaining:k.balloons});return false;}
+ k.balloons--;k.damage++;k.inv=2.2;k.speed*=.35;k.vy=3;emit(s,'hit',k,{...detail,source:owner,blocked:false,remaining:k.balloons});if(owner!==k.id&&s.karts[owner])s.karts[owner].hits=(s.karts[owner].hits??0)+1;
  if(k.balloons===0){k.eliminatedAt=s.tick;emit(s,'eliminated',{...k,y:Math.max(0,k.y)});if(owner!==k.id&&s.karts[owner])s.karts[owner].kills++;}
  return true;
 }
@@ -127,7 +128,7 @@ export function useItem(s:State,k:Kart) {
  const type=k.item;k.item=null;emit(s,'fire',k);
  if(type==='boost'){k.boost=Math.max(k.boost,2);k.ram=2;emit(s,'boost',k);return;}
  if(type==='shield'){k.shield=7;return;}
- if(type==='pulse'){emit(s,'shockwave',k);for(const o of s.karts)if(o.id!==k.id&&distance(o,k)<9&&Math.abs(o.y-k.y)<4)damage(s,o,k.id);return;}
+ if(type==='pulse'){emit(s,'shockwave',k);for(const o of s.karts)if(o.id!==k.id&&distance(o,k)<9&&Math.abs(o.y-k.y)<4)damage(s,o,k.id,{cause:'pulse',fromX:k.x,fromZ:k.z});return;}
  const back=type==='mine'?-2.8:2.3;
  s.shots.push({id:++s.serial,owner:k.id,kind:type,x:k.x+Math.sin(k.angle)*back,z:k.z+Math.cos(k.angle)*back,y:k.y+(type==='bolt'?.65:1),angle:k.angle,life:type==='mine'?25:type==='bolt'?8:5,age:0,bounces:0});
 }
@@ -239,7 +240,7 @@ export function drive(s:State,k:Kart,input:Input,dt:number) {
  k.hopHeld=input.hop;
  k.vy-=21*dt;k.y+=k.vy*dt;
  const h=ground(s.config.arena,k.x,k.z,k.y+.4);if(k.y<h&&k.y>h-1.5){k.y=h;k.vy=0;}
- if(k.y<(s.config.arena==='castle'?-4:-14)){damage(s,k,k.id);k.x=0;k.z=0;k.y=1;k.vy=0;k.speed=0;k.boost=0;k.ram=0;k.vx=0;k.vz=0;k.pushX=0;k.pushZ=0;k.inv=3;emit(s,'fall',k);}
+ if(k.y<(s.config.arena==='castle'?-4:-14)){damage(s,k,k.id,{cause:s.config.arena==='castle'?'lava':'fall'});k.x=0;k.z=0;k.y=1;k.vy=0;k.speed=0;k.boost=0;k.ram=0;k.vx=0;k.vz=0;k.pushX=0;k.pushZ=0;k.inv=3;emit(s,'fall',k);}
  if(k.roulette>0){
   if(input.fire&&!k.fireHeld)k.rouletteStop=true;
   k.roulette=Math.max(0,k.roulette-dt);
@@ -266,7 +267,7 @@ export function collideKarts(s:State){
    const aToward=(a.vx+(a.pushX??0))*nx+(a.vz+(a.pushZ??0))*nz,bToward=-(b.vx+(b.pushX??0))*nx-(b.vz+(b.pushZ??0))*nz;
    const hitA=(a.ram??0)>0&&a.boost>0&&a.speed>8&&aToward>6&&Math.sin(a.angle)*nx+Math.cos(a.angle)*nz>.35&&closing>4;
    const hitB=(b.ram??0)>0&&b.boost>0&&b.speed>8&&bToward>6&&-Math.sin(b.angle)*nx-Math.cos(b.angle)*nz>.35&&closing>4;
-   if(hitA)damage(s,b,a.id);if(hitB)damage(s,a,b.id);
+   if(hitA)damage(s,b,a.id,{cause:'ram',fromX:a.x,fromZ:a.z});if(hitB)damage(s,a,b.id,{cause:'ram',fromX:b.x,fromZ:b.z});
    const impulse=clamp(closing*.72+(a.boost>0||b.boost>0?3:0),1,21);
    a.pushX=(a.pushX??0)-nx*impulse;a.pushZ=(a.pushZ??0)-nz*impulse;
    b.pushX=(b.pushX??0)+nx*impulse;b.pushZ=(b.pushZ??0)+nz*impulse;
@@ -293,7 +294,7 @@ export function advanceRicochet(s:State,p:Shot,dt:number){
   for(const o of obstacles(arena)){const d=Math.hypot(nx-o.x,nz-o.z);if(p.y<2.6&&d<o.r+radius){const ax=d>.001?(nx-o.x)/d:-vx,az=d>.001?(nz-o.z)/d:-vz,dot=vx*ax+vz*az;if(dot<0){vx-=2*dot*ax;vz-=2*dot*az;bounced=true;}nx=o.x+ax*(o.r+radius+.02);nz=o.z+az*(o.r+radius+.02);}}
   p.x=nx;p.z=nz;p.angle=Math.atan2(vx,vz);if(bounced)rebound();
   const floor=ground(arena,p.x,p.z,p.y-.35);if(floor< -10){p.life=0;break;}if(floor<=p.y+.4)p.y=floor+.65;
-  for(const k of s.karts){if(!k.balloons||Math.abs(k.y+.8-p.y)>1.7||(k.id===p.owner&&(p.bounces===0||p.age<.4)))continue;const dx=p.x-ox,dz=p.z-oz,t=clamp(((k.x-ox)*dx+(k.z-oz)*dz)/(dx*dx+dz*dz||1),0,1);if(Math.hypot(k.x-ox-dx*t,k.z-oz-dz*t)<1.65){damage(s,k,p.owner);p.life=0;break;}}
+  for(const k of s.karts){if(!k.balloons||Math.abs(k.y+.8-p.y)>1.7||(k.id===p.owner&&(p.bounces===0||p.age<.4)))continue;const dx=p.x-ox,dz=p.z-oz,t=clamp(((k.x-ox)*dx+(k.z-oz)*dz)/(dx*dx+dz*dz||1),0,1);if(Math.hypot(k.x-ox-dx*t,k.z-oz-dz*t)<1.65){damage(s,k,p.owner,{cause:'bolt',fromX:k.x-Math.sin(p.angle)*5,fromZ:k.z-Math.cos(p.angle)*5});p.life=0;break;}}
  }
 }
 export function dangerRadius(s:State){const start=(s.config.arena==='neon'||s.config.arena==='sky'?1.35:Math.SQRT2)*arenaExtent(s.config.arena);return s.time>45?start:Math.max(7,start*s.time/45);}
@@ -309,7 +310,7 @@ export function step(s:State,inputs:Record<number,Input>,dt=1/60) {
  for(const b of s.boxes)b.respawn=Math.max(0,b.respawn-dt);
  for(const k of s.karts){drive(s,k,k.bot?botInput(s,k):inputs[k.id]??idle(),dt);if(k.balloons<=0)continue;
   for(const b of s.boxes)if(!k.item&&!k.roulette&&b.respawn<=0&&distance(k,b)<2.5&&Math.abs(k.y-b.y)<2){beginRoulette(s,k,b);b.respawn=6;}
-  if(s.time<=45&&Math.hypot(k.x,k.z)>dangerRadius(s))damage(s,k,k.id);
+  if(s.time<=45&&Math.hypot(k.x,k.z)>dangerRadius(s))damage(s,k,k.id,{cause:'ring'});
  }
  collideKarts(s);stepFootball(s,dt);
  for(const p of s.shots){p.life-=dt;if(p.kind!=='bolt')p.age=(p.age??0)+dt;if(p.kind==='bolt'){advanceRicochet(s,p,dt);continue;}
@@ -320,10 +321,13 @@ export function step(s:State,inputs:Record<number,Input>,dt=1/60) {
   if(solidAt(s.config.arena,p.x,p.y+.15,p.z)||Math.abs(p.x)>arenaExtent(s.config.arena)+2||Math.abs(p.z)>arenaExtent(s.config.arena)+2){p.life=0;continue;}
   for(const k of s.karts){if((k.id===p.owner&&p.kind!=='mine')||(p.kind==='mine'&&(p.age??0)<MINE_ARM_TIME)||!k.balloons||Math.abs(k.y+1-p.y)>2)continue;
    const dx=p.x-ox,dz=p.z-oz,t=clamp(((k.x-ox)*dx+(k.z-oz)*dz)/(dx*dx+dz*dz||1),0,1);
-   if(Math.hypot(k.x-ox-dx*t,k.z-oz-dz*t)<1.8){damage(s,k,p.owner);p.life=0;break;}
+   if(Math.hypot(k.x-ox-dx*t,k.z-oz-dz*t)<1.8){damage(s,k,p.owner,{cause:p.kind,fromX:p.kind==='mine'?p.x:k.x-Math.sin(p.angle)*5,fromZ:p.kind==='mine'?p.z:k.z-Math.cos(p.angle)*5});p.life=0;break;}
   }
  }
  s.shots=s.shots.filter(p=>p.life>0);
- if(s.time<=0)for(const k of s.karts)if(k.balloons>0)damage(s,k,k.id);
+ if(s.time<=0)for(const k of s.karts)if(k.balloons>0)damage(s,k,k.id,{cause:'timeout'});
  finish(s);
 }
+
+
+

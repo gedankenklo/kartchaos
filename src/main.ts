@@ -1,3 +1,4 @@
+import {combatMessage,hitDirection,viewportStyle} from './combatFeedback';
 import {controllerPanel,updateControllerPanels,GAME_VERSION,DEVELOPER} from './controllerPanel';
 import {cupPresentation} from './cupView';
 import {championshipOrder,roundOrder} from './championship';
@@ -50,9 +51,23 @@ function updateReels(){
   reel.style.transform=`translateY(-${(progress-step)*100}%)`;
  }
 }
-let feedbackMessages:{text:string;until:number}[]=[];
-function showHitFeedback(event:State['events'][number]){const ids=localIds(),victim=state.karts[event.player],attacker=event.source;if(!victim)return;let text='';if(attacker!==undefined&&attacker!==event.player&&ids.includes(attacker)){text=event.blocked?victim.name+' blocked your hit!':'You hit '+victim.name+'!';if(!event.blocked)sound.effect('confirmed');}else if(ids.includes(event.player))text=event.blocked?'Shield absorbed the hit!':'Balloon popped!';if(text){feedbackMessages.push({text,until:performance.now()+2100});feedbackMessages=feedbackMessages.slice(-3);}if(ids.includes(event.player)&&!event.blocked){const flash=document.createElement('div');flash.className='damage-flash';const index=ids.indexOf(event.player),cols=ids.length>2?2:ids.length===2&&vertical?2:1,rows=Math.ceil(ids.length/cols);flash.style.cssText=`left:${index%cols*100/cols}%;top:${Math.floor(index/cols)*100/rows}%;width:${100/cols}%;height:${100/rows}%`;app.appendChild(flash);setTimeout(()=>flash.remove(),320);}}
-function updateFeedback(now:number){feedbackMessages=feedbackMessages.filter(m=>m.until>now);const host=document.querySelector<HTMLElement>('#battleFeedback');if(host){const html=feedbackMessages.map(m=>`<div>${esc(m.text)}</div>`).join('');if(host.innerHTML!==html)host.innerHTML=html;}}
+let feedbackMessages:{text:string;until:number;view:number;event:State['events'][number];victim:boolean;positive:boolean}[]=[];
+function showHitFeedback(event:State['events'][number]){
+ const ids=localIds(),now=performance.now();
+ ids.forEach((id,index)=>{const spectating=state.karts[id]?.balloons===0&&event.player!==id,viewer=spectating?(world.cameras[index]?.userData.targetId??world.watched(state,id)?.id):id;if(viewer===undefined)return;const message=combatMessage(event,viewer,state.karts);if(!message)return;
+  const prefix=spectating?'SPECTATING '+state.karts[viewer].name+' · ':ids.length>1?'P'+(index+1)+' · ':'';
+  feedbackMessages.push({...message,text:prefix+message.text,view:index,event,victim:viewer===event.player,until:now+2200});
+  feedbackMessages=feedbackMessages.filter((m,i,all)=>m.view!==index||all.slice(i+1).filter(next=>next.view===index).length<2);
+ });
+ if(event.source!==event.player&&event.source!==undefined&&ids.includes(event.source)&&!event.blocked)sound.effect('confirmed');
+ if(ids.includes(event.player)&&!event.blocked){const flash=document.createElement('div');flash.className='damage-flash';flash.style.cssText=viewportStyle(ids.indexOf(event.player),ids.length,vertical);app.appendChild(flash);setTimeout(()=>flash.remove(),320);}
+}
+function updateFeedback(now:number){
+ feedbackMessages=feedbackMessages.filter(m=>m.until>now);const host=document.querySelector<HTMLElement>('#battleFeedback');if(!host)return;const ids=localIds();
+ const html=ids.map((id,index)=>{const messages=feedbackMessages.filter(m=>m.view===index);if(!messages.length)return '';const latest=messages.filter(m=>m.victim).at(-1),camera=world.cameras[index],heading=camera?Math.atan2(-camera.matrixWorld.elements[8],-camera.matrixWorld.elements[10]):state.karts[id]?.angle??0,angle=latest&&latest.until-now>1000?hitDirection(latest.event,heading):null;
+  return `<div class="combat-view" style="${viewportStyle(index,ids.length,vertical)}"><div class="combat-messages">${messages.map(m=>`<div class="combat-message ${m.positive?'positive':m.event.blocked?'blocked':'hurt'}">${esc(m.text)}</div>`).join('')}</div>${angle!==null?`<div class="hit-bearing ${latest?.event.blocked?'blocked':''}" style="transform:translate(-50%,-50%) rotate(${angle.toFixed(1)}deg)" aria-label="Incoming ${latest?.event.blocked?'blocked hit':'hit'} direction"><span>▲</span></div>`:''}</div>`;
+ }).join('');if(host.innerHTML!==html)host.innerHTML=html;
+}
 function updateHud(){if(!playing)return;const active=state.karts.filter(k=>k.balloons>0),ids=localIds(),seconds=Math.ceil(state.time);$('#clock').textContent=`${Math.floor(seconds/60)}:${(seconds%60).toString().padStart(2,'0')}`;$('#clock').classList.toggle('urgent',state.time<=45);$('#alive').textContent=active.length+' KARTS LEFT';$('#roster').innerHTML=state.karts.map(k=>`<div class="driver ${!k.balloons?'out':''}"><i style="background:${COLORS[k.driver??k.id]}">${k.id+1}</i><span>${ids.includes(k.id)?'YOU'+(ids.length>1?' '+(ids.indexOf(k.id)+1):''):k.name}</span><b style="color:${COLORS[k.driver??k.id]}">${'●'.repeat(k.balloons)}<em>${'○'.repeat(3-k.balloons)}</em></b></div>`).join('');
  const cols=ids.length>2?2:ids.length===2&&vertical?2:1,rows=Math.ceil(ids.length/cols);
  $('#viewHuds').innerHTML=ids.map((id,i)=>{const owned=state.karts[id],k=world.watched(state,id);if(!owned||!k)return '';const rolling=k.roulette>0,shown=rolling?rouletteItem(k):k.item,fireKey=i===0?'E / GAMEPAD B':controls.bindings[i]?.[6].replace('Key','')??'FIRE';return `<div class="view-hud" style="left:${i%cols*100/cols}%;top:${Math.floor(i/cols)*100/rows}%;width:${100/cols}%;height:${100/rows}%"><div class="player-tag" style="--player:${COLORS[k.driver??id]}">P${i+1} <span>${owned.balloons?'●'.repeat(owned.balloons):'SPECTATING '+k.name}</span></div><div class="speedometer"><strong>${Math.round(Math.abs(k.speed)*4.2)}</strong><small>KM/H</small><div class="drift-meter"><i style="width:${Math.min(100,k.drift*100)}%;background:${k.drift>1?'#83d2e2':'#eea752'}"></i></div><span>${k.ram>0?'TURBO RAM!':k.boost>0?'TURBO!':k.drift>1?'RELEASE FOR TURBO':k.drift>0?'POWERSLIDE':'KEEP IT SIDEWAYS'}</span></div><div class="item-slot ${rolling?'rolling':k.item?'loaded':''} ${k.itemFlash>0?'item-ready':''}" aria-label="${rolling?'Item roulette. Press fire to stop.':shown?itemNames[shown]:'Empty item slot'}"><div>${rolling?`<span class="roulette-reel" data-roll-player="${id}"><i>${itemIcons[ITEMS[(ITEMS.indexOf(shown!)+5)%6]]}</i><i>${itemIcons[shown!]}</i><i>${itemIcons[ITEMS[(ITEMS.indexOf(shown!)+1)%6]]}</i></span>`:shown?itemIcons[shown]:'?'}</div><span>${rolling?'ITEM ROULETTE':shown?itemNames[shown]:'FIND AN ITEM BOX'}<small>${!owned.balloons?'WATCHED DRIVER’S ITEM':rolling?fireKey+' TO STOP':shown?fireKey+' TO USE':'ONE ITEM. MAKE IT COUNT.'}</small>${rolling?`<b class="roulette-timer"><i style="width:${k.roulette/2.4*100}%"></i></b>`:''}</span></div></div>`;}).join('');
@@ -172,6 +187,7 @@ function frame(now:number){if(!playing||modal)updateControllerPanels(controls);m
  const audible=playing?world.viewKart(state,localIds()[0]):undefined;sound.update(audible?.speed??0,playing&&!paused&&!results,audible?.boost??0,speedSettings(state.config.speedClass).scale);sound.updateDrift(driftSoundLevel(audible,audible?ground(state.config.arena,audible.x,audible.z,audible.y):0,playing&&!paused&&!results),audible?.speed??0);sound.updateMusic(state.config.arena,true,results,selectMusicScene(playing,paused||modal==='pause',state.config.arena));const trackPlaying=document.querySelector('#trackPlaying');if(trackPlaying&&sound.currentTrack)trackPlaying.textContent='Now playing: '+sound.currentTrack;updateFeedback(now);world.sync(state,paused?0:dt,now/1000,net.state?net.ids:undefined);world.render(state,localIds(),playing,previewRect,now/1000,dt,vertical);portrait?.render(dt,now/1000);podiumPortraits.forEach(p=>p.render(dt,now/1000));requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
+
 
 
 
