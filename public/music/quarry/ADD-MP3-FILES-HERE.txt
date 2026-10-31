@@ -1,0 +1,9 @@
+Music for Rift Quarry
+
+Upload your MP3 files directly into this folder.
+The next Render build discovers them automatically.
+Multiple MP3s play in filename order and loop.
+If no MP3 is present, generated music is used.
+Keep Settings > Music selection on Auto.
+
+Keep this file so GitHub retains the folder even without MP3s.
