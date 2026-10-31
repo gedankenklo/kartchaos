@@ -1,3 +1,4 @@
+import {ChaosDirector} from './broadcast';
 import {previewDepthRange} from './previewCamera';
 import {createStadiumFloor,createBoardwalkMaterial} from './floorPaint';
 import {ArenaDetails,createFootballVisual} from './arenaDetails';
@@ -27,6 +28,7 @@ export class World {
  landscape?:Landscape;
  skidMarks:{mesh:T.Mesh;life:number}[]=[];
  cameraRay=new T.Raycaster();cameraTerrain=new T.Group();
+ director=new ChaosDirector();broadcastMode:'camera'|'map'='camera';broadcastCamera=new T.PerspectiveCamera(55,1,.5,2400);
  renderer:T.WebGLRenderer; scene=new T.Scene(); arenaGroup=new T.Group(); kartGroup=new T.Group(); fx=new T.Group(); cameras:T.PerspectiveCamera[]=[]; demoCamera=new T.PerspectiveCamera(37,1,.1,350); map:Arena='fortress'; models=new Map<number,T.Group>(); boxes:T.Group[]=[]; shots=new Map<number,T.Group>(); particles:{mesh:T.Mesh;life:number;v:T.Vector3}[]=[]; lastEvent=0; distance=10; reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
  constructor(canvas:HTMLCanvasElement){
   this.renderer=new T.WebGLRenderer({canvas,antialias:true,alpha:false});this.renderer.setPixelRatio(Math.min(devicePixelRatio,1.8));this.renderer.shadowMap.enabled=true;this.renderer.shadowMap.autoUpdate=false;this.renderer.shadowMap.type=T.PCFSoftShadowMap;this.renderer.outputColorSpace=T.SRGBColorSpace;this.renderer.setClearColor('#f5f1e8');
@@ -226,6 +228,15 @@ export class World {
    if(fresh){cam.position.copy(target);cam.userData.targetId=chosen.id;cam.userData.look=lookTarget.clone();}else cam.position.lerp(target,1-Math.exp(-dt*(hit?22:10)));
    (cam.userData.look as T.Vector3).lerp(lookTarget,1-Math.exp(-dt*14));cam.lookAt(cam.userData.look as T.Vector3);cam.fov+=(62+Math.max(0,Math.abs(chosen.speed)-14)*.22+(chosen.boost>0?2:0)-cam.fov)*(1-Math.exp(-dt*5));cam.aspect=vw/vh;cam.updateProjectionMatrix();r.setViewport(x,y,vw,vh);r.setScissor(x,y,vw,vh);r.setScissorTest(true);this.landscape!.follow(cam);r.render(this.scene,cam);
   });
+  if(count===3){this.director.update(s);if(this.broadcastMode==='camera'){
+   const focus=this.director.focus(s),cam=this.broadcastCamera,angle=this.director.shotAngle+.7,target=new T.Vector3(focus.x-Math.sin(angle)*27,focus.y+25,focus.z-Math.cos(angle)*27);
+   target.y=Math.max(target.y,ground(s.config.arena,target.x,target.z)+9);
+   const origin=new T.Vector3(focus.x,focus.y+1.6,focus.z),arm=target.clone().sub(origin),length=arm.length();this.cameraRay.set(origin,arm.normalize());this.cameraRay.far=length;const obstruction=this.cameraRay.intersectObject(this.cameraTerrain,true)[0];if(obstruction)target.copy(origin).addScaledVector(arm,Math.max(1.3,obstruction.distance-.6));
+   const fresh=cam.userData.shot!==this.director.switched;if(fresh){cam.position.copy(target);cam.userData.shot=this.director.switched;cam.userData.look=new T.Vector3(focus.x,focus.y+1,focus.z);}else cam.position.lerp(target,1-Math.exp(-dt*2.5));
+   (cam.userData.look as T.Vector3).lerp(new T.Vector3(focus.x,focus.y+1,focus.z),1-Math.exp(-dt*3));cam.lookAt(cam.userData.look);cam.aspect=w/h;cam.updateProjectionMatrix();r.setViewport(w/2,0,w/2,h/2);r.setScissor(w/2,0,w/2,h/2);r.setScissorTest(true);this.landscape!.follow(cam);r.render(this.scene,cam);
+  }}
  }
- reset(){this.spectatorTargets.clear();this.eliminations.clear();for(const model of this.models.values()){model.scale.setScalar(1);model.rotation.set(0,0,0);}this.battleEffects.clearBursts();this.lastEvent=0;for(const c of this.cameras)delete c.userData.targetId;for(const model of this.models.values()){delete model.userData.skid;delete model.userData.balloonMotion;delete model.userData.previousSpeed;}for(const mark of this.skidMarks){this.fx.remove(mark.mesh);mark.mesh.geometry.dispose();(mark.mesh.material as T.Material).dispose();}this.skidMarks=[];for(const p of this.particles){this.fx.remove(p.mesh);p.mesh.geometry.dispose();}this.particles=[];}
+ reset(){this.director.reset();delete this.broadcastCamera.userData.shot;this.spectatorTargets.clear();this.eliminations.clear();for(const model of this.models.values()){model.scale.setScalar(1);model.rotation.set(0,0,0);}this.battleEffects.clearBursts();this.lastEvent=0;for(const c of this.cameras)delete c.userData.targetId;for(const model of this.models.values()){delete model.userData.skid;delete model.userData.balloonMotion;delete model.userData.previousSpeed;}for(const mark of this.skidMarks){this.fx.remove(mark.mesh);mark.mesh.geometry.dispose();(mark.mesh.material as T.Material).dispose();}this.skidMarks=[];for(const p of this.particles){this.fx.remove(p.mesh);p.mesh.geometry.dispose();}this.particles=[];}
 }
+
+

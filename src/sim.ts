@@ -112,7 +112,7 @@ export function damage(s:State,k:Kart,owner:number,detail:Pick<Event,'cause'|'fr
  if(s.phase!=='playing'||k.balloons<=0||k.inv>0)return false;
  if(k.shield>0){k.shield=0;k.inv=.6;emit(s,'hit',k,{...detail,source:owner,blocked:true,remaining:k.balloons});return false;}
  k.balloons--;k.damage++;k.inv=2.2;k.speed*=.35;k.vy=3;emit(s,'hit',k,{...detail,source:owner,blocked:false,remaining:k.balloons});if(owner!==k.id&&s.karts[owner])s.karts[owner].hits=(s.karts[owner].hits??0)+1;
- if(k.balloons===0){k.eliminatedAt=s.tick;emit(s,'eliminated',{...k,y:Math.max(0,k.y)});if(owner!==k.id&&s.karts[owner])s.karts[owner].kills++;}
+ if(k.balloons===0){k.eliminatedAt=s.tick;emit(s,'eliminated',{...k,y:Math.max(0,k.y)},{source:owner,cause:detail.cause});if(owner!==k.id&&s.karts[owner])s.karts[owner].kills++;}
  return true;
 }
 export const ROULETTE_DURATION=2.4;
@@ -328,6 +328,7 @@ export function step(s:State,inputs:Record<number,Input>,dt=1/60) {
  if(s.time<=0)for(const k of s.karts)if(k.balloons>0)damage(s,k,k.id,{cause:'timeout'});
  finish(s);
 }
+
 
 
 

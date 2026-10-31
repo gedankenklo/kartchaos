@@ -1,17 +1,18 @@
-# v1.3.0 combat feedback
+# KART CHAOS 64 v1.4.0 - Chaos Cam
 
-Upload ALL contents of this update folder to your existing GitHub repository ROOT
-(the page containing package.json), merge src and tests, then commit.
-Wait for Render to redeploy and refresh the game. Settings should show v1.3.0.
+Upload all contents to your existing GitHub repository ROOT and commit.
+Merge the src, server, scripts and tests folders and replace package.json and
+package-lock.json. Wait for Render to redeploy, refresh, and check Settings for v1.4.0.
 
-Added: specific messages for self mines and ricochets, turbo rams, shields,
-projectiles, shockwaves, falling, lava and danger-ring damage. Direction markers
-point toward incoming attacks relative to the camera. Each split-screen player
-receives their own messages, and spectators see the watched driver's feedback.
+With exactly THREE local drivers on this browser (Couch or mixed online play),
+the bottom-right tile becomes CHAOS CAM LIVE. No fourth driver is added.
+The director holds shots for at least six seconds, follows battles and the
+stadium ball, avoids blocking scenery and changes targets when a driver is out.
+The tile shows balloons, KOs, cup points when available and live event captions.
 
-Ricochet Pods already damage their owner after a rebound and the initial
-0.4-second launch protection. This update makes that cause explicit in the HUD.
-No self-hit score is awarded. Shields and temporary invulnerability still apply.
+Click Map in the tile to use the large tactical map, or choose Three-player
+fourth tile in Settings. The choice is saved in this browser. Controller users
+can change it in Settings. One-, two- and four-local-player layouts stay as before.
 
-This update contains no music files or music folders. Your existing MP3s stay
-in public/music and are rediscovered automatically on the next Render build.
+This update includes the preceding combat feedback and controller code updates.
+It contains no public folder or MP3s. Your existing music stays in public/music.
