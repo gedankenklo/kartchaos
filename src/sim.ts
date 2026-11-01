@@ -1,3 +1,4 @@
+import {newRoundStats,statsFor,type RoundStats} from './matchStats';
 import {createFootball,stepFootball,type Football} from './football';
 import {createChampionship,scoreChampionship,type Championship} from './championship';
 // Shared by browser and authoritative server. All distances are metres, time seconds.
@@ -18,7 +19,7 @@ export const DRIVER_NAMES=['ROOK','BOLT','MANGO','PLUM','MINT','PEACH','SKIP','P
 export function normalizeDrivers(raw:unknown,count:number):number[]{const values=Array.isArray(raw)?raw:[];return Array.from({length:count},(_,i)=>Number.isInteger(values[i])&&values[i]>=0&&values[i]<8?values[i]:i%8);}
 export interface Input { gas:number; steer:number; drift:boolean; fire:boolean; hop:boolean; }
 export const idle = ():Input => ({gas:0,steer:0,drift:false,fire:false,hop:false});
-export interface Kart {id:number; driver:number; name:string; bot:boolean; x:number; z:number; y:number; angle:number; vx:number; vz:number; vy:number; speed:number; steering:number; yawRate:number; reverseTime:number; driftSide:number; driftSlip:number; pushX:number; pushZ:number; bumpCooldown:number; balloons:number; inv:number; item:Item|null; roulette:number; rouletteSeed:number; rouletteStop:boolean; itemFlash:number; boost:number; ram:number; shield:number; drift:number; cooldown:number; hopHeld:boolean; fireHeld:boolean; target:number; stuck:number; kills:number; damage:number; hits:number; eliminatedAt?:number; }
+export interface Kart {stats?:RoundStats;id:number; driver:number; name:string; bot:boolean; x:number; z:number; y:number; angle:number; vx:number; vz:number; vy:number; speed:number; steering:number; yawRate:number; reverseTime:number; driftSide:number; driftSlip:number; pushX:number; pushZ:number; bumpCooldown:number; balloons:number; inv:number; item:Item|null; roulette:number; rouletteSeed:number; rouletteStop:boolean; itemFlash:number; boost:number; ram:number; shield:number; drift:number; cooldown:number; hopHeld:boolean; fireHeld:boolean; target:number; stuck:number; kills:number; damage:number; hits:number; eliminatedAt?:number; }
 export interface Shot {id:number; owner:number; kind:'bolt'|'seeker'|'mine'; x:number; z:number; y:number; angle:number; life:number; age?:number; bounces?:number; }
 export interface Box {x:number; z:number; y:number; respawn:number;}
 export type HitCause='bolt'|'seeker'|'mine'|'ram'|'pulse'|'fall'|'lava'|'ring'|'timeout';
@@ -93,7 +94,7 @@ export function createState(config:Config):State {
   let x=Math.sin(a)*radius,z=Math.cos(a)*radius;
   if(config.arena==='fortress'){const lane=6*ARENA_SCALE.fortress;if(Math.abs(x)<Math.abs(z))x=clamp(x,-lane,lane);else z=clamp(z,-lane,lane);}
   const driver=id<config.humans?config.drivers![id]:(available.shift()??id%8);
-  return {id,driver,name:DRIVER_NAMES[driver],bot:id>=config.humans,x,z,y:ground(config.arena,x,z,0),angle:a+Math.PI,vx:0,vz:0,vy:0,speed:0,steering:0,yawRate:0,reverseTime:0,driftSide:0,driftSlip:0,pushX:0,pushZ:0,bumpCooldown:0,balloons:3,inv:0,item:null,roulette:0,rouletteSeed:0,rouletteStop:false,itemFlash:0,boost:0,ram:0,shield:0,drift:0,cooldown:0,hopHeld:false,fireHeld:false,target:0,stuck:0,kills:0,damage:0,hits:0};
+  return {stats:newRoundStats(),id,driver,name:DRIVER_NAMES[driver],bot:id>=config.humans,x,z,y:ground(config.arena,x,z,0),angle:a+Math.PI,vx:0,vz:0,vy:0,speed:0,steering:0,yawRate:0,reverseTime:0,driftSide:0,driftSlip:0,pushX:0,pushZ:0,bumpCooldown:0,balloons:3,inv:0,item:null,roulette:0,rouletteSeed:0,rouletteStop:false,itemFlash:0,boost:0,ram:0,shield:0,drift:0,cooldown:0,hopHeld:false,fireHeld:false,target:0,stuck:0,kills:0,damage:0,hits:0};
  });
  const points=(isExpansion(config.arena)?EXPANSIONS[config.arena].items:config.arena==='fortress'?[{x:0,z:0},...[-1,1].flatMap(s=>[{x:0,z:s*28,y:0},{x:s*28,z:0,y:0}]),...[-1,1].flatMap(sx=>[-1,1].flatMap(sz=>[{x:sx*20,z:sz*35},{x:sx*12,z:sz*20},{x:sx*23,z:sz*23}])),...FORT_BRIDGES.map(b=>({x:b.x,z:b.z,y:b.y}))]:config.arena==='sky'?[{x:0,z:0},{x:0,z:24},{x:24,z:0},{x:0,z:-24},{x:-24,z:0},{x:0,z:10},{x:10,z:0},{x:0,z:-10},{x:-10,z:0}]:[0,1,2,3,4,5,6,7].map(i=>({x:Math.sin(i*Math.PI/4)*20,z:Math.cos(i*Math.PI/4)*20}))).map((p:{x:number;z:number;y?:number})=>({x:p.x*ARENA_SCALE[config.arena],z:p.z*ARENA_SCALE[config.arena],y:p.y===undefined?undefined:p.y*ARENA_HEIGHT[config.arena]}));
  const championship=config.championship?createChampionship(config,karts):undefined;
@@ -111,7 +112,7 @@ function emit(s:State,type:Event['type'],k:Kart,detail:Partial<Event>={}){s.even
 export function damage(s:State,k:Kart,owner:number,detail:Pick<Event,'cause'|'fromX'|'fromZ'>={}) {
  if(s.phase!=='playing'||k.balloons<=0||k.inv>0)return false;
  if(k.shield>0){k.shield=0;k.inv=.6;emit(s,'hit',k,{...detail,source:owner,blocked:true,remaining:k.balloons});return false;}
- k.balloons--;k.damage++;k.inv=2.2;k.speed*=.35;k.vy=3;emit(s,'hit',k,{...detail,source:owner,blocked:false,remaining:k.balloons});if(owner!==k.id&&s.karts[owner])s.karts[owner].hits=(s.karts[owner].hits??0)+1;
+ k.balloons--;k.damage++;k.inv=2.2;k.speed*=.35;k.vy=3;emit(s,'hit',k,{...detail,source:owner,blocked:false,remaining:k.balloons});if(owner!==k.id&&s.karts[owner]){const attacker=s.karts[owner];attacker.hits=(attacker.hits??0)+1;if(detail.cause==='bolt'||detail.cause==='seeker')statsFor(attacker).projectileHits++;if(detail.cause==='ram')statsFor(attacker).turboRams++;}else if(owner===k.id&&detail.cause!=='timeout')statsFor(k).selfLosses++;
  if(k.balloons===0){k.eliminatedAt=s.tick;emit(s,'eliminated',{...k,y:Math.max(0,k.y)},{source:owner,cause:detail.cause});if(owner!==k.id&&s.karts[owner])s.karts[owner].kills++;}
  return true;
 }
@@ -129,6 +130,7 @@ export function useItem(s:State,k:Kart) {
  if(type==='boost'){k.boost=Math.max(k.boost,2);k.ram=2;emit(s,'boost',k);return;}
  if(type==='shield'){k.shield=7;return;}
  if(type==='pulse'){emit(s,'shockwave',k);for(const o of s.karts)if(o.id!==k.id&&distance(o,k)<9&&Math.abs(o.y-k.y)<4)damage(s,o,k.id,{cause:'pulse',fromX:k.x,fromZ:k.z});return;}
+ if(type==='bolt'||type==='seeker')statsFor(k).projectilesFired++;
  const back=type==='mine'?-2.8:2.3;
  s.shots.push({id:++s.serial,owner:k.id,kind:type,x:k.x+Math.sin(k.angle)*back,z:k.z+Math.cos(k.angle)*back,y:k.y+(type==='bolt'?.65:1),angle:k.angle,life:type==='mine'?25:type==='bolt'?8:5,age:0,bounces:0});
 }
@@ -137,14 +139,14 @@ export function clearPath(arena:Arena,a:{x:number;z:number;y?:number},b:{x:numbe
  const steps=Math.ceil(distance(a,b)/1.8);
  for(let i=1;i<=steps;i++){const x=a.x+(b.x-a.x)*i/steps,z=a.z+(b.z-a.z)*i/steps,h=ground(arena,x,z,prev+.35);if(h< -10||Math.abs(h-prev)>1.6||obstacles(arena).some(o=>Math.hypot(x-o.x,z-o.z)<o.r+1.4))return false;prev=h;}return Math.abs(prev-(b.y??ground(arena,b.x,b.z)))<1.6;
 }
-const routes=new WeakMap<Kart,{tick:number;goalX:number;goalZ:number;point:{x:number;z:number}}>();
+const routes=new WeakMap<Kart,{tick:number;goalX:number;goalZ:number;goalY:number;point:{x:number;z:number}}>();
 function waypoint(s:State,k:Kart,goal:{x:number;z:number;y?:number}) {
- const cached=routes.get(k);if(cached&&s.tick-cached.tick<20&&Math.hypot(goal.x-cached.goalX,goal.z-cached.goalZ)<5&&distance(k,cached.point)>2)return cached.point;
- const point=findWaypoint(s,k,goal);routes.set(k,{tick:s.tick,goalX:goal.x,goalZ:goal.z,point});return point;
+ const cached=routes.get(k);if(cached&&s.tick-cached.tick<20&&Math.hypot(goal.x-cached.goalX,goal.z-cached.goalZ)<5&&Math.abs((goal.y??ground(s.config.arena,goal.x,goal.z))-cached.goalY)<1&&distance(k,cached.point)>2&&clearPath(s.config.arena,k,cached.point))return cached.point;
+ const point=findWaypoint(s,k,goal);routes.set(k,{tick:s.tick,goalX:goal.x,goalZ:goal.z,goalY:goal.y??ground(s.config.arena,goal.x,goal.z),point});return point;
 }
 const navigation=new Map<Arena,{points:NavPoint[];edges:{to:number;cost:number}[][]}>();
 export function navGraph(arena:Arena){let graph=navigation.get(arena);if(!graph){const points=nav(arena),edges=points.map(()=>[] as {to:number;cost:number}[]);for(let i=0;i<points.length;i++)for(let j=i+1;j<points.length;j++)if(clearPath(arena,points[i],points[j])&&clearPath(arena,points[j],points[i])){const cost=distance(points[i],points[j]);edges[i].push({to:j,cost});edges[j].push({to:i,cost});}graph={points,edges};navigation.set(arena,graph);}return graph;}
-function findWaypoint(s:State,k:Kart,goal:{x:number;z:number;y?:number}) {
+export function findWaypoint(s:State,k:Kart,goal:{x:number;z:number;y?:number}) {
  if(clearPath(s.config.arena,k,goal))return goal;
  const graph=navGraph(s.config.arena),nodes=[{x:k.x,z:k.z,y:k.y},...graph.points,goal],end=nodes.length-1;
  const links=nodes.map(()=>[] as {to:number;cost:number}[]);
@@ -156,7 +158,7 @@ function findWaypoint(s:State,k:Kart,goal:{x:number;z:number;y?:number}) {
   if(u===end||u<0||!Number.isFinite(costs[u]))break;done.add(u);
   for(const edge of links[u]){const j=edge.to,c=costs[u]+edge.cost;if(!done.has(j)&&c<costs[j]){costs[j]=c;previous[j]=u;}}
  }
- let i=end;while(previous[i]>0)i=previous[i];return previous[i]===0?nodes[i]:nav(s.config.arena)[0];
+ let i=end;while(previous[i]>0)i=previous[i];if(previous[i]===0)return nodes[i];const reachable=links[0].map(edge=>nodes[edge.to]).sort((a,b)=>(distance(a,goal)+distance(k,a)*.3)-(distance(b,goal)+distance(k,b)*.3));return reachable[0]??k;
 }
 const retreatGoals=new WeakMap<Kart,{tick:number;goal:NavPoint}>();
 export function botGoal(s:State,k:Kart){
@@ -185,13 +187,20 @@ export function botInput(s:State,k:Kart):Input {
  }
  if(recovery){const backing=recovery.reverse&&recovery.remaining>1.5,error=angleDiff(recovery.heading,k.angle);return {gas:backing?-1:.65,steer:clamp(error*1.8,-1,1)*(backing?-1:1),drift:false,hop:false,fire:false};}
  const {goal,foe,tactic}=botGoal(s,k);if(foe===k)return idle();const wp=waypoint(s,k,goal);let desired=Math.atan2(wp.x-k.x,wp.z-k.z);
- for(const o of obstacles(s.config.arena))if(distance(k,o)<o.r+5)desired+=angleDiff(Math.atan2(o.x-k.x,o.z-k.z),k.angle)>0?-.7:.7;
+ for(const o of obstacles(s.config.arena))if(distance(k,o)<o.r+5&&Math.abs(angleDiff(Math.atan2(o.x-k.x,o.z-k.z),k.angle))<1.2)desired+=angleDiff(Math.atan2(o.x-k.x,o.z-k.z),k.angle)>0?-.7:.7;
  for(const hazard of s.shots){if(Math.abs(hazard.y-k.y)>3)continue;const d=distance(k,hazard);if(hazard.kind==='mine'&&(hazard.age??0)<MINE_ARM_TIME)continue;if(d< (hazard.kind==='mine'?8:10)&&Math.abs(angleDiff(Math.atan2(hazard.x-k.x,hazard.z-k.z),k.angle))<.9)desired+=angleDiff(Math.atan2(hazard.x-k.x,hazard.z-k.z),k.angle)>0?-.85:.85;}
  const error=angleDiff(desired,k.angle),aim=Math.abs(angleDiff(Math.atan2(foe.x-k.x,foe.z-k.z),k.angle)),range=distance(k,foe),sameLevel=Math.abs(k.y-foe.y)<3,visible=clearPath(s.config.arena,k,foe),diff=s.config.difficulty;
  const pace=diff==='easy'?.65:diff==='hard'?1:.85,ahead=Math.max(7,Math.abs(k.speed)*.65),edge=s.config.arena==='sky'&&ground('sky',k.x+Math.sin(k.angle)*ahead,k.z+Math.cos(k.angle)*ahead)< -10;
- const throttle=Math.min(pace,clamp(1-Math.abs(error)*.7,.28,1),edge?.16:1);
- const fire=!!k.item&&(k.item==='shield'&&(range<24||k.balloons===1)||k.item==='boost'&&(tactic==='retreat'||aim<.45&&range<38&&visible)||k.item==='mine'&&range<14&&(aim>1.6||tactic==='retreat')||k.item==='pulse'&&range<8&&sameLevel||(k.item==='bolt'||k.item==='seeker')&&visible&&sameLevel&&aim<(k.item==='seeker'?.85:.25)&&range<50);
- return {gas:throttle,steer:clamp(error*1.8,-1,1),drift:s.config.arena!=='sky'&&Math.abs(error)>.5&&Math.abs(k.speed)>10,hop:false,fire};
+  const scale=speedSettings(s.config.speedClass).scale,hazardMap=s.config.arena==='sky'||s.config.arena==='castle';
+ const travel=Math.hypot(k.vx,k.vz)>2?Math.atan2(k.vx,k.vz):k.angle,look=Math.max(3,Math.abs(k.speed)*.55);
+ const aheadX=k.x+Math.sin(travel)*look,aheadZ=k.z+Math.cos(travel)*look;
+ const unsafe=!clearPath(s.config.arena,k,{x:aheadX,z:aheadZ,y:ground(s.config.arena,aheadX,aheadZ,k.y+.35)});
+ const cruise=hazardMap?.7/Math.sqrt(scale):pace,corner=clamp(1-Math.abs(error)*.85,.1,1);
+ const throttle=Math.min(pace,cruise,corner,unsafe?.13:1,edge?.1:1),desiredSpeed=20*scale*throttle;
+ const braking=k.speed>desiredSpeed+2&&(unsafe||Math.abs(error)>.65);
+ const boostSafe=clearPath(s.config.arena,k,{x:k.x+Math.sin(k.angle)*31*scale*2.1,z:k.z+Math.cos(k.angle)*31*scale*2.1,y:k.y});
+ const fire=!!k.item&&(k.item==='shield'&&(range<24||k.balloons===1)||k.item==='boost'&&boostSafe&&!unsafe&&Math.abs(error)<.25&&(tactic==='retreat'||aim<.45&&range<38&&visible)||k.item==='mine'&&range<14&&(aim>1.6||tactic==='retreat')||k.item==='pulse'&&range<8&&sameLevel||(k.item==='bolt'||k.item==='seeker')&&visible&&sameLevel&&aim<(k.item==='seeker'?.85:.25)&&range<50);
+ return {gas:braking?-1:throttle,steer:clamp(error*1.8,-1,1),drift:!hazardMap&&!unsafe&&Math.abs(error)>.5&&Math.abs(error)<1.2&&Math.abs(k.speed)>10,hop:false,fire};
 }
 export function drive(s:State,k:Kart,input:Input,dt:number) {
  if(k.balloons<=0)return;
@@ -328,6 +337,11 @@ export function step(s:State,inputs:Record<number,Input>,dt=1/60) {
  if(s.time<=0)for(const k of s.karts)if(k.balloons>0)damage(s,k,k.id,{cause:'timeout'});
  finish(s);
 }
+
+
+
+
+
 
 
 

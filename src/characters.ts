@@ -1,3 +1,4 @@
+import {stepSuspension,createGlow} from './visualPolish';
 import {applyToon,contactShadow} from './toon';
 import {surfaceMaterial} from './surfaces';
 import * as T from 'three';
@@ -16,8 +17,9 @@ export const CREW=[
  {name:'PIP',species:'Bear',fur:'#ab8a6e',cream:'#f2d8ad',tag:'Soft paws. Absolutely no mercy.'},
 ] as const;
 const materials=new Map<string,T.MeshStandardMaterial>();
-function material(color:string){let m=materials.get(color);if(!m){m=surfaceMaterial(color,color==='#303440'?'rubber':'paint',{roughness:.62,metalness:.03,flatShading:false});materials.set(color,m);}return m;}
-function mesh(parent:T.Object3D,geometry:T.BufferGeometry,color:string,x=0,y=0,z=0){const m=new T.Mesh(geometry,material(color));m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;}
+function material(color:string,paint=false){const metal=['#6b7180','#626a77','#b1b8ba','#747d89','#858c96','#777f8a','#a0a6aa'].includes(color),rubber=color==='#303440',kind=rubber?'rubber':metal?'metal':paint?'paint':'fabric',key=color+kind;let m=materials.get(key);if(!m){m=(paint&&!rubber)||metal?new T.MeshPhysicalMaterial({color,roughness:metal?.28:.3,metalness:metal?.72:.08,clearcoat:metal?.35:.8,clearcoatRoughness:.16}):surfaceMaterial(color,rubber?'rubber':'paint',{roughness:rubber?.98:.9,metalness:0,flatShading:false});m.userData.keepPbr=rubber||metal||paint;materials.set(key,m);}return m;}
+function paintedParent(parent:T.Object3D){let node:T.Object3D|null=parent;while(node){if(node.name==='driver')return false;if(node.name==='chassis'||node.name==='wheelSpin')return true;node=node.parent;}return false;}
+function mesh(parent:T.Object3D,geometry:T.BufferGeometry,color:string,x=0,y=0,z=0){const m=new T.Mesh(geometry,material(color,paintedParent(parent)));m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;}
 const box=(p:T.Object3D,c:string,x:number,y:number,z:number,w:number,h:number,d:number,r=.08)=>mesh(p,new RoundedBoxGeometry(w,h,d,2,Math.min(r,w/3,h/3,d/3)),c,x,y,z);
 function ball(p:T.Object3D,c:string,x:number,y:number,z:number,sx:number,sy=sx,sz=sx){const m=mesh(p,new T.SphereGeometry(1,16,12),c,x,y,z);m.scale.set(sx,sy,sz);return m;}
 const cylinder=(p:T.Object3D,c:string,x:number,y:number,z:number,r:number,h:number)=>mesh(p,new T.CylinderGeometry(r,r,h,16),c,x,y,z);
@@ -59,7 +61,7 @@ export function createKart(id:number,trial=false):T.Group {
   const axle=cylinder(root,'#747d89',0,.42,z,.065,2.2);axle.rotation.z=Math.PI/2;
   for(const side of [-1,1]){
    const pivot=group(root,z>0?'frontWheel':'rearWheel',side*1.02,.46,z),spin=group(pivot,'wheelSpin');
-   const tire=cylinder(spin,'#303440',0,0,0,.46,.37);tire.rotation.z=Math.PI/2;
+   const tire=cylinder(spin,'#303440',0,0,0,.46,.37);tire.name='tire';tire.rotation.z=Math.PI/2;
    const rim=cylinder(spin,'#dedbcf',side*.195,0,0,.29,.025);rim.rotation.z=Math.PI/2;
    const hub=cylinder(spin,c,side*.214,0,0,.18,.04);hub.rotation.z=Math.PI/2;
    const bolt=cylinder(spin,'#777f8a',side*.24,0,0,.065,.025);bolt.rotation.z=Math.PI/2;
@@ -95,8 +97,7 @@ export function createKart(id:number,trial=false):T.Group {
  eyes.position.y=eyeY;
  for(const side of [-1,1]){
   ball(eyes,'#fff9e9',side*.205,0,eyeZ,.118,.145,.055);
-  ball(eyes,'#333541',side*.19,.003,eyeZ+.051,.059,.088,.025);
-  ball(eyes,'#ffffff',side*.19-.018,.04,eyeZ+.072,.022,.025,.01);
+  const pupil=group(eyes,'pupil',side*.19,.003,eyeZ+.051);pupil.userData.baseX=side*.19;ball(pupil,'#333541',0,0,0,.059,.088,.025);ball(pupil,'#ffffff',-.018,.037,.021,.022,.025,.01);
   if(id!==2)ball(head,'#e9ac94',side*.36,-.12,.37,.065,.037,.025);
  }
  // A short curved smile, large enough to read on the portrait without visual noise.
@@ -112,7 +113,7 @@ export function createKart(id:number,trial=false):T.Group {
   const line=new T.Line(new T.BufferGeometry().setAttribute('position',new T.BufferAttribute(new Float32Array(12),3)),new T.LineBasicMaterial({color:'#655c65'}));line.name='tether'+i;line.frustumCulled=false;root.add(line);
  }
  const shield=mesh(root,new T.SphereGeometry(2,16,12),'#a0e6ed',0,1,0);shield.name='shield';shield.material=new T.MeshStandardMaterial({color:'#a0e6ed',transparent:true,opacity:.22,wireframe:true});shield.visible=false;
- batchDetails(root);if(trial){chassis.scale.set(1.035,1,1.025);root.getObjectByName('head')!.scale.setScalar(1.07);for(const pivot of root.children)if(pivot.name==='frontWheel'||pivot.name==='rearWheel'){pivot.position.y=.49;pivot.scale.setScalar(1.065);}applyToon(root,true);root.add(contactShadow());}updateBalloonRig(root,{},0);return root;
+ batchDetails(root);if(trial){chassis.scale.set(1.035,1,1.025);root.getObjectByName('head')!.scale.setScalar(1.07);for(const pivot of root.children)if(pivot.name==='frontWheel'||pivot.name==='rearWheel'){pivot.position.y=.49;pivot.scale.setScalar(1.065);}applyToon(root,true);}root.add(contactShadow());for(const side of [-1,1]){const glow=createGlow('#83dfff',1.3,.25);glow.name=side<0?'driftGlowLeft':'driftGlowRight';glow.position.set(side*.95,.2,-.85);glow.visible=false;root.add(glow);}updateBalloonRig(root,{},0);return root;
 }
 type Pose=Pick<Kart,'speed'|'steering'|'drift'|'boost'|'vy'> & Partial<Pick<Kart,'balloons'|'yawRate'|'pushX'|'pushZ'|'angle'>>;
 type BalloonMotion={x:number;z:number;vx:number;vz:number;previousSpeed:number;previousVy:number};
@@ -145,10 +146,16 @@ export function animateKart(model:T.Group,k:Pose,dt:number,now:number){
  const blend=1-Math.exp(-dt*12);
  chassis.rotation.z+=(-steering*Math.min(Math.abs(k.speed)/20,1)*.065-chassis.rotation.z)*blend;
  chassis.rotation.x+=(clamp(accel*.0014-k.vy*.009,-.075,.075)-chassis.rotation.x)*blend;
- chassis.position.y=Math.sin(now*9)*Math.min(Math.abs(k.speed),20)*.0008;
- driver.rotation.z+=(-steering*.1-driver.rotation.z)*blend;head.rotation.y+=(steering*.15-head.rotation.y)*blend;
+ const grounded=model.userData.grounded??true,wasGrounded=model.userData.wasGrounded??grounded,landing=grounded&&!wasGrounded?Math.min(1.5,Math.abs(model.userData.landingVy??0)*.1):0;
+ const spring=model.userData.suspension??={offset:0,velocity:0};if(model.userData.reduced){spring.offset=0;spring.velocity=0;}else stepSuspension(spring,dt,-landing);
+ model.userData.wasGrounded=grounded;model.userData.landingVy=k.vy;
+ chassis.position.y=spring.offset+(model.userData.reduced?0:Math.sin(now*11)*Math.min(Math.abs(k.speed),24)*.0012);
+ driver.rotation.z+=(-steering*.1-driver.rotation.z)*blend;head.rotation.y+=(steering*.15+(model.userData.lookYaw??0)-head.rotation.y)*blend;
  head.rotation.x=personality.nod*(victory?1:idle);head.rotation.z=personality.tilt*(victory?1:idle);head.rotation.y+=personality.turn*(victory?1:idle)*blend;driver.position.y=personality.lift*(victory?1:idle);for(const side of ['left','right'] as const){const arm=model.getObjectByName(side+'Arm');if(arm){arm.rotation.set(0,0,0);if(victory&&(side==='right'||personality.left!==0)){const sign=side==='left'?-1:1,rest=new T.Vector3(sign*.09,-.28,.66).normalize(),wave=model.userData.reduced?0:Math.sin(now*(1.5+(model.userData.driverId??0)*.23)+sign);const target=new T.Vector3(sign*.95,.25+wave*.15,.18+Math.cos(now*1.3)*.035).normalize();arm.quaternion.setFromUnitVectors(rest,target);}}}
  const eyes=model.getObjectByName('eyes')!,blink=(now+(model.userData.driverId??0)*.57)%4.7;eyes.scale.y=blink>4.54?Math.max(.06,Math.abs(blink-4.62)/.08):1;
+ const reaction=now<(model.userData.emoteUntil??0)&&!victory&&!model.userData.reduced?Math.sin((model.userData.emoteUntil-now)*8):0;
+ if(reaction){head.rotation.x+=(model.userData.emoteKind==='hit'?.12:-.1)*reaction;head.rotation.z+=(model.userData.emoteKind==='hit'?.08:.03)*reaction;eyes.scale.y*=model.userData.emoteKind==='hit'?.7:1.08;}
+ model.traverse(object=>{if(object.name==='pupil')object.position.x=object.userData.baseX+clamp((model.userData.lookYaw??0)*.045,-.025,.025);if(object.name==='frontWheel'||object.name==='rearWheel'){object.position.y=model.userData.toon?.49:.46;object.rotation.z=clamp(-steering*.065,-.08,.08);}});
  const counter=k.drift>.03?-(model.userData.driftSide??Math.sign(steering))*.65:0;
  model.getObjectByName('steeringWheel')!.rotation.z=-(steering*.5+counter);model.getObjectByName('scarfTail')!.rotation.x=Math.sin(now*7)*(.07+Math.abs(k.speed)*.006);
  model.traverse(o=>{if(o.name==='frontWheel')o.rotation.y=clamp(steering*.36+counter,-.55,.55);if(o.name==='wheelSpin')o.rotation.x=(o.rotation.x+k.speed*dt/.46)%(Math.PI*2);});
@@ -158,7 +165,11 @@ export function animateKart(model:T.Group,k:Pose,dt:number,now:number){
 export class DriverPortrait {
  renderer:T.WebGLRenderer; scene=new T.Scene(); camera=new T.PerspectiveCamera(38,1,.1,40);model:T.Group;host:HTMLElement;celebrating=false;
  constructor(host:HTMLElement,id=0,public trial=false){this.host=host;this.renderer=new T.WebGLRenderer({antialias:true,alpha:true});this.renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));this.renderer.setClearColor('#ede6db',1);this.renderer.outputColorSpace=T.SRGBColorSpace;if(trial){this.renderer.toneMapping=T.ACESFilmicToneMapping;this.renderer.toneMappingExposure=1.15;}host.appendChild(this.renderer.domElement);this.scene.add(new T.HemisphereLight('#fff8e8','#8d859b',2));const light=new T.DirectionalLight('#fff2dc',2.7);light.position.set(-4,8,5);this.scene.add(light);const fill=new T.DirectionalLight('#e6edff',1);fill.position.set(5,3,-4);this.scene.add(fill);this.model=createKart(id,this.trial);this.scene.add(this.model);this.camera.position.set(4.4,2.8,6.4);this.camera.lookAt(0,1.65,0);}
- select(id:number){this.renderer.toneMapping=this.trial?T.ACESFilmicToneMapping:T.NoToneMapping;this.scene.remove(this.model);this.model.traverse(o=>{if(o instanceof T.Mesh||o instanceof T.Line){if(!o.userData.sharedGeometry)o.geometry.dispose();if(o.userData.disposeMaterial)for(const m of Array.isArray(o.material)?o.material:[o.material])m.dispose();}});this.model=createKart(id,this.trial);this.scene.add(this.model);}
+ select(id:number){this.renderer.toneMapping=this.trial?T.ACESFilmicToneMapping:T.NoToneMapping;this.scene.remove(this.model);this.model.traverse(o=>{if(o instanceof T.Sprite)o.material.dispose();if(o instanceof T.Mesh||o instanceof T.Line){if(!o.userData.sharedGeometry)o.geometry.dispose();if(o.userData.disposeMaterial)for(const m of Array.isArray(o.material)?o.material:[o.material])m.dispose();}});this.model=createKart(id,this.trial);this.scene.add(this.model);}
  render(dt:number,now:number){const w=this.host.clientWidth,h=this.host.clientHeight;this.renderer.setSize(w,h,false);this.camera.aspect=w/h;this.camera.updateProjectionMatrix();this.model.userData.celebrating=this.celebrating;this.model.userData.reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;this.model.rotation.y=Math.sin(now*.35)*.3;animateKart(this.model,{speed:0,steering:Math.sin(now*.6)*.13,drift:0,boost:0,vy:0},dt,now);this.renderer.render(this.scene,this.camera);}
- dispose(){this.model.traverse(o=>{if(o instanceof T.Mesh||o instanceof T.Line){if(!o.userData.sharedGeometry)o.geometry.dispose();if(o.userData.disposeMaterial)for(const m of Array.isArray(o.material)?o.material:[o.material])m.dispose();}});this.renderer.dispose();this.renderer.domElement.remove();}
+ dispose(){this.model.traverse(o=>{if(o instanceof T.Sprite)o.material.dispose();if(o instanceof T.Mesh||o instanceof T.Line){if(!o.userData.sharedGeometry)o.geometry.dispose();if(o.userData.disposeMaterial)for(const m of Array.isArray(o.material)?o.material:[o.material])m.dispose();}});this.renderer.dispose();this.renderer.domElement.remove();}
 }
+
+
+
+
