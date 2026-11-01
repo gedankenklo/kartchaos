@@ -1,25 +1,11 @@
-# KART CHAOS 64 — v1.30 four new arenas and quieter music
+# KART CHAOS 64 — v1.31 sudden-death sound and pulse
 
-Upload these contents into your existing GitHub repository root, merging folders. Keep your existing MP3s. Commit and let Render rebuild. Update client and server together.
+Upload these contents into your existing GitHub repository root, merging folders. Keep existing MP3 files. Commit and let Render rebuild.
 
-Music defaults to 10 percent for players without a saved music setting. Saved mixes remain unchanged and everyone can adjust the slider.
+Sudden death begins with a bass impact, descending alarm and low rumble. An ongoing warning beat repeats every 1.15 seconds while sudden death is active. The warning label and containment boundary pulse on the same match-time rhythm, including the curved wall on Starcore Sphere.
 
-Four new arenas bring the selector to sixteen maps in a four-column grid:
-- Starfall Citadels (starfall): a 442-metre space CTF arena inspired by opposing-tower layouts. Two team citadels, three long crossings, flank lookouts and open space below. Automatic balanced teams and the same capture/drop/return rules as Tide Depot. Distant spacecraft, asteroids, stars and a planet provide the backdrop.
-- Glacier Slide (glacier): a 280-metre regular battle map. Every driving surface is slippery, including raised decks and ramps. Snow, icy mountain scenery and tall glacier formations surround the arena.
-- Cinder Crypt (crypt): a 264-metre regular battle map. Raised crossings and battlements over three lava pits, four tall roofed towers, wandering ghosts and dark rock spires. Sunset/night lighting.
-- Starcore Sphere (starcore): a complete 120-metre-radius globe with a recessed reactor dish. Surface-following movement, radial gravity, orientation and camera follow work over poles and around the entire sphere. Karts, items, mines, seekers, projectiles, collisions and Shockwave use the curved surface. Sudden death is a visible curved containment wall. Three-player split-screen uses a globe overview in the fourth tile.
+The intro plays once per round. Pausing stops further beats; resuming does not restart the intro. Late joining an active sudden-death round gets one intro. Results/end-of-round stops further cues. Sounds respect mute and the effects-volume setting. Reduced-motion mode keeps the visual warning steady while retaining audio cues.
 
-Space arenas remain in space lighting. Both art styles remain available. Prior maps, including Tide Depot CTF, are retained.
+Validation: production build; 205 automated tests, including intro deduplication, beat timing, pause/resume, late joining and round reset. All previous map and music updates are included.
 
-New soundtrack folders (included with visible placeholder files so GitHub retains them):
-public/music/starfall/
-public/music/glacier/
-public/music/crypt/
-public/music/starcore/
-
-Put MP3s directly in the matching folder. A random starting track is selected when that arena loads; empty folders use generated music. Four new generated themes each have three arrangements. Keep existing soundtrack files; the update does not include MP3s or replace tracks.json.
-
-Validation: production build; 203 automated tests; all 48 two-minute navigation scenarios across 16 maps and three speeds (96 simulated minutes); both CTF arenas completed bot captures at all three speeds; all six multiplayer tests passed, including hosting all four new arenas. Globe tests cover complete circuits through poles and longitude seams, surface distances and combat across the seam. Browser visual checks covered the new layouts, globe driving, its crater and camera orientation, and lava visibility in preview.
-
-Developer fixture: /tests/extra-arenas-browser.html. This update includes all previous releases.
+Preserve your MP3s. This patch includes placeholder files for all four v1.30 music folders, but contains no MP3s and does not replace tracks.json.

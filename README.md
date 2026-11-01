@@ -178,3 +178,6 @@ v1.29: results-screen Shuffle maps is reachable by controller and highlights the
 ## v1.30
 
 Four new arenas: Starfall Citadels (CTF), Glacier Slide, Cinder Crypt and Starcore Sphere. Music defaults to 10%, preserving saved settings. New MP3 folders are starfall, glacier, crypt and starcore.
+
+
+v1.31: dramatic sudden-death intro and synchronized recurring audio/visual warning pulse.

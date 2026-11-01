@@ -93,3 +93,5 @@
 .arena-options{grid-template-columns:repeat(4,minmax(0,1fr))}@media(max-width:700px){.arena-options{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 .arena-art.starfall{background:#17203d}.arena-art.starfall .terrain{background:#6a789c}.arena-art.starfall i{background:#a398bb}.arena-art.glacier{background:#b7dbe9}.arena-art.glacier .terrain{background:#e0f2f5}.arena-art.glacier i{background:#7ca8bf}.arena-art.crypt{background:#392f48}.arena-art.crypt .terrain{background:#e88747}.arena-art.crypt i{background:#675370}.arena-art.starcore{background:#111a34}.arena-art.starcore .terrain{border-radius:50%;background:radial-gradient(circle at 35% 30%,#adc4d5,#647c98 55%,#2b3d5c);transform:rotate(-18deg);height:85%;width:60%;left:20%;top:7%}.arena-art.starcore i{display:none}
+
+.match-notices .danger-text{box-shadow:0 0 calc(5px + 18px * var(--danger-pulse,0)) rgba(255,116,62,.45);border:1px solid rgba(255,201,132,.7)}

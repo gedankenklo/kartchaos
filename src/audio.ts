@@ -1,3 +1,4 @@
+import {SuddenDeathCues} from './suddenDeath';
 import {ArenaMusic,type MusicScene} from './arenaMusic';
 import {clamp,ARENA_IDS,type Kart,type Arena} from './sim';
 export function driftSoundLevel(k:Pick<Kart,'speed'|'driftSide'|'driftSlip'|'balloons'|'y'>|undefined,floor:number,active:boolean){if(!k||!active||k.balloons<=0||!k.driftSide||Math.abs(k.y-floor)>.55)return 0;return clamp((Math.abs(k.speed)-5)/18,0,1)*clamp(Math.abs(k.driftSlip)/.5,0,1);}
@@ -24,6 +25,9 @@ export function combatSound(event:{type:string;blocked?:boolean;cause?:string}){
 export type AudioChannel='music'|'engine'|'effects';
 export function normalizedVolume(value:number){return Number.isFinite(value)?clamp(value,0,1):0;}
 export class Sound {
+ suddenDeath=new SuddenDeathCues();
+ updateSuddenDeath(remaining:number,active:boolean){const cue=this.suddenDeath.update(remaining,active);if(!cue||!this.ctx||!this.enabled)return;if(cue==='start'){this.filteredNoise(.85,420,.14);this.tone(105,.85,'sine',.16,-63);this.tone(330,.65,'sawtooth',.035,-160);this.tone(220,.7,'triangle',.045,-110);}else{this.tone(74,.24,'sine',.075,-30);this.tone(150,.15,'triangle',.018,-55);this.filteredNoise(.12,280,.022);}}
+
  customMusic=new ArenaMusic();currentMusicScene:MusicScene='title';
  selectedTrack='auto';trackCycle=0;lastTrackKey='';currentTrack='';
  volumes:Record<AudioChannel,number>={music:.1,engine:.8,effects:.85};master:GainNode|null=null;buses:Partial<Record<AudioChannel,GainNode>>={};musicStep=0;nextBeat=0;musicArena:Arena='fortress';previewUntil=0;
