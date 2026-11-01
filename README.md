@@ -148,3 +148,12 @@ Version 1.21: Foundry conveyors push at 10 m/s instead of 3.5 m/s. Stripe motion
 Version 1.22: Fortress extent grows to 64 layout units (307 m across), adding 19.2 m of ground on every side around the existing blocks and ramps. Pines follow the shared boundary and keep their canopies outside.
 
 Version 1.23: held items sway with a bounded damped spring in response to turning, acceleration, braking, bumps and landings. They settle naturally and stay still in reduced-motion mode. Rotation and the existing HUD are retained.
+
+
+v1.24: solid Ember Keep lamp posts and Fortress perimeter chase recovery.
+
+
+v1.25: offshore sea traffic and cleaner kart self-shadowing.
+
+
+v1.26: restored kart self-shadows, interpolated display poses and solid beach palms.

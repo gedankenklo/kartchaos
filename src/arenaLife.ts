@@ -10,11 +10,11 @@ export class ArenaLife extends T.Group {
  constructor(public arena:Arena){super();this.name='arenaLife';const info=ARENAS[arena],e=info.extent*info.scale;
   const actor=(kind:string,seed:number,radius:number,y:number,speed:number)=>{const root=new T.Group();root.name=kind;this.add(root);const a={root,kind,seed,radius,y,speed};this.actors.push(a);return root;};
   if(arena==='depot'||arena==='beach'){
-   for(let i=0;i<(arena==='depot'?5:5);i++){const ship=actor(arena==='depot'&&i<2?'ship':'sailboat',i*1.31,e+35+(i%3)*22,arena==='beach'?-.1:-1.4,i%2?.014:-.011);this.boat(ship,i,arena==='depot'&&i<2);}
-   if(arena==='depot')this.colossus(actor('harborColossus',3.3,e+93,-2,.009));
-   else {for(let i=0;i<3;i++){const ski=actor('jetSki',i*2.1,e+29+i*13,-.15,.055+i*.006);this.box(ski,i%2?'#e58c55':'#69b7c6',0,.45,0,1.5,.7,3.5);this.ellipsoid(ski,'#f5ead4',0,1.15,-.1,.45,.65,.45);const wake=new T.Mesh(new T.ConeGeometry(1.5,7,3),this.mat('#d9ffff',true,.25));wake.rotation.x=Math.PI/2;wake.scale.z=.04;wake.position.set(0,.05,-4);ski.add(wake);}
-    for(let i=0;i<3;i++)this.seaCreature(actor('dolphin',i*4.2,e+55+i*15,-1.8,.018),false);
-    this.seaCreature(actor('whale',2.8,e+92,-5,.006),true);
+   for(let i=0;i<(arena==='depot'?5:5);i++){const ship=actor(arena==='depot'&&i<2?'ship':'sailboat',i*1.31,Math.SQRT2*e+35+(i%3)*22,arena==='beach'?-.1:-1.4,i%2?.014:-.011);this.boat(ship,i,arena==='depot'&&i<2);}
+   if(arena==='depot')this.colossus(actor('harborColossus',3.3,Math.SQRT2*e+93,-2,.009));
+   else {for(let i=0;i<3;i++){const ski=actor('jetSki',i*2.1,Math.SQRT2*e+29+i*13,-.15,.055+i*.006);this.box(ski,i%2?'#e58c55':'#69b7c6',0,.45,0,1.5,.7,3.5);this.ellipsoid(ski,'#f5ead4',0,1.15,-.1,.45,.65,.45);const wake=new T.Mesh(new T.ConeGeometry(1.5,7,3),this.mat('#d9ffff',true,.25));wake.rotation.x=Math.PI/2;wake.scale.z=.04;wake.position.set(0,.05,-4);ski.add(wake);}
+    for(let i=0;i<3;i++)this.seaCreature(actor('dolphin',i*4.2,Math.SQRT2*e+55+i*15,-1.8,.018),false);
+    this.seaCreature(actor('whale',2.8,Math.SQRT2*e+92,-5,.006),true);
    }
   }
   if(arena==='quarry'){

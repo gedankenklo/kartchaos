@@ -122,7 +122,7 @@ export class World {
    geometry.setAttribute('position',new T.Float32BufferAttribute(vertices,3));geometry.setAttribute('color',new T.Float32BufferAttribute(colors,3));geometry.computeVertexNormals();const surface=this.mesh(geometry,'#ffffff',g);surface.material=this.textured('#ffffff','metal',{vertexColors:true});surface.castShadow=false;
    for(let i=0;i<NEON_RIM_SHAPE.count;i++)placeNeonRimMarker(this.cube(g,i%2?'#ed9269':'#bba3e1',0,0,0,NEON_RIM_SHAPE.width,NEON_RIM_SHAPE.height,NEON_RIM_SHAPE.depth),i);
   }
-  for(const o of layoutObstacles(arena)){this.cylinder(g,arena==='neon'?'#e5ac84':'#927da8',o.x,.8,o.z,o.r,1.6,8);this.cylinder(g,'#e4cfb1',o.x,1.7,o.z,o.r+.15,.3,8);}
+  for(const o of arena==='castle'||arena==='beach'?[]:layoutObstacles(arena)){this.cylinder(g,arena==='neon'?'#e5ac84':'#927da8',o.x,.8,o.z,o.r,1.6,8);this.cylinder(g,'#e4cfb1',o.x,1.7,o.z,o.r+.15,.3,8);}
   // Decorative landscape below the island.
   for(let i=0;i<18;i++){const a=i*2.399,r=(isExpansion(arena)?ARENAS[arena].extent+10:47)+i%4*3;const {x,z}=arena==='fortress'?fortressTreePosition(i):{x:Math.sin(a)*r,z:Math.cos(a)*r};if(arena==='yard'){this.cube(g,'#9a8875',x,.5,z,1,4,1);this.cube(g,'#e8be6f',x,2.8,z,1.2,.6,1.2);}else if(arena==='depot'){this.cylinder(g,'#879b9d',x,-.5,z,.7,2,8);}else if(arena==='quarry'){this.cylinder(g,'#8fa17e',x,.5,z,.5,4,7);this.cube(g,'#8fa17e',x+.8,.5,z,1.5,.65,.65);this.cylinder(g,'#8fa17e',x+1.3,1.3,z,.32,1.8,7);}else if(!isNewArena(arena)&&arena!=='neon'&&arena!=='sky'&&arena!=='castle'&&arena!=='beach'&&arena!=='stadium'){this.cylinder(g,'#a39079',x,0,z,.35,3,6);this.mesh(new T.ConeGeometry(2.6,6,6),i%2?'#91a97c':'#718e72',g,x,4,z);}}
   if(arena==='castle'||arena==='beach'||arena==='stadium'){this.details=new ArenaDetails(arena);g.add(this.details);}
@@ -246,7 +246,7 @@ export class World {
   localIds.forEach((id,i)=>{
    const cols=count>2?2:count===2&&vertical?2:1,rows=Math.ceil(count/cols),vw=w/cols,vh=h/rows,x=(i%cols)*vw,y=h-(Math.floor(i/cols)+1)*vh;
    let cam=this.cameras[i];if(!cam){cam=new T.PerspectiveCamera(62,vw/vh,.1,2400);this.cameras[i]=cam;cam.position.set(0,15,20);}
-   const chosen=this.viewKart(s,id);if(!chosen)return;
+   const watched=this.viewKart(s,id);if(!watched)return;const visual=this.models.get(watched.id);const chosen=visual&&visual.visible?{...watched,x:visual.position.x,y:visual.position.y,z:visual.position.z,angle:visual.rotation.y}:watched;
    const fresh=cam.userData.targetId!==chosen.id;
    const facing=chosen.angle-(chosen.driftSlip??0)*.75;let yaw=fresh?facing:cam.userData.followAngle as number;yaw+=angleDiff(facing,yaw)*(1-Math.exp(-dt*6.5));cam.userData.followAngle=yaw;
    const d=this.distance,tx=chosen.x-Math.sin(yaw)*d,tz=chosen.z-Math.cos(yaw)*d;

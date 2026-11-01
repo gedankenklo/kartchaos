@@ -1,11 +1,13 @@
-# KART CHAOS 64 — v1.23 held-item sway
+# KART CHAOS 64 — v1.26 smoother driving and solid beach palms
 
-Upload the CONTENTS of this folder into your existing GitHub repository root. Merge folders, preserve your MP3s, commit and let Render rebuild with the existing settings.
+Upload these contents to your existing GitHub repository root, merging folders. Keep your existing MP3s. Commit and let Render rebuild.
 
-Held items now use a small damped spring: they lag through turns, trail acceleration, swing forward when braking and react to bumps and landing impulses. They settle naturally when those forces stop. Slow rotation and gentle idle movement remain. Motion is bounded beside the kart, and the anchor sits slightly lower to leave more room beneath swaying balloons. The shield remains readable. Reduced-motion mode keeps the held item still.
+Kart self-shadows are restored in both styles.
 
-This is visual feedback only; inventory, item use, driving physics and the item HUD are unchanged. It applies to all six held items and to rival karts through their existing state fields. All previous arena and gameplay improvements are included. Music folders and MP3 handling are unchanged: keep existing MP3 files.
+Offline rendering now interpolates kart positions and angles between fixed 60 Hz simulation steps. Physics remains unchanged. Cameras follow the displayed kart position, including network-smoothed spectator targets, instead of mixing raw simulation positions with smoothed visuals. This targets the few-pixel vibration visible during movement. Confirm the improvement in motion on your own display.
 
-Validation: production build; 186 automated tests, including turn reversal, acceleration/braking, bounded motion, settling, reduced motion, cleanup and consistency at 30/60 fps; browser visual checks with simulated driving inputs and both art styles.
+Sunbreak Beach has eight additional palms inside the arena. Shared trunk geometry defines collision footprints for karts, ricochets, seekers and bot route planning. Existing offshore traffic fixes remain included.
 
-Developer browser fixture: /tests/held-items-browser.html; Motion / still toggles simulated driving forces.
+Validation: production build; 191 automated tests including non-mutating interpolation, angle wrapping, teleport handling, palm collisions and ricochet rebounds; all 36 two-minute navigation scenarios (72 simulated match minutes).
+
+This patch contains no MP3s and does not replace tracks.json. Preserve existing soundtrack files.

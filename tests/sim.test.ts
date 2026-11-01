@@ -323,3 +323,44 @@ test('held items lag through turns, acceleration and bumps and settle safely',()
 test('held item spring is consistent at 30 and 60 fps',()=>{const k={id:0,item:'seeker' as const,roulette:0,balloons:3,speed:30,yawRate:1,angle:0};const simulate=(fps:number)=>{const d=new HeldItemDisplay();for(let i=0;i<fps*2;i++)d.update(k,i/fps,false,true,1/fps);const result=d.motion.clone();d.clearModel();return result;};assert.ok(simulate(30).distanceTo(simulate(60))<.005);});
 
 test('held item trails acceleration and swings forward on braking',()=>{const s=match(),k=s.karts[0],d=new HeldItemDisplay();k.item='mine';for(let i=0;i<90;i++)d.update(k,i/60,false,true,1/60);let before=d.motion.z;k.speed=30;d.update(k,1.5,false,true,1/60);assert.ok(d.motion.z<before,'accelerating should pull item back');for(let i=91;i<240;i++)d.update(k,i/60,false,true,1/60);before=d.motion.z;k.speed=0;d.update(k,4,false,true,1/60);assert.ok(d.motion.z>before,'braking should swing item forward');d.clearModel();});
+import {CASTLE_LAMPS} from '../src/castleProps';
+test('castle lamps block routes and projectiles only below their tops',()=>{
+ for(const p of CASTLE_LAMPS){const x=p.x*ARENA_SCALE.castle,z=p.z*ARENA_SCALE.castle;
+ assert.equal(solidAt('castle',x,1,z),true);
+ assert.equal(solidAt('castle',x,5,z),false);
+ assert.equal(clearPath('castle',{x:x-4,z,y:0},{x:x+4,z,y:0}),false);
+ const shot={id:100,owner:0,kind:'bolt' as const,x:x-3,z,y:.65,angle:Math.PI/2,life:8,age:1,bounces:0};
+ const s=match();s.config.arena='castle';
+ for(let i=0;i<12;i++)advanceRicochet(s,shot,1/60);
+ assert.ok(shot.bounces>0);assert.ok(Math.sin(shot.angle)<0);
+ }
+});
+test('karts cannot drive through any castle lamp from either axis',()=>{
+ for(const p of CASTLE_LAMPS)for(const axis of ['x','z'] as const)for(const sign of [-1,1]){
+ const s=match();s.config.arena='castle';const k=s.karts[0],x=p.x*ARENA_SCALE.castle,z=p.z*ARENA_SCALE.castle;
+ Object.assign(k,{x:x-(axis==='x'?sign*4:0),z:z-(axis==='z'?sign*4:0),y:0,angle:axis==='x'?sign*Math.PI/2:sign>0?0:Math.PI,speed:20,vx:0,vz:0});
+ for(let i=0;i<60;i++)drive(s,k,{...idle(),gas:1},1/60);
+ assert.ok(Math.hypot(k.x-x,k.z-z)>1.7);
+ assert.ok(axis==='x'?(k.x-x)*sign<0:(k.z-z)*sign<0);
+ }
+});
+test('sea traffic stays completely outside square arenas throughout its orbit',()=>{
+ for(const arena of ['beach','depot'] as const){const life=new ArenaLife(arena),e=arenaExtent(arena);
+ for(let t=0;t<=1200;t+=3){life.update(t);for(const a of life.actors){a.root.updateWorldMatrix(true,true);const bounds=new T.Box3().setFromObject(a.root);assert.ok(bounds.max.x < -e||bounds.min.x>e||bounds.max.z < -e||bounds.min.z>e,arena+' '+a.kind+' at '+t);}}
+ life.dispose();}
+});
+
+import {BEACH_PALMS} from '../src/beachProps';
+import {RenderInterpolation} from '../src/renderInterpolation';
+test('display interpolation smooths high-refresh movement without changing physics',()=>{
+ const s=match(),k=s.karts[0],view=new RenderInterpolation();Object.assign(k,{x:0,z:0,y:0,angle:Math.PI-.1});view.capture(s);s.tick++;k.x=1;k.angle=-Math.PI+.1;
+ const a=view.sample(s,.25),b=view.sample(s,.75);assert.equal(a.karts[0].x,.25);assert.equal(b.karts[0].x,.75);assert.ok(Math.abs(a.karts[0].angle-Math.PI)<.11);assert.equal(k.x,1);assert.equal(k.angle,-Math.PI+.1);assert.equal(a.events,s.events);
+ k.x=50;assert.equal(view.sample(s,.5).karts[0].x,50);assert.equal(view.sample(match(),.5).config.arena,'fortress');
+});
+test('beach palms block karts, route planning and ricochets',()=>{
+ for(const p of BEACH_PALMS){const x=p.x*ARENA_SCALE.beach,z=p.z*ARENA_SCALE.beach,s=match();s.config.arena='beach';const k=s.karts[0];Object.assign(k,{x:x-4,z,y:0,angle:Math.PI/2,speed:20,vx:20,vz:0});
+ assert.ok(solidAt('beach',x,1,z));assert.equal(solidAt('beach',x,9,z),false);assert.equal(clearPath('beach',{x:x-4,z,y:0},{x:x+4,z,y:0}),false);
+ for(let i=0;i<60;i++)drive(s,k,{...idle(),gas:1},1/60);assert.ok(k.x<x-2);
+ const shot={id:300,owner:0,kind:'bolt' as const,x:x-3,z,y:.65,angle:Math.PI/2,life:8,age:1,bounces:0};for(let i=0;i<12;i++)advanceRicochet(s,shot,1/60);assert.ok(shot.bounces>0);assert.ok(Math.sin(shot.angle)<0);
+ }
+});
