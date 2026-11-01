@@ -1,3 +1,4 @@
+import {createRampSlab} from './rampSlab';
 import {suddenDeathPulse} from './suddenDeath';
 import {extraFloor,stationMesh,ExtraArenaScenery} from './extraArenaVisuals';
 import {FlagScene} from './flagScene';
@@ -65,11 +66,12 @@ export class World {
  cylinder(parent:T.Object3D,c:string,x:number,y:number,z:number,r:number,h:number,n=10){return this.mesh(new T.CylinderGeometry(r,r,h,n),c,parent,x,y,z);}
  road(parent:T.Object3D,color:string,x:number,y:number,z:number,width:number,depth:number){const m=this.mesh(new T.PlaneGeometry(width,depth),color,parent,x,y,z);m.rotation.x=-Math.PI/2;m.castShadow=false;m.material=this.textured(color,this.map==='quarry'||this.map==='beach'?'sand':this.map==='depot'?'metal':this.map==='yard'?'stone':this.map==='sky'?'stone':'grass');return m;}
  ramp(parent:T.Object3D,r:Ramp,color:string){
+  if(r.thickness){const geo=createRampSlab(r),top=geo.clone();top.setDrawRange(0,6);const slab=this.mesh(top,color,parent);slab.material=this.textured(color,'stone');geo.setDrawRange(6,30);const shell=this.mesh(geo,color,parent);shell.material=this.textured(color,'stone');shell.receiveShadow=false;return;}
   const point=(along:number,cross:number,y:number)=>r.axis==='x'?[along,y,cross]:[cross,y,along];
   const a=point(r.from,r.cross-r.width/2,r.bottom),b=point(r.to,r.cross-r.width/2,r.top),c=point(r.to,r.cross+r.width/2,r.top),d=point(r.from,r.cross+r.width/2,r.bottom);
   const geometry=new T.BufferGeometry();geometry.setAttribute('position',new T.Float32BufferAttribute([...a,...b,...c,...a,...c,...d],3));geometry.computeVertexNormals();const m=this.mesh(geometry,color,parent);m.material=this.textured(color,this.map==='depot'?'wood':'stone',{side:T.DoubleSide});m.castShadow=false;
   // Solid side walls follow the same incline as the simulation.
-  const side=new T.BufferGeometry();const b0=[b[0],r.bottom,b[2]],c0=[c[0],r.bottom,c[2]];side.setAttribute('position',new T.Float32BufferAttribute([...a,...b0,...b,...d,...c,...c0],3));side.computeVertexNormals();const sm=this.mesh(side,'#b7a28c',parent);sm.material=this.textured('#b7a28c','stone',{side:T.DoubleSide});
+  const side=new T.BufferGeometry();const b0=[b[0],r.bottom,b[2]],c0=[c[0],r.bottom,c[2]];side.setAttribute('position',new T.Float32BufferAttribute([...a,...b0,...b,...d,...c,...c0],3));side.computeVertexNormals();const sm=this.mesh(side,'#b7a28c',parent);sm.material=this.textured('#b7a28c','stone',{side:T.DoubleSide});sm.receiveShadow=false;
  }
  build(arena:Arena){
   this.newSet?.dispose();this.newSet=isNewArena(arena)?new NewArenaSet(arena):undefined;if(this.newSet){this.newSet.scale.set(ARENA_SCALE[arena],ARENA_HEIGHT[arena],ARENA_SCALE[arena]);this.scene.add(this.newSet);}
@@ -106,7 +108,7 @@ export class World {
    else if(arena==='castle'){const xs=[-e,e,...LAVA_PITS.flatMap(p=>[p.x-p.width/2,p.x+p.width/2])].sort((a,b)=>a-b),zs=[-e,e,...LAVA_PITS.flatMap(p=>[p.z-p.depth/2,p.z+p.depth/2])].sort((a,b)=>a-b);for(let i=0;i<xs.length-1;i++)for(let j=0;j<zs.length-1;j++){const w=xs[i+1]-xs[i],d=zs[j+1]-zs[j],x=(xs[i]+xs[i+1])/2,z=(zs[j]+zs[j+1])/2;if(w>0&&d>0&&!lavaAt(x,z)){this.cube(g,layout.wall,x,-1.2,z,w,2,d).castShadow=false;this.road(g,layout.floor,x,0,z,w,d);}}}
    else if(arena==='depot'){for(const sign of [-1,1]){this.cube(g,layout.wall,sign*(e+7)/2,-1.2,0,e-7,2,e*2).castShadow=false;this.road(g,layout.floor,sign*(e+7)/2,0,0,e-7,e*2);}const water=this.road(g,'#589ea8',0,-3,0,14,e*2);water.material=new T.MeshStandardMaterial({color:'#589ea8',roughness:.24,metalness:.25});}
    else{if(arena!=='ruins'){const foundation=this.cube(g,layout.wall,0,-2.2,0,e*2+2,4,e*2+2);foundation.castShadow=false;}if(isNewArena(arena))g.add(createNewArenaFloor(arena));else if(arena==='stadium')g.add(createStadiumFloor(this.artTrial));else for(let ix=0;ix<10;ix++)for(let iz=0;iz<10;iz++)this.road(g,(ix+iz)%2?layout.floor:layout.alternate,-e+(ix+.5)*cell,0,-e+(iz+.5)*cell,cell,cell);}
-   for(const b of layout.blocks){const blockMesh=this.cube(g,b.color,b.x,b.height/2,b.z,b.width,b.height,b.depth);blockMesh.material=this.textured(b.color,arena==='yard'||arena==='harbour'?'wood':arena==='depot'||arena==='foundry'?'metal':'stone');if(arena==='beach'&&b.driveable&&!this.artTrial){const base=blockMesh.material as T.Material,top=createBoardwalkMaterial(false);blockMesh.material=[base,base,top,base,base,base];blockMesh.userData.ownedMaterials=[top];}
+   for(const b of layout.blocks){const blockMesh=this.cube(g,b.color,b.x,b.height-(b.thickness??b.height)/2,b.z,b.width,b.thickness??b.height,b.depth);blockMesh.material=this.textured(b.color,arena==='yard'||arena==='harbour'?'wood':arena==='depot'||arena==='foundry'?'metal':'stone');if(arena==='beach'&&b.driveable&&!this.artTrial){const base=blockMesh.material as T.Material,top=createBoardwalkMaterial(false);blockMesh.material=[base,base,top,base,base,base];blockMesh.userData.ownedMaterials=[top];}
     for(const side of [-1,1]){
      this.cube(g,arena==='yard'?'#e5d5ad':'#e9d4ae',b.x,b.height*.7,b.z+side*(b.depth/2+.025),b.width,.25,.04);
      if(arena==='quarry')this.cube(g,'#9e725f',b.x,b.height*.35,b.z+side*(b.depth/2+.025),b.width,.28,.04);
@@ -142,6 +144,7 @@ export class World {
    else if(arena==='neon'){const edge=this.mesh(new T.TorusGeometry(36.8,.07,5,96),'#e8d8ac',g,0,neonHeight(36.8)+.08,0);edge.rotation.x=-Math.PI/2;edge.castShadow=false;}
   }
   const shadowExtent=Math.max(90,arenaExtent(arena)+16);Object.assign(this.sun.shadow.camera,{left:-shadowExtent,right:shadowExtent,top:shadowExtent,bottom:-shadowExtent});this.sun.shadow.camera.updateProjectionMatrix();
+  if(arena==='glacier')for(const b of EXPANSIONS.glacier.blocks.filter(b=>b.thickness)){const mesh=g.children.find(o=>o instanceof T.Mesh&&o.position.x===b.x&&o.position.z===b.z&&Math.abs(o.position.y-(b.height-b.thickness!/2))<.01) as T.Mesh|undefined;if(mesh){const mats=Array.isArray(mesh.material)?[...mesh.material]:Array(6).fill(mesh.material),underside=new T.MeshBasicMaterial({color:new T.Color(b.color).multiplyScalar(.55)});mats[3]=underside;mesh.material=mats;g.userData.ownedMaterials=[...(g.userData.ownedMaterials??[]),underside];}}
   g.updateMatrixWorld(true);this.previewBounds.setFromObject(this.arenaGroup).expandByScalar(8);if(this.newSet){this.newSet.updateMatrixWorld(true);this.newSet.traverse(o=>{if(o instanceof T.Mesh&&!(o instanceof T.InstancedMesh)&&o.name!=='harbourAurora'){o.geometry.computeBoundingBox();if(o.geometry.boundingBox)this.previewBounds.union(o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld));}});}
  }
  deckMaterials(color:string,topLight=.2){const c=new T.Color(color),top=c.clone().lerp(new T.Color('#fff1cf'),topLight),side=c.clone().multiplyScalar(.88),bottom=c.clone().multiplyScalar(.65);return [toonMaterial(side),toonMaterial(side),toonMaterial(top),toonMaterial(bottom),toonMaterial(c),toonMaterial(c)];}
@@ -167,7 +170,7 @@ export class World {
    for(let x=-e;x<e;x+=2)for(let z=-e;z<e;z+=2){if(arena==='castle'&&lavaAt(x+1,z+1))continue;const color=new T.Color(base);if(Math.abs(x+1)<5||Math.abs(z+1)<5)color.lerp(new T.Color('#f1e3bb'),.18);else if(Math.floor((x+e)/12)%2)color.multiplyScalar(.97);v.push(x,.02,z,x+2,.02,z+2,x+2,.02,z,x,.02,z,x,.02,z+2,x+2,.02,z+2);for(let n=0;n<6;n++)colors.push(color.r,color.g,color.b);}
    const geo=new T.BufferGeometry().setAttribute('position',new T.Float32BufferAttribute(v,3)).setAttribute('color',new T.Float32BufferAttribute(colors,3));geo.computeVertexNormals();const m=toonMaterial('#ffffff',new T.Color(0),0,T.FrontSide,true),floor=new T.Mesh(geo,m);floor.receiveShadow=true;g.add(floor);
    }
-   for(const b of EXPANSIONS[arena].blocks){const mesh=g.children.find(o=>o instanceof T.Mesh&&o.position.x===b.x&&o.position.z===b.z&&Math.abs(o.position.y-b.height/2)<.01) as T.Mesh|undefined;if(mesh){mesh.geometry.dispose();mesh.geometry=new RoundedBoxGeometry(b.width,b.height,b.depth,2,.2);mesh.material=this.deckMaterials(b.color,.24);if(arena==='beach'&&b.driveable){const top=createBoardwalkMaterial(true);mesh.material[2]=top;mesh.userData.ownedMaterials=[top];}}}
+   for(const b of EXPANSIONS[arena].blocks){const mesh=g.children.find(o=>o instanceof T.Mesh&&o.position.x===b.x&&o.position.z===b.z&&Math.abs(o.position.y-(b.height-(b.thickness??b.height)/2))<.01) as T.Mesh|undefined;if(mesh){mesh.geometry.dispose();mesh.geometry=new RoundedBoxGeometry(b.width,b.thickness??b.height,b.depth,2,.2);mesh.material=this.deckMaterials(b.color,.24);if(arena==='beach'&&b.driveable){const top=createBoardwalkMaterial(true);mesh.material[2]=top;mesh.userData.ownedMaterials=[top];}}}
    this.markLedges(g,EXPANSIONS[arena].blocks.filter(b=>b.driveable).map(b=>({...b,y:b.height})),ramps);
   }else if(arena==='sky'){
    const palette=['#c9dbe1','#93acbd','#93acbd','#93acbd','#93acbd','#c8bedf','#b7ccbe','#d8c3ad','#aebed6'];

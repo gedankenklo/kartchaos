@@ -1,6 +1,6 @@
 // Shared surfaces for the renderer, driving, weapons and bot navigation.
 export const FORT={extent:64,center:24,half:16,lower:6,upperCenter:28,upperHalf:8,upper:11,upperBridgeWidth:5,bridgeWidth:8,bridgeThickness:.6} as const;
-export interface Ramp {axis:'x'|'z'; from:number; to:number; cross:number; width:number; bottom:number; top:number;}
+export interface Ramp {axis:'x'|'z'; from:number; to:number; cross:number; width:number; bottom:number; top:number; thickness?:number;}
 export interface Bridge {x:number;z:number;width:number;depth:number;y:number;thickness:number;}
 export const FORT_RAMPS:Ramp[]=[];
 export const FORT_BRIDGES:Bridge[]=[];

@@ -390,3 +390,31 @@ import {createLavaMaterial} from '../src/lavaSurface';
 test('redesigned maps offer distinct tiers and Cinder uses the same animated lava as Ember',()=>{assert.equal(ground('starfall',0,0),9);assert.equal(ground('starfall',0,-40),4.5);assert.ok(ground('glacier',0,-76)>15);assert.equal(ground('glacier',76,-6),7);const scene=new ExtraArenaScenery('crypt');assert.equal(scene.lava.length,3);const lava=createLavaMaterial();assert.equal(scene.lava[0].fragmentShader,lava.fragmentShader);scene.update(7);assert.equal(scene.lava[0].uniforms.time.value,7);scene.update(20,true);assert.equal(scene.lava[0].uniforms.time.value,0);scene.dispose();lava.dispose();});
 test('station mesh matches the ordinary collision floor without orbital projections',()=>{const model=stationMesh(),mesh=model.children[0] as T.Mesh,p=mesh.geometry.getAttribute('position');for(let i=0;i<p.count;i+=97){assert.ok(Math.abs(p.getY(i)-stationHeight(p.getX(i),p.getZ(i)))<.01);}model.traverse(o=>{if(o instanceof T.Mesh){o.geometry.dispose();for(const m of Array.isArray(o.material)?o.material:[o.material])m.dispose();}});});
 test('space-battle scenery animates fleets, fighters, lasers and explosions outside play',()=>{const scene=new ExtraArenaScenery('starfall'),battle=scene.spaceBattle!;assert.ok(battle);const before=battle.capitals[0].position.clone(),p=battle.lasers.geometry.getAttribute('position'),start=p.getX(0);scene.update(8);assert.ok(before.distanceTo(battle.capitals[0].position)>1);assert.notEqual(p.getX(0),start);assert.equal(battle.fighters.count,32);assert.equal(battle.bursts.count,10);for(const c of battle.capitals)assert.ok(Math.hypot(c.position.x,c.position.z)>400);scene.dispose();});
+
+// Decorative tower shells must not share side faces with the solid foundations.
+test('Starfall tower decorations avoid coplanar foundation faces',()=>{const scene=new ExtraArenaScenery('starfall');for(const child of scene.children){if(!(child instanceof T.Mesh)||!(child.geometry instanceof T.BoxGeometry)||!child.userData.terrain)continue;const {width,depth,height}=child.geometry.parameters;for(const b of EXPANSIONS.starfall.blocks){const cx=b.x*ARENA_SCALE.starfall,cz=b.z*ARENA_SCALE.starfall,w=b.width*ARENA_SCALE.starfall,d=b.depth*ARENA_SCALE.starfall,h=b.height*ARENA_HEIGHT.starfall;if(Math.abs(child.position.x-cx)>.001||Math.abs(child.position.z-cz)>.001)continue;const overlaps=Math.min(child.position.y+height/2,h)-Math.max(child.position.y-height/2,0)>.01;assert.ok(!(overlaps&&(Math.abs(width-w)<.001||Math.abs(depth-d)<.001)),'tower decoration duplicates a collision block side');}}scene.dispose();});
+
+import {ceiling} from '../src/sim';
+import {createRampSlab} from '../src/rampSlab';
+test('Glacier bridges support upper lanes and open ice corridors below',()=>{
+ const scale=ARENA_SCALE.glacier,ys=ARENA_HEIGHT.glacier;
+ for(const [x,z,h] of [[20.5,12,4],[-20.5,12,4],[38,0,5],[-38,0,5],[0,12,3]]){
+  assert.equal(ground('glacier',x*scale,z*scale,0),0);
+  assert.ok(Math.abs(ground('glacier',x*scale,z*scale,h*ys)-h*ys)<.0001);
+  assert.equal(solidAt('glacier',x*scale,1,z*scale),false);
+  assert.ok(solidAt('glacier',x*scale,h*ys-.2,z*scale));
+  assert.ok(ceiling('glacier',x*scale,z*scale,0)>3);
+ }
+ assert.ok(clearPath('glacier',{x:-54,z:24,y:0},{x:54,z:24,y:0}));
+ const s=createState({...config,arena:'glacier',humans:1,bots:0}),k=s.karts[0];Object.assign(k,{x:-54,z:24,y:0,angle:Math.PI/2,speed:18,vx:18,vz:0});
+ for(let i=0;i<480;i++)drive(s,k,{...idle(),gas:1},1/60);
+ assert.ok(k.x>35,'kart must traverse both connecting bridges and the central deck underneath');assert.equal(k.y,0);
+});
+test('Glacier elevated ramps use closed slabs with upward top normals',()=>{
+ for(const r of EXPANSIONS.glacier.ramps.filter(r=>r.thickness)){
+  const g=createRampSlab(r),p=g.getAttribute('position'),n=g.getAttribute('normal');assert.equal(p.count,36);
+  for(let i=0;i<6;i++)assert.ok(n.getY(i)>0,'top face must face upward on either ramp direction');
+  assert.ok(Array.from({length:p.count},(_,i)=>p.getY(i)).every(y=>y>=Math.min(r.bottom,r.top)-r.thickness!-.001));g.dispose();
+ }
+});
+

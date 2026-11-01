@@ -8,7 +8,7 @@ import {newRoundStats,statsFor,type RoundStats} from './matchStats';
 import {createFootball,stepFootball,soccerTeam,assignSoccerTeams,type Football} from './football';
 import {createChampionship,scoreChampionship,type Championship} from './championship';
 // Shared by browser and authoritative server. All distances are metres, time seconds.
-import {FORT,fortressSolidHeight,skyHeight,neonHeight,FORT_BRIDGES,FORT_RAMPS,FORT_ITEMS} from './terrain';
+import {FORT,fortressSolidHeight,skyHeight,neonHeight,FORT_BRIDGES,FORT_RAMPS,FORT_ITEMS,rampHeight} from './terrain';
 import {ARENAS,ARENA_IDS,isExpansion,expansionHeight,expansionNav,EXPANSIONS,type Arena} from './arenas';
 export type {Arena} from './arenas';
 export {ARENA_IDS} from './arenas';
@@ -41,15 +41,26 @@ export function ground(arena:Arena,x:number,z:number,referenceY=Infinity):number
   const h=solid< -10?solid:solid*ARENA_HEIGHT.fortress;
   return FORT_BRIDGES.filter(b=>Math.abs(lx-b.x)<=b.width/2+1e-7&&Math.abs(lz-b.z)<=b.depth/2+1e-7&&referenceY>=b.y*ARENA_HEIGHT.fortress-.85).reduce((height,b)=>Math.max(height,b.y*ARENA_HEIGHT.fortress),h);
  }
- const lx=x/ARENA_SCALE[arena],lz=z/ARENA_SCALE[arena],h=isExpansion(arena)?expansionHeight(arena,lx,lz):arena==='sky'?skyHeight(lx,lz):neonHeight(Math.hypot(lx,lz));
+ const lx=x/ARENA_SCALE[arena],lz=z/ARENA_SCALE[arena],h=isExpansion(arena)?expansionHeight(arena,lx,lz,referenceY/ARENA_HEIGHT[arena]):arena==='sky'?skyHeight(lx,lz):neonHeight(Math.hypot(lx,lz));
  return h< -10?h:h*ARENA_HEIGHT[arena];
 }
 export function ceiling(arena:Arena,x:number,z:number,feet:number):number {
+ if(arena==='glacier'){
+  const xLocal=x/ARENA_SCALE[arena],zLocal=z/ARENA_SCALE[arena],ys=ARENA_HEIGHT[arena],unders:number[]=[];
+  for(const b of EXPANSIONS.glacier.blocks)if(b.thickness&&Math.abs(xLocal-b.x)<=b.width/2&&Math.abs(zLocal-b.z)<=b.depth/2)unders.push((b.height-b.thickness)*ys);
+  for(const r of EXPANSIONS.glacier.ramps){const h=rampHeight(r,xLocal,zLocal);if(r.thickness&&h!==undefined)unders.push((h-r.thickness)*ys);}
+  return Math.min(Infinity,...unders.filter(h=>feet<h));
+ }
  if(arena!=='fortress')return Infinity;
  const xLocal=x/ARENA_SCALE.fortress,zLocal=z/ARENA_SCALE.fortress;
  return Math.min(Infinity,...FORT_BRIDGES.filter(b=>Math.abs(xLocal-b.x)<=b.width/2&&Math.abs(zLocal-b.z)<=b.depth/2&&feet<(b.y-b.thickness)*ARENA_HEIGHT.fortress).map(b=>(b.y-b.thickness)*ARENA_HEIGHT.fortress));
 }
 export function solidAt(arena:Arena,x:number,y:number,z:number,includeRim=true):boolean {
+ if(arena==='glacier'){
+  const lx=x/ARENA_SCALE[arena],lz=z/ARENA_SCALE[arena],ly=y/ARENA_HEIGHT[arena];
+  if(expansionHeight(arena,lx,lz,-Infinity)>ly)return true;
+  return EXPANSIONS.glacier.blocks.some(b=>b.thickness&&Math.abs(lx-b.x)<=b.width/2&&Math.abs(lz-b.z)<=b.depth/2&&ly>=b.height-b.thickness&&ly<=b.height)||EXPANSIONS.glacier.ramps.some(r=>{const h=rampHeight(r,lx,lz);return r.thickness&&h!==undefined&&ly>=h-r.thickness&&ly<=h;});
+ }
  if(arena!=='fortress')return ground(arena,x,z)>y||includeRim&&(arena==='castle'||arena==='beach')&&obstacles(arena).some(o=>y>=0&&y<(o.height??0)&&Math.hypot(x-o.x,z-o.z)<o.r)||includeRim&&arena==='neon'&&!!neonRimContact(x,z,0,y);
  const lx=x/ARENA_SCALE.fortress,lz=z/ARENA_SCALE.fortress;
  if(fortressSolidHeight(lx,lz)*ARENA_HEIGHT.fortress>y)return true;
@@ -79,7 +90,9 @@ export function nav(arena:Arena):NavPoint[] {
   for(const b of FORT_BRIDGES){points.push({x:b.x,z:b.z,y:b.y},{x:b.x,z:b.z,y:0});for(const sign of [-1,1])points.push({x:b.x+sign*(b.width> b.depth?b.width/2:0),z:b.z+sign*(b.depth>b.width?b.depth/2:0),y:b.y});}
   return points.map(p=>({x:p.x*ARENA_SCALE.fortress,z:p.z*ARENA_SCALE.fortress,y:p.y*ARENA_HEIGHT.fortress}));
  }
- return layoutNav(arena).map(p=>({x:p.x*ARENA_SCALE[arena],z:p.z*ARENA_SCALE[arena],y:ground(arena,p.x*ARENA_SCALE[arena],p.z*ARENA_SCALE[arena])}));
+ const points=layoutNav(arena).map(p=>({x:p.x*ARENA_SCALE[arena],z:p.z*ARENA_SCALE[arena],y:ground(arena,p.x*ARENA_SCALE[arena],p.z*ARENA_SCALE[arena])}));
+ if(arena==='glacier')for(const x of [-38,-20,0,20,38])for(const z of [-24,0,12,24])if(expansionHeight('glacier',x,z,-Infinity)===0)points.push({x:x*ARENA_SCALE.glacier,z:z*ARENA_SCALE.glacier,y:0});
+ return points;
 }
 function layoutNav(arena:Arena):{x:number;z:number}[] {
  if(isExpansion(arena))return expansionNav(arena);
