@@ -1,13 +1,11 @@
-# KART CHAOS 64 — v1.26 smoother driving and solid beach palms
+# KART CHAOS 64 — v1.27 final duels and held-item reveal
 
-Upload these contents to your existing GitHub repository root, merging folders. Keep your existing MP3s. Commit and let Render rebuild.
+Upload these contents to your existing GitHub repository root, merging folders. Preserve existing MP3s. Commit and let Render rebuild.
 
-Kart self-shadows are restored in both styles.
+Final rivals no longer endlessly flee on their last balloon. Bots holding Turbo Juice also pursue instead of retreating. Copper Yard turbo checks use a clear steering horizon rather than requiring an impractically long straight lane; open-edge maps retain their full-run safety check.
 
-Offline rendering now interpolates kart positions and angles between fixed 60 Hz simulation steps. Physics remains unchanged. Cameras follow the displayed kart position, including network-smoothed spectator targets, instead of mixing raw simulation positions with smoothed visuals. This targets the few-pixel vibration visible during movement. Confirm the improvement in motion on your own display.
+Held items now grow into position, briefly overshoot and settle with a small bounce and jiggle after roulette finishes. The existing sway and slow rotation remain. Reduced-motion mode reveals immediately. Using an item, elimination or results still hides it.
 
-Sunbreak Beach has eight additional palms inside the arena. Shared trunk geometry defines collision footprints for karts, ricochets, seekers and bot route planning. Existing offshore traffic fixes remain included.
+Validation: production build; 193 automated tests; nine one-minute Copper Yard duel scenarios at three speeds and three starting layouts. All pairs reached contact range, used turbo and fired weapons, with zero retreat decisions. All 36 two-minute navigation scenarios passed across all 12 maps and three speeds (72 simulated match minutes).
 
-Validation: production build; 191 automated tests including non-mutating interpolation, angle wrapping, teleport handling, palm collisions and ricochet rebounds; all 36 two-minute navigation scenarios (72 simulated match minutes).
-
-This patch contains no MP3s and does not replace tracks.json. Preserve existing soundtrack files.
+All prior updates, including restored self-shadows, smooth display movement and solid beach palms, are included. This patch contains no MP3s and does not replace tracks.json.

@@ -188,7 +188,7 @@ export function botGoal(s:State,k:Kart){
   }
   if(regroup.goal)return {goal:regroup.goal,foe,tactic:'regroup'};
  }
- const close=enemies.reduce((a,b)=>distance(k,a)<distance(k,b)?a:b),fragile=k.balloons===1&&!k.shield&&!(s.config.arena==='sky'&&k.item==='boost'),pressure=fragile&&distance(k,close)<26;
+ const close=enemies.reduce((a,b)=>distance(k,a)<distance(k,b)?a:b),fragile=enemies.length>1&&k.balloons===1&&!k.shield&&k.item!=='boost'&&k.ram<=0,pressure=fragile&&distance(k,close)<26;
  if(s.time<=45&&Math.hypot(k.x,k.z)>dangerRadius(s)*.8)return {goal:{x:0,z:0,y:0},foe,tactic:'ring'};
 
  if(pressure&&!(k.item==='pulse'&&distance(k,foe)<8)){
@@ -226,7 +226,9 @@ export function botInput(s:State,k:Kart):Input {
  const cruise=hazardMap?(s.config.arena==='sky'?.9:.7)/Math.sqrt(scale):pace,corner=clamp(1-Math.abs(error)*.85,.1,1);
  const throttle=Math.min(pace,cruise,corner,unsafe?.13:1,edge?.1:1),desiredSpeed=20*scale*throttle;
  const braking=k.speed>desiredSpeed+2&&(unsafe||Math.abs(error)>.65);
- const boostSafe=clearPath(s.config.arena,k,{x:k.x+Math.sin(k.angle)*31*scale*2.1,z:k.z+Math.cos(k.angle)*31*scale*2.1,y:k.y});
+ // Enclosed Yard lanes need only a steering horizon; open-edge maps retain full-run checks.
+ const boostLook=31*scale*(s.config.arena==='yard'?.8:2.1);
+ const boostSafe=clearPath(s.config.arena,k,{x:k.x+Math.sin(k.angle)*boostLook,z:k.z+Math.cos(k.angle)*boostLook,y:k.y});
  const fire=!!k.item&&(k.item==='shield'&&(range<24||k.balloons===1)||k.item==='boost'&&boostSafe&&!unsafe&&Math.abs(error)<.25&&(tactic==='retreat'||aim<.45&&(range<38||s.config.arena==='sky')&&visible)||k.item==='mine'&&range<14&&(aim>1.6||tactic==='retreat')||k.item==='pulse'&&range<8&&sameLevel||(k.item==='bolt'||k.item==='seeker')&&visible&&sameLevel&&aim<(k.item==='seeker'?.85:.25)&&range<50);
  return {gas:braking?-1:throttle,steer:clamp(error*1.8,-1,1),drift:!hazardMap&&!unsafe&&Math.abs(error)>.5&&Math.abs(error)<1.2&&Math.abs(k.speed)>10,hop:false,fire};
 }

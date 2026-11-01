@@ -1,3 +1,5 @@
+// A short overshoot, then a damped settling jiggle; reduced motion reveals instantly.
+export function heldItemReveal(age:number,reduced=false){if(reduced||age>=.75)return {scale:1,lift:0,tilt:0};const t=Math.max(0,age),fade=Math.exp(-8*t);return {scale:Math.max(.08,1-fade*Math.cos(15*t)),lift:Math.sin(t*15)*fade*.18,tilt:Math.sin(t*23)*fade*.24};}
 import * as T from 'three';
 import type {Item,Kart} from './sim';
 import {toonMaterial} from './toon';
@@ -16,14 +18,16 @@ export function createHeldItem(item:Item,toon=false){
  root.scale.setScalar(.78);return root;
 }
 export class HeldItemDisplay extends T.Group {
- item:Item|null=null;model?:T.Group;
+ item:Item|null=null;model?:T.Group;revealAge=0;
  motion=new T.Vector3();velocity=new T.Vector3();target=new T.Vector3();previousSpeed?:number;previousVy?:number;
  constructor(public toon=false){super();this.name='heldItemDisplay';this.visible=false;this.position.set(1.8,1.55,-1.45);}
- clearModel(){if(this.model){const geometries=new Set<T.BufferGeometry>(),materials=new Set<T.Material>();this.model.traverse(o=>{if(o instanceof T.Mesh){geometries.add(o.geometry);for(const m of Array.isArray(o.material)?o.material:[o.material])materials.add(m);}});geometries.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());this.remove(this.model);this.model=undefined;}this.item=null;this.motion.set(0,0,0);this.velocity.set(0,0,0);this.previousSpeed=this.previousVy=undefined;}
+ clearModel(){if(this.model){const geometries=new Set<T.BufferGeometry>(),materials=new Set<T.Material>();this.model.traverse(o=>{if(o instanceof T.Mesh){geometries.add(o.geometry);for(const m of Array.isArray(o.material)?o.material:[o.material])materials.add(m);}});geometries.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());this.remove(this.model);this.model=undefined;}this.item=null;this.revealAge=0;this.motion.set(0,0,0);this.velocity.set(0,0,0);this.previousSpeed=this.previousVy=undefined;}
  update(k:Pick<Kart,'item'|'roulette'|'balloons'|'id'>&Partial<Pick<Kart,'speed'|'yawRate'|'steering'|'angle'|'pushX'|'pushZ'|'vy'>>,now:number,reduced=false,playing=true,dt=1/60){
   const item=playing&&k.balloons>0&&k.roulette<=0?k.item:null;
   if(item!==this.item){this.clearModel();if(item){this.model=createHeldItem(item,this.toon);this.add(this.model);this.item=item;}}
   this.visible=!!item;if(!this.model)return;
+  this.revealAge=Math.min(1,this.revealAge+Math.max(0,Math.min(.1,dt)));
+  const pop=heldItemReveal(this.revealAge,reduced);this.model.scale.setScalar(.78*pop.scale);
   const clamp=(v:number,a:number,b:number)=>Math.max(a,Math.min(b,v)),speed=k.speed??0,vy=k.vy??0;
   const acceleration=dt>0&&this.previousSpeed!==undefined?clamp((speed-this.previousSpeed)/dt,-50,50):0;
   const landing=dt>0&&this.previousVy!==undefined?clamp((vy-this.previousVy)/dt,-60,60):0;
@@ -36,7 +40,7 @@ export class HeldItemDisplay extends T.Group {
    let remaining=clamp(dt,0,.1);while(remaining>0){const h=Math.min(remaining,1/120);this.velocity.x+=(target.x-this.motion.x)*32*h;this.velocity.y+=(target.y-this.motion.y)*32*h;this.velocity.z+=(target.z-this.motion.z)*32*h;this.velocity.multiplyScalar(Math.exp(-8*h));this.motion.addScaledVector(this.velocity,h);remaining-=h;}
    this.motion.x=clamp(this.motion.x,-.18,.32);this.motion.y=clamp(this.motion.y,-.1,.1);this.motion.z=clamp(this.motion.z,-.36,.24);
   }
-  this.position.set(1.8+this.motion.x,1.55+this.motion.y+(reduced?0:Math.sin(t*2.1+k.id)*.045),-1.45+this.motion.z);
-  this.model.rotation.set(this.motion.z*.35,Math.PI+(reduced?0:item==='shield'?Math.sin(t*.8)*.25:t*.35),-this.motion.x*.8+(reduced?0:Math.sin(t*1.4+k.id)*.035));
+  this.position.set(1.8+this.motion.x,1.55+this.motion.y+pop.lift+(reduced?0:Math.sin(t*2.1+k.id)*.045),-1.45+this.motion.z);
+  this.model.rotation.set(this.motion.z*.35,Math.PI+(reduced?0:item==='shield'?Math.sin(t*.8)*.25:t*.35),-this.motion.x*.8+pop.tilt+(reduced?0:Math.sin(t*1.4+k.id)*.035));
  }
 }

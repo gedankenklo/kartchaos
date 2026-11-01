@@ -157,3 +157,6 @@ v1.25: offshore sea traffic and cleaner kart self-shadowing.
 
 
 v1.26: restored kart self-shadows, interpolated display poses and solid beach palms.
+
+
+v1.27: final-duel aggression, Yard turbo use and held-item pop/jiggle.
