@@ -1,26 +1,37 @@
-# KART CHAOS 64 v1.6.0 - Visual polish
+# KART CHAOS 64 v1.7.0 - Living arenas
 
-Upload ALL contents of this update to your existing GitHub repository ROOT,
-merge src, server, scripts and tests, replace package.json and package-lock.json,
-and commit. Wait for Render to deploy, refresh and check Settings for v1.6.0.
+Upload ALL contents of this update to your existing GitHub repository ROOT.
+Merge src, server, scripts and tests; replace package.json and package-lock.json.
+Commit, wait for Render to finish, refresh the game and check Settings for v1.7.0.
+No public/music files are included or changed. Your MP3s stay in place.
 
-Visual changes:
-- Clearer key/fill lighting, cooler shadows, stronger contact shadows and ledge rims.
-- Painted bodywork, metallic hardware and matte textured tires in both art styles.
-- Bounded spring suspension and landing compression, steering camber, nearby-rival
-  glances and pupil movement, plus pickup/hit/confirmed-hit driver reactions.
-- Existing blinking, scarves, spring balloons and victory personalities retained.
-- Castle embers and torch halos, coastal foam and stadium crowd-light waves.
-- Small depth-tested glows for item boxes, charged drift sparks and stadium lamps.
-  These use shared textures and bounded geometry, with no fullscreen bloom pass.
+Background scenery appears DURING MATCHES. Use Settings > Visual effects > Full
+flair for all animated scenery. Reduced effects and reduced motion keep a quieter,
+less busy version. Background actors do not block driving, projectiles or cameras.
 
-Settings > Visual effects offers Full flair and Reduced (saved in this browser).
-Reduced disables decorative glows and foam and reduces atmospheric particle count.
-The system reduced-motion preference also suppresses added bounce and reactions.
-Both Original and Soft toon remain available. Driving, collisions and maps stay
-unchanged; ledge caps are visual markings and do not block ramps or bridges.
+Tide Depot: cargo ships, sailing boats and an original stomping harbor colossus.
+Rift Quarry: three dust-devil columns and rolling tumbleweeds.
+Ember Keep: flying winged beasts and translucent ghosts on the tower roofs.
+Sunbreak Beach: sailing boats, jet-skis with wakes, leaping dolphins and an
+occasionally surfacing whale.
+Copper Yard: cheering/clapping spectators and subtle synthesized crowd sounds.
+Neon Bowl: distant spacecraft and an OPEN RIM. Karts can now fall off, lose a
+balloon and respawn safely above the center platform. Ricochet Pods also fall
+off the rim; bumper cylinders still reflect them. Bots treat the rim as a hazard.
+Sky Platforms: roughly 20% larger (about 138m of platforms) with drifting airships.
+Physics, scenery, spawns, boxes and bot navigation use the same updated scale.
+Floodlight Stadium: two large live status boards above the ends, with driver
+numbers, balloons, survivors/eliminations and the bonus football score.
+The Fortress: moving bird flocks around the arena.
 
-Verification: 127 automated tests and successful production build; shader checks
-on Castle, Beach and Stadium; both art styles and three-player Chaos Cam checked.
-The update includes earlier code changes and contains NO public/music files.
-Your existing MP3 soundtrack remains in place and is rediscovered by the build.
+Item boxes now have a larger, stronger pulsing violet aura.
+Goal fireworks have 192 instanced stars, wider and higher bursts, longer trails
+and a deep boom. Reduced-effects mode uses a smaller burst.
+Turbo Juice has a distinct launch whoosh and rising engine note (mini-turbos retain
+their existing sound). Mines have larger fragments, a ground ring, bass explosion
+and a short per-view camera shake that respects reduced-motion/effects settings.
+All added sounds use the Effects volume slider and master mute.
+
+Verification: 132 automated tests, five multiplayer checks, all 27 two-minute
+navigation scenarios across nine arenas and three speeds, successful build and
+browser rendering checks of the new scenery and physical stadium boards.

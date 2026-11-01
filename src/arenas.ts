@@ -3,8 +3,8 @@ export type Arena='fortress'|'sky'|'neon'|'yard'|'depot'|'quarry'|'castle'|'beac
 export const ARENA_IDS:Arena[]=['fortress','sky','neon','yard','depot','quarry','castle','beach','stadium'];
 export const ARENAS:Record<Arena,{name:string;size:string;scale:number;height:number;extent:number;note:string;icon:string}>={
  fortress:{name:'The Fortress',size:'XL · 230 M',scale:2.4,height:1.5,extent:48,note:'Four blocks. Three floors. Endless escapes.',icon:'⚑'},
- sky:{name:'Sky Platforms',size:'M · 115 M',scale:1.8,height:1,extent:37,note:'Open skies. Broad bridges. Dangerous edges.',icon:'☁'},
- neon:{name:'Neon Bowl',size:'L · 148 M',scale:2,height:1.25,extent:37,note:'Wide banking and a raised central stage.',icon:'◎'},
+ sky:{name:'Sky Platforms',size:'L · 138 M',scale:2.15,height:1,extent:37,note:'Open skies. Broad bridges. Dangerous edges.',icon:'☁'},
+ neon:{name:'Neon Bowl',size:'L · 148 M',scale:2,height:1.25,extent:37,note:'Open rim. Wide banking. Watch the drop.',icon:'◎'},
  yard:{name:'Copper Yard',size:'S · 85 M',scale:1.25,height:1,extent:34,note:'Compact crossfire with room to powerslide.',icon:'▦'},
  depot:{name:'Tide Depot',size:'M · 136 M',scale:1.7,height:1.25,extent:40,note:'Raised piers, long ramps and broad channels.',icon:'≋'},
  quarry:{name:'Rift Quarry',size:'L · 208 M',scale:2,height:1.4,extent:52,note:'Three terraces. Wide valleys. Big ambushes.',icon:'▲'},
@@ -40,3 +40,4 @@ export function expansionNav(arena:keyof typeof EXPANSIONS):{x:number;z:number}[
  for(const r of layout.ramps){points.push(r.axis==='x'?{x:r.from,z:r.cross}:{x:r.cross,z:r.from},r.axis==='x'?{x:r.to,z:r.cross}:{x:r.cross,z:r.to});}
  return points;
 }
+

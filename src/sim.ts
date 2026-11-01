@@ -127,7 +127,7 @@ export const MINE_ARM_TIME=.65;
 export function useItem(s:State,k:Kart) {
  if(!k.item||k.roulette>0||k.balloons<=0||s.phase!=='playing')return;
  const type=k.item;k.item=null;emit(s,'fire',k);
- if(type==='boost'){k.boost=Math.max(k.boost,2);k.ram=2;emit(s,'boost',k);return;}
+ if(type==='boost'){k.boost=Math.max(k.boost,2);k.ram=2;emit(s,'boost',k,{cause:'ram'});return;}
  if(type==='shield'){k.shield=7;return;}
  if(type==='pulse'){emit(s,'shockwave',k);for(const o of s.karts)if(o.id!==k.id&&distance(o,k)<9&&Math.abs(o.y-k.y)<4)damage(s,o,k.id,{cause:'pulse',fromX:k.x,fromZ:k.z});return;}
  if(type==='bolt'||type==='seeker')statsFor(k).projectilesFired++;
@@ -191,7 +191,7 @@ export function botInput(s:State,k:Kart):Input {
  for(const hazard of s.shots){if(Math.abs(hazard.y-k.y)>3)continue;const d=distance(k,hazard);if(hazard.kind==='mine'&&(hazard.age??0)<MINE_ARM_TIME)continue;if(d< (hazard.kind==='mine'?8:10)&&Math.abs(angleDiff(Math.atan2(hazard.x-k.x,hazard.z-k.z),k.angle))<.9)desired+=angleDiff(Math.atan2(hazard.x-k.x,hazard.z-k.z),k.angle)>0?-.85:.85;}
  const error=angleDiff(desired,k.angle),aim=Math.abs(angleDiff(Math.atan2(foe.x-k.x,foe.z-k.z),k.angle)),range=distance(k,foe),sameLevel=Math.abs(k.y-foe.y)<3,visible=clearPath(s.config.arena,k,foe),diff=s.config.difficulty;
  const pace=diff==='easy'?.65:diff==='hard'?1:.85,ahead=Math.max(7,Math.abs(k.speed)*.65),edge=s.config.arena==='sky'&&ground('sky',k.x+Math.sin(k.angle)*ahead,k.z+Math.cos(k.angle)*ahead)< -10;
-  const scale=speedSettings(s.config.speedClass).scale,hazardMap=s.config.arena==='sky'||s.config.arena==='castle';
+  const scale=speedSettings(s.config.speedClass).scale,hazardMap=s.config.arena==='sky'||s.config.arena==='castle'||s.config.arena==='neon';
  const travel=Math.hypot(k.vx,k.vz)>2?Math.atan2(k.vx,k.vz):k.angle,look=Math.max(3,Math.abs(k.speed)*.55);
  const aheadX=k.x+Math.sin(travel)*look,aheadZ=k.z+Math.cos(travel)*look;
  const unsafe=!clearPath(s.config.arena,k,{x:aheadX,z:aheadZ,y:ground(s.config.arena,aheadX,aheadZ,k.y+.35)});
@@ -238,10 +238,9 @@ export function drive(s:State,k:Kart,input:Input,dt:number) {
  const crash=()=>{if(k.cooldown<=0&&Math.hypot(k.vx+k.pushX,k.vz+k.pushZ)>5){k.cooldown=.65;emit(s,'crash',k);}};
  const slide=(normalX:number,normalZ:number)=>{if((k.vx+k.pushX)*normalX+(k.vz+k.pushZ)*normalZ>5)crash();const external=k.pushX*normalX+k.pushZ*normalZ;if(external>0){k.pushX-=normalX*external;k.pushZ-=normalZ*external;}const into=k.vx*normalX+k.vz*normalZ;if(into<=0)return;const ratio=into/Math.max(1,Math.hypot(k.vx,k.vz));k.vx-=normalX*into;k.vz-=normalZ*into;k.speed*=ratio>.94?.28:1-.06*ratio;};
  if(newFloor>k.y+.85){const freeX=ground(s.config.arena,nx,k.z,k.y)<=k.y+.85,freeZ=ground(s.config.arena,k.x,nz,k.y)<=k.y+.85;if(freeX&&(!freeZ||Math.abs(k.vx)>Math.abs(k.vz))){slide(0,Math.sign(nz-k.z));nz=k.z;}else if(freeZ){slide(Math.sign(nx-k.x),0);nx=k.x;}else{crash();nx=k.x;nz=k.z;k.vx=0;k.vz=0;k.pushX=0;k.pushZ=0;k.speed*=.28;}}
- if(s.config.arena!=='sky'){
+ if(s.config.arena!=='sky'&&s.config.arena!=='neon'){
   const scale=ARENA_SCALE[s.config.arena];
-  if(s.config.arena==='neon'){const r=Math.hypot(nx,nz),limit=35.5*scale;if(r>limit){slide(nx/r,nz/r);nx*=limit/r;nz*=limit/r;}}
-  else {const limit=(ARENAS[s.config.arena].extent-1.25)*scale-1.1;if(Math.abs(nx)>limit){slide(Math.sign(nx),0);nx=clamp(nx,-limit,limit);}if(Math.abs(nz)>limit){slide(0,Math.sign(nz));nz=clamp(nz,-limit,limit);}}
+  {const limit=(ARENAS[s.config.arena].extent-1.25)*scale-1.1;if(Math.abs(nx)>limit){slide(Math.sign(nx),0);nx=clamp(nx,-limit,limit);}if(Math.abs(nz)>limit){slide(0,Math.sign(nz));nz=clamp(nz,-limit,limit);}}
  }
  for(const o of obstacles(s.config.arena)){const d=Math.hypot(nx-o.x,nz-o.z);if(d<o.r+1.1&&k.y<2){const normalX=(nx-o.x)/(d||1),normalZ=(nz-o.z)/(d||1);slide(-normalX,-normalZ);nx=o.x+normalX*(o.r+1.15);nz=o.z+normalZ*(o.r+1.15);}}
  k.x=nx;k.z=nz;
@@ -249,7 +248,7 @@ export function drive(s:State,k:Kart,input:Input,dt:number) {
  k.hopHeld=input.hop;
  k.vy-=21*dt;k.y+=k.vy*dt;
  const h=ground(s.config.arena,k.x,k.z,k.y+.4);if(k.y<h&&k.y>h-1.5){k.y=h;k.vy=0;}
- if(k.y<(s.config.arena==='castle'?-4:-14)){damage(s,k,k.id,{cause:s.config.arena==='castle'?'lava':'fall'});k.x=0;k.z=0;k.y=1;k.vy=0;k.speed=0;k.boost=0;k.ram=0;k.vx=0;k.vz=0;k.pushX=0;k.pushZ=0;k.inv=3;emit(s,'fall',k);}
+ if(k.y<(s.config.arena==='castle'?-4:-14)){damage(s,k,k.id,{cause:s.config.arena==='castle'?'lava':'fall'});k.x=0;k.z=0;k.y=ground(s.config.arena,0,0)+1;k.vy=0;k.speed=0;k.boost=0;k.ram=0;k.vx=0;k.vz=0;k.pushX=0;k.pushZ=0;k.inv=3;emit(s,'fall',k);}
  if(k.roulette>0){
   if(input.fire&&!k.fireHeld)k.rouletteStop=true;
   k.roulette=Math.max(0,k.roulette-dt);
@@ -268,7 +267,7 @@ export function collideKarts(s:State){
   for(const [k,sign] of [[a,-1],[b,1]] as [Kart,number][]){
    const x=k.x+nx*overlap*sign,z=k.z+nz*overlap*sign;
    const limit=(ARENAS[s.config.arena].extent-1.25)*ARENA_SCALE[s.config.arena]-1.1;
-   const inside=s.config.arena==='sky'||(s.config.arena==='neon'?Math.hypot(x,z)<=35.5*ARENA_SCALE.neon:Math.max(Math.abs(x),Math.abs(z))<=limit);
+   const inside=s.config.arena==='sky'||s.config.arena==='neon'||Math.max(Math.abs(x),Math.abs(z))<=limit;
    if(inside&&ground(s.config.arena,x,z,k.y)<=k.y+.85){k.x=x;k.z=z;}
   }
   const closing=(a.vx+(a.pushX??0)-b.vx-(b.pushX??0))*nx+(a.vz+(a.pushZ??0)-b.vz-(b.pushZ??0))*nz;
@@ -291,9 +290,8 @@ export function advanceRicochet(s:State,p:Shot,dt:number){
  const rebound=()=>{p.bounces!++;if(p.bounces!>12){p.life=0;return;}emit(s,'ricochet',{...s.karts[p.owner],x:p.x,y:p.y,z:p.z});};
  for(let i=0;i<parts&&p.life>0;i++){
   const ox=p.x,oz=p.z;let vx=Math.sin(p.angle),vz=Math.cos(p.angle),nx=ox+vx*velocity*h,nz=oz+vz*velocity*h,bounced=false;
-  if(arena!=='sky'){
-   if(arena==='neon'){const d=Math.hypot(nx,nz),limit=35.5*ARENA_SCALE.neon-radius;if(d>limit){const ax=nx/d,az=nz/d,dot=vx*ax+vz*az;vx-=2*dot*ax;vz-=2*dot*az;nx=ax*(limit-.02);nz=az*(limit-.02);bounced=true;}}
-   else {const limit=(ARENAS[arena].extent-1.25)*ARENA_SCALE[arena]-radius;if(Math.abs(nx)>limit){vx=-vx;nx=clamp(nx,-limit+.02,limit-.02);bounced=true;}if(Math.abs(nz)>limit){vz=-vz;nz=clamp(nz,-limit+.02,limit-.02);bounced=true;}}
+  if(arena!=='sky'&&arena!=='neon'){
+   {const limit=(ARENAS[arena].extent-1.25)*ARENA_SCALE[arena]-radius;if(Math.abs(nx)>limit){vx=-vx;nx=clamp(nx,-limit+.02,limit-.02);bounced=true;}if(Math.abs(nz)>limit){vz=-vz;nz=clamp(nz,-limit+.02,limit-.02);bounced=true;}}
   }
   const blocked=(x:number,z:number)=>solidAt(arena,x,p.y,z);
   const bx=blocked(nx+Math.sign(vx)*radius,oz)||blocked(nx+Math.sign(vx)*radius,oz+radius*.65)||blocked(nx+Math.sign(vx)*radius,oz-radius*.65);
@@ -337,6 +335,9 @@ export function step(s:State,inputs:Record<number,Input>,dt=1/60) {
  if(s.time<=0)for(const k of s.karts)if(k.balloons>0)damage(s,k,k.id,{cause:'timeout'});
  finish(s);
 }
+
+
+
 
 
 
