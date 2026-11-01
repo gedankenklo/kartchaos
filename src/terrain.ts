@@ -11,6 +11,8 @@ for(const sx of [-1,1])for(const sz of [-1,1]){
 for(const sign of [-1,1]){
  FORT_BRIDGES.push({x:sign*20,z:0,width:6,depth:16,y:6,thickness:.6});
  FORT_BRIDGES.push({x:0,z:sign*20,width:16,depth:6,y:6,thickness:.6});
+ FORT_BRIDGES.push({x:sign*27,z:0,width:4,depth:38,y:11,thickness:.6});
+ FORT_BRIDGES.push({x:0,z:sign*27,width:38,depth:4,y:11,thickness:.6});
 }
 export function rampHeight(r:Ramp,x:number,z:number):number|undefined {
  const along=r.axis==='x'?x:z,cross=r.axis==='x'?z:x,t=(along-r.from)/(r.to-r.from);

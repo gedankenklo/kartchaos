@@ -1,8 +1,8 @@
 import {newRoundStats,statsFor,type RoundStats} from './matchStats';
-import {createFootball,stepFootball,type Football} from './football';
+import {createFootball,stepFootball,soccerTeam,assignSoccerTeams,soccerBotGoal,type Football} from './football';
 import {createChampionship,scoreChampionship,type Championship} from './championship';
 // Shared by browser and authoritative server. All distances are metres, time seconds.
-import {FORT,fortressSolidHeight,bridgeAt,skyHeight,neonHeight,FORT_BRIDGES} from './terrain';
+import {FORT,fortressSolidHeight,skyHeight,neonHeight,FORT_BRIDGES} from './terrain';
 import {ARENAS,ARENA_IDS,isExpansion,expansionHeight,expansionNav,EXPANSIONS,type Arena} from './arenas';
 export type {Arena} from './arenas';
 export {ARENA_IDS} from './arenas';
@@ -19,35 +19,35 @@ export const DRIVER_NAMES=['ROOK','BOLT','MANGO','PLUM','MINT','PEACH','SKIP','P
 export function normalizeDrivers(raw:unknown,count:number):number[]{const values=Array.isArray(raw)?raw:[];return Array.from({length:count},(_,i)=>Number.isInteger(values[i])&&values[i]>=0&&values[i]<8?values[i]:i%8);}
 export interface Input { gas:number; steer:number; drift:boolean; fire:boolean; hop:boolean; }
 export const idle = ():Input => ({gas:0,steer:0,drift:false,fire:false,hop:false});
-export interface Kart {stats?:RoundStats;id:number; driver:number; name:string; bot:boolean; x:number; z:number; y:number; angle:number; vx:number; vz:number; vy:number; speed:number; steering:number; yawRate:number; reverseTime:number; driftSide:number; driftSlip:number; pushX:number; pushZ:number; bumpCooldown:number; balloons:number; inv:number; item:Item|null; roulette:number; rouletteSeed:number; rouletteStop:boolean; itemFlash:number; boost:number; ram:number; shield:number; drift:number; cooldown:number; hopHeld:boolean; fireHeld:boolean; target:number; stuck:number; kills:number; damage:number; hits:number; eliminatedAt?:number; }
+export interface Kart {team?:'blue'|'orange';stats?:RoundStats;id:number; driver:number; name:string; bot:boolean; x:number; z:number; y:number; angle:number; vx:number; vz:number; vy:number; speed:number; steering:number; yawRate:number; reverseTime:number; driftSide:number; driftSlip:number; pushX:number; pushZ:number; bumpCooldown:number; balloons:number; inv:number; item:Item|null; roulette:number; rouletteSeed:number; rouletteStop:boolean; itemFlash:number; boost:number; ram:number; shield:number; drift:number; cooldown:number; hopHeld:boolean; fireHeld:boolean; target:number; stuck:number; kills:number; damage:number; hits:number; eliminatedAt?:number; }
 export interface Shot {id:number; owner:number; kind:'bolt'|'seeker'|'mine'; x:number; z:number; y:number; angle:number; life:number; age?:number; bounces?:number; }
 export interface Box {x:number; z:number; y:number; respawn:number;}
-export type HitCause='bolt'|'seeker'|'mine'|'ram'|'pulse'|'fall'|'lava'|'ring'|'timeout';
-export interface Event {id:number; type:'goal'|'eliminated'|'hit'|'fire'|'pickup'|'boost'|'win'|'fall'|'bump'|'itemready'|'shockwave'|'crash'|'ricochet'; x:number; y:number; z:number; player:number;source?:number;blocked?:boolean;remaining?:number;cause?:HitCause;fromX?:number;fromZ?:number;team?:'blue'|'orange';}
-export interface Config {arena:Arena; humans:number; bots:number; difficulty:'easy'|'normal'|'hard'; duration:number;speedClass?:50|100|150;drivers?:number[];shuffleMaps?:boolean;mapQueue?:Arena[];championship?:boolean;}
-export interface State {config:Config; championship?:Championship; ball?:Football; karts:Kart[]; shots:Shot[]; boxes:Box[]; time:number; countdown:number; phase:'countdown'|'playing'|'finished'; winner:number|null; tick:number; seed:number; serial:number; events:Event[];}
+export type HitCause='bolt'|'seeker'|'mine'|'ram'|'pulse'|'fall'|'lava'|'ring'|'timeout'|'goal';
+export interface Event {ownGoal?:boolean;id:number; type:'goal'|'eliminated'|'hit'|'fire'|'pickup'|'boost'|'win'|'fall'|'bump'|'itemready'|'shockwave'|'crash'|'ricochet'; x:number; y:number; z:number; player:number;source?:number;blocked?:boolean;remaining?:number;cause?:HitCause;fromX?:number;fromZ?:number;team?:'blue'|'orange';}
+export interface Config {soccer?:boolean;arena:Arena; humans:number; bots:number; difficulty:'easy'|'normal'|'hard'; duration:number;speedClass?:50|100|150;drivers?:number[];shuffleMaps?:boolean;mapQueue?:Arena[];championship?:boolean;}
+export interface State {winningTeam?:'blue'|'orange';config:Config; championship?:Championship; ball?:Football; karts:Kart[]; shots:Shot[]; boxes:Box[]; time:number; countdown:number; phase:'countdown'|'playing'|'finished'; winner:number|null; tick:number; seed:number; serial:number; events:Event[];}
 export const clamp=(v:number,a:number,b:number)=>Math.max(a,Math.min(b,v));
 export const angleDiff=(a:number,b:number)=>Math.atan2(Math.sin(a-b),Math.cos(a-b));
 export const distance=(a:{x:number;z:number},b:{x:number;z:number})=>Math.hypot(a.x-b.x,a.z-b.z);
 export function ground(arena:Arena,x:number,z:number,referenceY=Infinity):number {
  if(arena==='fortress'){
-  const lx=x/ARENA_SCALE.fortress,lz=z/ARENA_SCALE.fortress,solid=fortressSolidHeight(lx,lz),b=bridgeAt(lx,lz);
+  const lx=x/ARENA_SCALE.fortress,lz=z/ARENA_SCALE.fortress,solid=fortressSolidHeight(lx,lz);
   const h=solid< -10?solid:solid*ARENA_HEIGHT.fortress;
-  return b&&referenceY>=b.y*ARENA_HEIGHT.fortress-.85?Math.max(h,b.y*ARENA_HEIGHT.fortress):h;
+  return FORT_BRIDGES.filter(b=>Math.abs(lx-b.x)<=b.width/2+1e-7&&Math.abs(lz-b.z)<=b.depth/2+1e-7&&referenceY>=b.y*ARENA_HEIGHT.fortress-.85).reduce((height,b)=>Math.max(height,b.y*ARENA_HEIGHT.fortress),h);
  }
  const lx=x/ARENA_SCALE[arena],lz=z/ARENA_SCALE[arena],h=isExpansion(arena)?expansionHeight(arena,lx,lz):arena==='sky'?skyHeight(lx,lz):neonHeight(Math.hypot(lx,lz));
  return h< -10?h:h*ARENA_HEIGHT[arena];
 }
 export function ceiling(arena:Arena,x:number,z:number,feet:number):number {
  if(arena!=='fortress')return Infinity;
- const b=bridgeAt(x/ARENA_SCALE.fortress,z/ARENA_SCALE.fortress);
- return b&&feet<(b.y-b.thickness)*ARENA_HEIGHT.fortress?(b.y-b.thickness)*ARENA_HEIGHT.fortress:Infinity;
+ const xLocal=x/ARENA_SCALE.fortress,zLocal=z/ARENA_SCALE.fortress;
+ return Math.min(Infinity,...FORT_BRIDGES.filter(b=>Math.abs(xLocal-b.x)<=b.width/2&&Math.abs(zLocal-b.z)<=b.depth/2&&feet<(b.y-b.thickness)*ARENA_HEIGHT.fortress).map(b=>(b.y-b.thickness)*ARENA_HEIGHT.fortress));
 }
 export function solidAt(arena:Arena,x:number,y:number,z:number):boolean {
  if(arena!=='fortress')return ground(arena,x,z)>y;
  const lx=x/ARENA_SCALE.fortress,lz=z/ARENA_SCALE.fortress;
  if(fortressSolidHeight(lx,lz)*ARENA_HEIGHT.fortress>y)return true;
- const b=bridgeAt(lx,lz);return !!b&&y>=(b.y-b.thickness)*ARENA_HEIGHT.fortress&&y<=b.y*ARENA_HEIGHT.fortress;
+ return FORT_BRIDGES.some(b=>Math.abs(lx-b.x)<=b.width/2&&Math.abs(lz-b.z)<=b.depth/2&&y>=(b.y-b.thickness)*ARENA_HEIGHT.fortress&&y<=b.y*ARENA_HEIGHT.fortress);
 }
 export function obstacles(arena:Arena):{x:number;z:number;r:number}[] {
  return layoutObstacles(arena).map(o=>({x:o.x*ARENA_SCALE[arena],z:o.z*ARENA_SCALE[arena],r:o.r*ARENA_SCALE[arena]}));
@@ -65,7 +65,7 @@ export function nav(arena:Arena):NavPoint[] {
   for(const sx of [-1,1])for(const sz of [-1,1]){
    for(const p of [{x:sx*35,z:sz*35,y:0},{x:sx*20,z:sz*42,y:0},{x:sx*20,z:sz*32,y:6},{x:sx*12,z:sz*32,y:6},{x:sx*12,z:sz*20,y:6},{x:sx*20,z:sz*12,y:6},{x:sx*9,z:sz*20,y:6},{x:sx*12,z:sz*24,y:6},{x:sx*19,z:sz*24,y:11},{x:sx*24,z:sz*24,y:11}])points.push(p);
   }
-  for(const b of FORT_BRIDGES)points.push({x:b.x,z:b.z,y:6},{x:b.x,z:b.z,y:0});
+  for(const b of FORT_BRIDGES){points.push({x:b.x,z:b.z,y:b.y},{x:b.x,z:b.z,y:0});for(const sign of [-1,1])points.push({x:b.x+sign*(b.width> b.depth?b.width/2:0),z:b.z+sign*(b.depth>b.width?b.depth/2:0),y:b.y});}
   return points.map(p=>({x:p.x*ARENA_SCALE.fortress,z:p.z*ARENA_SCALE.fortress,y:p.y*ARENA_HEIGHT.fortress}));
  }
  return layoutNav(arena).map(p=>({x:p.x*ARENA_SCALE[arena],z:p.z*ARENA_SCALE[arena],y:ground(arena,p.x*ARENA_SCALE[arena],p.z*ARENA_SCALE[arena])}));
@@ -85,7 +85,7 @@ export function nextRoundConfig(config:Config,rng= Math.random):Config {
  return {...config,arena:queue[0],mapQueue:queue.slice(1)};
 }
 export function createState(config:Config):State {
- config={...config,speedClass:normalizeSpeedClass(config.speedClass),drivers:normalizeDrivers(config.drivers,config.humans)};
+ config={...config,soccer:config.arena==='stadium',speedClass:normalizeSpeedClass(config.speedClass),drivers:normalizeDrivers(config.drivers,config.humans)};
  const count=clamp(config.humans+config.bots,2,8);
  const used=new Set(config.drivers),available=DRIVER_NAMES.map((_,i)=>i).filter(i=>!used.has(i));
  const karts=Array.from({length:count},(_,id)=>{
@@ -96,6 +96,7 @@ export function createState(config:Config):State {
   const driver=id<config.humans?config.drivers![id]:(available.shift()??id%8);
   return {stats:newRoundStats(),id,driver,name:DRIVER_NAMES[driver],bot:id>=config.humans,x,z,y:ground(config.arena,x,z,0),angle:a+Math.PI,vx:0,vz:0,vy:0,speed:0,steering:0,yawRate:0,reverseTime:0,driftSide:0,driftSlip:0,pushX:0,pushZ:0,bumpCooldown:0,balloons:3,inv:0,item:null,roulette:0,rouletteSeed:0,rouletteStop:false,itemFlash:0,boost:0,ram:0,shield:0,drift:0,cooldown:0,hopHeld:false,fireHeld:false,target:0,stuck:0,kills:0,damage:0,hits:0};
  });
+ if(config.arena==='stadium')assignSoccerTeams(karts);
  const points=(isExpansion(config.arena)?EXPANSIONS[config.arena].items:config.arena==='fortress'?[{x:0,z:0},...[-1,1].flatMap(s=>[{x:0,z:s*28,y:0},{x:s*28,z:0,y:0}]),...[-1,1].flatMap(sx=>[-1,1].flatMap(sz=>[{x:sx*20,z:sz*35},{x:sx*12,z:sz*20},{x:sx*23,z:sz*23}])),...FORT_BRIDGES.map(b=>({x:b.x,z:b.z,y:b.y}))]:config.arena==='sky'?[{x:0,z:0},{x:0,z:24},{x:24,z:0},{x:0,z:-24},{x:-24,z:0},{x:0,z:10},{x:10,z:0},{x:0,z:-10},{x:-10,z:0}]:[0,1,2,3,4,5,6,7].map(i=>({x:Math.sin(i*Math.PI/4)*20,z:Math.cos(i*Math.PI/4)*20}))).map((p:{x:number;z:number;y?:number})=>({x:p.x*ARENA_SCALE[config.arena],z:p.z*ARENA_SCALE[config.arena],y:p.y===undefined?undefined:p.y*ARENA_HEIGHT[config.arena]}));
  const championship=config.championship?createChampionship(config,karts):undefined;
  return {config,championship,ball:config.arena==='stadium'?createFootball():undefined,karts,shots:[],boxes:points.map(p=>({...p,y:p.y??ground(config.arena,p.x,p.z),respawn:0})),time:config.duration,countdown:3,phase:'countdown',winner:null,tick:0,seed:728463,serial:0,events:[]};
@@ -110,9 +111,10 @@ export function cycleSpectator(s:State,id:number,preferred:number|undefined,dire
 function random(s:State){s.seed=(Math.imul(1664525,s.seed)+1013904223)>>>0;return s.seed/4294967296;}
 function emit(s:State,type:Event['type'],k:Kart,detail:Partial<Event>={}){s.events.push({id:++s.serial,type,x:k.x,y:k.y,z:k.z,player:k.id,...detail});if(s.events.length>24)s.events.shift();}
 export function damage(s:State,k:Kart,owner:number,detail:Pick<Event,'cause'|'fromX'|'fromZ'>={}) {
- if(s.phase!=='playing'||k.balloons<=0||k.inv>0)return false;
- if(k.shield>0){k.shield=0;k.inv=.6;emit(s,'hit',k,{...detail,source:owner,blocked:true,remaining:k.balloons});return false;}
- k.balloons--;k.damage++;k.inv=2.2;k.speed*=.35;k.vy=3;emit(s,'hit',k,{...detail,source:owner,blocked:false,remaining:k.balloons});if(owner!==k.id&&s.karts[owner]){const attacker=s.karts[owner];attacker.hits=(attacker.hits??0)+1;if(detail.cause==='bolt'||detail.cause==='seeker')statsFor(attacker).projectileHits++;if(detail.cause==='ram')statsFor(attacker).turboRams++;}else if(owner===k.id&&detail.cause!=='timeout')statsFor(k).selfLosses++;
+ const goal=detail.cause==='goal';if(s.phase!=='playing'||k.balloons<=0||(!goal&&k.inv>0))return false;
+ if(!goal&&s.ball&&owner!==k.id&&s.karts[owner]&&soccerTeam(s.karts[owner])===soccerTeam(k))return false;
+ if(k.shield>0&&!goal){k.shield=0;k.inv=.6;emit(s,'hit',k,{...detail,source:owner,blocked:true,remaining:k.balloons});return false;}
+ k.balloons--;k.damage++;k.inv=2.2;k.speed*=.35;k.vy=3;emit(s,'hit',k,{...detail,source:owner,blocked:false,remaining:k.balloons});if(owner!==k.id&&s.karts[owner]){const attacker=s.karts[owner];attacker.hits=(attacker.hits??0)+1;if(detail.cause==='bolt'||detail.cause==='seeker')statsFor(attacker).projectileHits++;if(detail.cause==='ram')statsFor(attacker).turboRams++;}else if(owner===k.id&&detail.cause!=='timeout'&&detail.cause!=='goal')statsFor(k).selfLosses++;
  if(k.balloons===0){k.eliminatedAt=s.tick;emit(s,'eliminated',{...k,y:Math.max(0,k.y)},{source:owner,cause:detail.cause});if(owner!==k.id&&s.karts[owner])s.karts[owner].kills++;}
  return true;
 }
@@ -162,9 +164,11 @@ export function findWaypoint(s:State,k:Kart,goal:{x:number;z:number;y?:number}) 
 }
 const retreatGoals=new WeakMap<Kart,{tick:number;goal:NavPoint}>();
 export function botGoal(s:State,k:Kart){
- const enemies=s.karts.filter(o=>o.id!==k.id&&o.balloons>0).sort((a,b)=>(distance(k,a)+Math.abs(k.y-a.y)*3-(3-a.balloons)*6)-(distance(k,b)+Math.abs(k.y-b.y)*3-(3-b.balloons)*6));const foe=enemies[0];if(!foe)return {goal:k,foe:k,tactic:'idle'};
+ const enemies=s.karts.filter(o=>o.id!==k.id&&o.balloons>0&&(!s.ball||!s.config.soccer||soccerTeam(o)!==soccerTeam(k))).sort((a,b)=>(distance(k,a)+Math.abs(k.y-a.y)*3-(3-a.balloons)*6)-(distance(k,b)+Math.abs(k.y-b.y)*3-(3-b.balloons)*6));const foe=enemies[0];if(!foe)return {goal:k,foe:k,tactic:'idle'};
  const close=enemies.reduce((a,b)=>distance(k,a)<distance(k,b)?a:b),fragile=k.balloons===1&&!k.shield,pressure=fragile&&distance(k,close)<26;
  if(s.time<=45&&Math.hypot(k.x,k.z)>dangerRadius(s)*.8)return {goal:{x:0,z:0,y:0},foe,tactic:'ring'};
+ if(s.ball&&s.config.soccer)return {goal:soccerBotGoal(s,k),foe,tactic:'soccer'};
+
  if(pressure&&!(k.item==='pulse'&&distance(k,foe)<8)){
   const cached=retreatGoals.get(k);if(cached&&s.tick-cached.tick<30)return {goal:cached.goal,foe,tactic:'retreat'};
   const candidates=navGraph(s.config.arena).points.filter(p=>distance(k,p)>7&&Math.hypot(p.x,p.z)<(s.time<=45?dangerRadius(s)*.75:arenaExtent(s.config.arena)));
@@ -195,12 +199,12 @@ export function botInput(s:State,k:Kart):Input {
  const travel=Math.hypot(k.vx,k.vz)>2?Math.atan2(k.vx,k.vz):k.angle,look=Math.max(3,Math.abs(k.speed)*.55);
  const aheadX=k.x+Math.sin(travel)*look,aheadZ=k.z+Math.cos(travel)*look;
  const unsafe=!clearPath(s.config.arena,k,{x:aheadX,z:aheadZ,y:ground(s.config.arena,aheadX,aheadZ,k.y+.35)});
- const cruise=hazardMap?.7/Math.sqrt(scale):pace,corner=clamp(1-Math.abs(error)*.85,.1,1);
+ const cruise=tactic==='soccer'&&s.ball&&distance(k,s.ball)<18?.65/scale:hazardMap?.7/Math.sqrt(scale):pace,corner=clamp(1-Math.abs(error)*.85,.1,1);
  const throttle=Math.min(pace,cruise,corner,unsafe?.13:1,edge?.1:1),desiredSpeed=20*scale*throttle;
  const braking=k.speed>desiredSpeed+2&&(unsafe||Math.abs(error)>.65);
  const boostSafe=clearPath(s.config.arena,k,{x:k.x+Math.sin(k.angle)*31*scale*2.1,z:k.z+Math.cos(k.angle)*31*scale*2.1,y:k.y});
  const fire=!!k.item&&(k.item==='shield'&&(range<24||k.balloons===1)||k.item==='boost'&&boostSafe&&!unsafe&&Math.abs(error)<.25&&(tactic==='retreat'||aim<.45&&range<38&&visible)||k.item==='mine'&&range<14&&(aim>1.6||tactic==='retreat')||k.item==='pulse'&&range<8&&sameLevel||(k.item==='bolt'||k.item==='seeker')&&visible&&sameLevel&&aim<(k.item==='seeker'?.85:.25)&&range<50);
- return {gas:braking?-1:throttle,steer:clamp(error*1.8,-1,1),drift:!hazardMap&&!unsafe&&Math.abs(error)>.5&&Math.abs(error)<1.2&&Math.abs(k.speed)>10,hop:false,fire};
+ return {gas:braking?-1:throttle,steer:clamp(error*1.8,-1,1),drift:tactic!=='soccer'&&!hazardMap&&!unsafe&&Math.abs(error)>.5&&Math.abs(error)<1.2&&Math.abs(k.speed)>10,hop:false,fire};
 }
 export function drive(s:State,k:Kart,input:Input,dt:number) {
  if(k.balloons<=0)return;
@@ -301,11 +305,12 @@ export function advanceRicochet(s:State,p:Shot,dt:number){
   for(const o of obstacles(arena)){const d=Math.hypot(nx-o.x,nz-o.z);if(p.y<2.6&&d<o.r+radius){const ax=d>.001?(nx-o.x)/d:-vx,az=d>.001?(nz-o.z)/d:-vz,dot=vx*ax+vz*az;if(dot<0){vx-=2*dot*ax;vz-=2*dot*az;bounced=true;}nx=o.x+ax*(o.r+radius+.02);nz=o.z+az*(o.r+radius+.02);}}
   p.x=nx;p.z=nz;p.angle=Math.atan2(vx,vz);if(bounced)rebound();
   const floor=ground(arena,p.x,p.z,p.y-.35);if(floor< -10){p.life=0;break;}if(floor<=p.y+.4)p.y=floor+.65;
-  for(const k of s.karts){if(!k.balloons||Math.abs(k.y+.8-p.y)>1.7||(k.id===p.owner&&(p.bounces===0||p.age<.4)))continue;const dx=p.x-ox,dz=p.z-oz,t=clamp(((k.x-ox)*dx+(k.z-oz)*dz)/(dx*dx+dz*dz||1),0,1);if(Math.hypot(k.x-ox-dx*t,k.z-oz-dz*t)<1.65){damage(s,k,p.owner,{cause:'bolt',fromX:k.x-Math.sin(p.angle)*5,fromZ:k.z-Math.cos(p.angle)*5});p.life=0;break;}}
+  for(const k of s.karts){if(s.ball&&s.config.soccer&&k.id!==p.owner&&soccerTeam(k)===soccerTeam(s.karts[p.owner]))continue;if(!k.balloons||Math.abs(k.y+.8-p.y)>1.7||(k.id===p.owner&&(p.bounces===0||p.age<.4)))continue;const dx=p.x-ox,dz=p.z-oz,t=clamp(((k.x-ox)*dx+(k.z-oz)*dz)/(dx*dx+dz*dz||1),0,1);if(Math.hypot(k.x-ox-dx*t,k.z-oz-dz*t)<1.65){damage(s,k,p.owner,{cause:'bolt',fromX:k.x-Math.sin(p.angle)*5,fromZ:k.z-Math.cos(p.angle)*5});p.life=0;break;}}
  }
 }
 export function dangerRadius(s:State){const start=(s.config.arena==='neon'||s.config.arena==='sky'?1.35:Math.SQRT2)*arenaExtent(s.config.arena);return s.time>45?start:Math.max(7,start*s.time/45);}
 export function finish(s:State) {
+ if(s.ball){const alive=s.karts.filter(k=>k.balloons>0),teams=new Set(alive.map(soccerTeam));if(teams.size>1)return;s.winningTeam=alive.length?soccerTeam(alive[0]):undefined;s.winner=alive[0]?.id??null;s.phase='finished';emit(s,'win',alive[0]??s.karts[0],{team:s.winningTeam});scoreChampionship(s);return;}
  const alive=s.karts.filter(k=>k.balloons>0);
  if(alive.length<=1){s.phase='finished';s.winner=alive[0]?.id??null;emit(s,'win',alive[0]??s.karts[0]);scoreChampionship(s);}
 }
@@ -321,12 +326,12 @@ export function step(s:State,inputs:Record<number,Input>,dt=1/60) {
  }
  collideKarts(s);stepFootball(s,dt);
  for(const p of s.shots){p.life-=dt;if(p.kind!=='bolt')p.age=(p.age??0)+dt;if(p.kind==='bolt'){advanceRicochet(s,p,dt);continue;}
-  if(p.kind==='seeker'){const target=s.karts.filter(k=>k.id!==p.owner&&k.balloons>0).sort((a,b)=>distance(p,a)-distance(p,b))[0];if(target){p.angle+=clamp(angleDiff(Math.atan2(target.x-p.x,target.z-p.z),p.angle),-2*dt,2*dt);p.y+=(target.y+1-p.y)*dt*3;}}
+  if(p.kind==='seeker'){const target=s.karts.filter(k=>k.id!==p.owner&&k.balloons>0&&(!s.ball||!s.config.soccer||soccerTeam(k)!==soccerTeam(s.karts[p.owner]))).sort((a,b)=>distance(p,a)-distance(p,b))[0];if(target){p.angle+=clamp(angleDiff(Math.atan2(target.x-p.x,target.z-p.z),p.angle),-2*dt,2*dt);p.y+=(target.y+1-p.y)*dt*3;}}
   const ox=p.x,oz=p.z,velocity=p.kind==='mine'?0:38*speedSettings(s.config.speedClass).scale;
   p.x+=Math.sin(p.angle)*velocity*dt;p.z+=Math.cos(p.angle)*velocity*dt;
   if(p.kind==='mine')p.y=ground(s.config.arena,p.x,p.z,p.y-.4)+.4;
   if(solidAt(s.config.arena,p.x,p.y+.15,p.z)||Math.abs(p.x)>arenaExtent(s.config.arena)+2||Math.abs(p.z)>arenaExtent(s.config.arena)+2){p.life=0;continue;}
-  for(const k of s.karts){if((k.id===p.owner&&p.kind!=='mine')||(p.kind==='mine'&&(p.age??0)<MINE_ARM_TIME)||!k.balloons||Math.abs(k.y+1-p.y)>2)continue;
+  for(const k of s.karts){if(s.ball&&s.config.soccer&&k.id!==p.owner&&soccerTeam(k)===soccerTeam(s.karts[p.owner]))continue;if((k.id===p.owner&&p.kind!=='mine')||(p.kind==='mine'&&(p.age??0)<MINE_ARM_TIME)||!k.balloons||Math.abs(k.y+1-p.y)>2)continue;
    const dx=p.x-ox,dz=p.z-oz,t=clamp(((k.x-ox)*dx+(k.z-oz)*dz)/(dx*dx+dz*dz||1),0,1);
    if(Math.hypot(k.x-ox-dx*t,k.z-oz-dz*t)<1.8){damage(s,k,p.owner,{cause:p.kind,fromX:p.kind==='mine'?p.x:k.x-Math.sin(p.angle)*5,fromZ:p.kind==='mine'?p.z:k.z-Math.cos(p.angle)*5});p.life=0;break;}
   }

@@ -1,6 +1,8 @@
 import * as T from 'three';
 import {ARENAS,type Arena} from './arenas';
 
+export const backdropFloorHeight=(arena:Arena)=>arena==='beach'?-.35:arena==='castle'?-60:arena==='sky'||arena==='neon'?-210:-1.5*ARENAS[arena].height;
+
 // Distant scenery is separate from driving surfaces and camera collision geometry.
 export class Landscape extends T.Group {
  sky:T.Mesh;horizon:string;clouds?:T.InstancedMesh;water?:T.ShaderMaterial;dust?:T.Points;flags:T.Group[]=[];signs:T.Mesh[]=[];
@@ -16,7 +18,7 @@ export class Landscape extends T.Group {
   skyMaterial.fragmentShader=skyMaterial.fragmentShader.replace(';#include',';\n#include');
   this.sky=new T.Mesh(new T.SphereGeometry(1700,32,16),skyMaterial);this.sky.renderOrder=-1000;this.sky.frustumCulled=false;this.add(this.sky);
   const groundColor=night?'#665d81':coast?'#73b8c6':desert?'#d2a77e':'#9bbd8d';
-  const floor:T.Mesh<T.CircleGeometry,T.Material>=new T.Mesh(new T.CircleGeometry(1450,96),new T.MeshBasicMaterial({color:groundColor}));floor.rotation.x=-Math.PI/2;floor.position.y=arena==='beach'?-.35:arena==='castle'?-60:floating?-210:-1.5*ARENAS[arena].height;this.add(floor);
+  const floor:T.Mesh<T.CircleGeometry,T.Material>=new T.Mesh(new T.CircleGeometry(1450,96),new T.MeshBasicMaterial({color:groundColor}));floor.rotation.x=-Math.PI/2;floor.position.y=backdropFloorHeight(arena);this.add(floor);
   const colors=deepNight?(arena==='castle'?['#39304b','#2c2b45','#25263b']:['#324056','#29374b','#233246']):trial&&arena==='fortress'?['#81a48a','#9bb6a0','#bbcbb7']:night?['#b294b6','#8c80a7','#73769c']:desert?['#c99577','#c3a08b','#b7a6a0']:coast?['#8bad9d','#9ebbb0','#afc7bf']:['#87a889','#9bb49c','#acc5b7'];
   for(let ring=2;ring>=0;ring--){
    const radius=330+ring*210,vertices:number[]=[];

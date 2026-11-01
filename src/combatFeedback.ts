@@ -11,7 +11,7 @@ export function combatMessage(event:Event,viewer:number,karts:State['karts']):{t
  const cause=event.cause,weapon=cause&&cause in weapons?weapons[cause as keyof typeof weapons]:null,own=event.source===event.player;
  if(viewer===event.player){
   if(event.blocked)return {text:own&&cause==='mine'?'Shield blocked your own mine!':own&&cause==='bolt'?'Shield blocked your ricochet!':weapon?'Shield blocked '+weapon.toLowerCase()+'!':'Shield blocked!',positive:false};
-  let text=own&&cause==='mine'?'Your own mine!':own&&cause==='bolt'?'Your own ricochet!':cause==='ram'?'Turbo ram from '+(attacker?.name??'a rival')+'!':cause==='fall'?'Fell off the arena!':cause==='lava'?'Lava!':cause==='ring'?'Outside the danger ring!':cause==='timeout'?'Round over!':weapon?weapon+' hit'+(attacker&&!own?' · '+attacker.name:'')+'!':'Balloon popped!';
+  let text=cause==='goal'?'Goal conceded! Team loses a balloon.':own&&cause==='mine'?'Your own mine!':own&&cause==='bolt'?'Your own ricochet!':cause==='ram'?'Turbo ram from '+(attacker?.name??'a rival')+'!':cause==='fall'?'Fell off the arena!':cause==='lava'?'Lava!':cause==='ring'?'Outside the danger ring!':cause==='timeout'?'Round over!':weapon?weapon+' hit'+(attacker&&!own?' · '+attacker.name:'')+'!':'Balloon popped!';
   if((event.remaining??victim.balloons)===0)text+=' Eliminated.';return {text,positive:false};
  }
  if(event.source===viewer&&!own)return {text:event.blocked?victim.name+' blocked your '+(weapon?.toLowerCase()??'hit')+'!':(cause==='ram'?'Turbo ram! ':cause==='bolt'?'Ricochet hit! ':'Hit! ')+victim.name+((event.remaining??victim.balloons)===0?' eliminated!':' lost a balloon!'),positive:!event.blocked};
