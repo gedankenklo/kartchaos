@@ -87,3 +87,5 @@
 @media(prefers-reduced-motion:reduce){.combat-message{animation:none}.combat-icon{text-shadow:none}}
 @media(max-width:650px){.combat-messages{top:clamp(190px,27%,260px)}}
 @media(max-height:500px) and (max-width:650px){.combat-messages{top:180px;gap:5px}.combat-message{padding:6px 9px;font-size:12px}.combat-title{font-size:8px}.split-screen .combat-messages{top:25%}}
+
+.map-shuffle:has(input.controller-focus){outline:3px solid #fff1b7;outline-offset:3px;box-shadow:0 0 0 6px #6a4966}

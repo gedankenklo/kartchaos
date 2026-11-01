@@ -170,3 +170,6 @@ Tide Depot keeps its name and public/music/depot soundtrack folder. The arena is
 
 
 Capture the enemy flag and return it to your base while your flag is home. Captures pop rival balloons; hits and Turbo Juice drop the flag. Team victory rules apply.
+
+
+v1.29: results-screen Shuffle maps is reachable by controller and highlights the full row.

@@ -15,14 +15,17 @@ try{
  document.querySelector('#app')!.insertAdjacentHTML('beforeend','<div id="overlay"><section class="modal"><button id="modalButton">Close dialog</button></section></div>');menu.ensure();check('Focus remains in active modal',menu.focused?.id==='modalButton');check('Menu actions lock held driving inputs',blocked>=10);
 
  const overlay=document.querySelector('#overlay')!;
- const resultScreen=(guest=false)=>{overlay.innerHTML=`<section class="modal results-modal"><select id="speed"><option value="50">50cc</option><option value="150">150cc</option></select><button data-pad-default data-action="rematch" ${guest?'disabled':''}>Next round</button><button data-pad-default data-action="leave">Back</button></section>`;};
+ const resultScreen=(guest=false)=>{overlay.innerHTML=`<section class="modal results-modal"><label class="speed-choice">Speed<select id="speed"><option value="50">50cc</option><option value="150">150cc</option></select></label><label class="map-shuffle"><input id="shuffleMaps" type="checkbox" ${guest?'disabled':''}><span>Shuffle maps between rounds<small>A fresh arena each rematch.</small></span><b>⤨</b></label><button class="solid-button" data-pad-default data-action="rematch" ${guest?'disabled':''}>Next round</button><button data-pad-default data-action="leave">Back</button></section>`;};
  // A stale speed identity from a previous screen must not win against a new results default.
  menu.key='speed';resultScreen();menu.ensure();check('Results preselect Next round over remembered speed',menu.focused?.dataset.action==='rematch'&&document.activeElement===menu.focused);
  let rematches=0;overlay.querySelector('[data-action="rematch"]')!.addEventListener('click',()=>rematches++);press(0);check('First A starts the next round without opening speed picker',rematches===1&&!menu.layer);
  menu.focus(overlay.querySelector<HTMLElement>('#speed')!);menu.ensure();check('Intentional navigation to speed remains selected',menu.focused?.id==='speed');
  press(0);menu.focus(Array.from(document.querySelectorAll<HTMLButtonElement>('.pad-option')).find(e=>e.textContent==='150cc'));press(0);check('Closing an intentional results speed picker restores its control',menu.focused?.id==='speed'&&!menu.layer);
  resultScreen();menu.ensure();check('Following results reset to Next round again',menu.focused?.dataset.action==='rematch');
+ resultScreen();menu.ensure();press(12);check('Up from Next round focuses shuffle row',menu.focused?.id==='shuffleMaps');press(0);check('A toggles shuffle on',overlay.querySelector<HTMLInputElement>('#shuffleMaps')!.checked);press(0);check('A toggles shuffle off',!overlay.querySelector<HTMLInputElement>('#shuffleMaps')!.checked);press(12);check('Up from shuffle reaches speed',menu.focused?.id==='speed');press(13);check('Down from speed reaches shuffle',menu.focused?.id==='shuffleMaps');press(13);check('Down from shuffle reaches Next round',menu.focused?.dataset.action==='rematch');
  resultScreen(true);menu.ensure();check('Guests focus enabled Back rather than disabled host button',menu.focused?.dataset.action==='leave');
  resultScreen();menu.focused=null;menu.using=false;menu.key='speed';press(0);check('Results default works when controller is first used after battle',(menu.focused as HTMLElement|null)?.dataset.action==='rematch'&&!menu.layer);
 }catch(error){results.push(String(error));}
 document.querySelector('#report')!.textContent=results.join('\n');
+
+menu.focus(document.querySelector<HTMLElement>('#shuffleMaps')!);
