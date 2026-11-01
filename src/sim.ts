@@ -1,3 +1,4 @@
+import {REACTOR,reactorAt} from './reactor';
 import {createFlags,assignFlagTeams,stepFlags,dropFlag,flagBotGoal,type CaptureFlags} from './captureFlag';
 import {BEACH_PALMS} from './beachProps';
 import {CASTLE_LAMPS} from './castleProps';
@@ -25,11 +26,11 @@ export const DRIVER_NAMES=['ROOK','BOLT','MANGO','PLUM','MINT','PEACH','SKIP','P
 export function normalizeDrivers(raw:unknown,count:number):number[]{const values=Array.isArray(raw)?raw:[];return Array.from({length:count},(_,i)=>Number.isInteger(values[i])&&values[i]>=0&&values[i]<8?values[i]:i%8);}
 export interface Input { gas:number; steer:number; drift:boolean; fire:boolean; hop:boolean; }
 export const idle = ():Input => ({gas:0,steer:0,drift:false,fire:false,hop:false});
-export interface Kart {orb?:boolean;team?:'blue'|'orange';stats?:RoundStats;id:number; driver:number; name:string; bot:boolean; x:number; z:number; y:number; angle:number; vx:number; vz:number; vy:number; speed:number; steering:number; yawRate:number; reverseTime:number; driftSide:number; driftSlip:number; pushX:number; pushZ:number; bumpCooldown:number; balloons:number; inv:number; item:Item|null; roulette:number; rouletteSeed:number; rouletteStop:boolean; itemFlash:number; boost:number; ram:number; shield:number; drift:number; cooldown:number; hopHeld:boolean; fireHeld:boolean; target:number; stuck:number; kills:number; damage:number; hits:number; eliminatedAt?:number; }
+export interface Kart {orb?:boolean;reactorCycle?:number;team?:'blue'|'orange';stats?:RoundStats;id:number; driver:number; name:string; bot:boolean; x:number; z:number; y:number; angle:number; vx:number; vz:number; vy:number; speed:number; steering:number; yawRate:number; reverseTime:number; driftSide:number; driftSlip:number; pushX:number; pushZ:number; bumpCooldown:number; balloons:number; inv:number; item:Item|null; roulette:number; rouletteSeed:number; rouletteStop:boolean; itemFlash:number; boost:number; ram:number; shield:number; drift:number; cooldown:number; hopHeld:boolean; fireHeld:boolean; target:number; stuck:number; kills:number; damage:number; hits:number; eliminatedAt?:number; }
 export interface Shot {orb?:boolean;id:number; owner:number; kind:'bolt'|'seeker'|'mine'; x:number; z:number; y:number; angle:number; life:number; age?:number; bounces?:number; }
 export interface Box {orb?:boolean;x:number; z:number; y:number; respawn:number;}
-export type HitCause='bolt'|'seeker'|'mine'|'ram'|'pulse'|'fall'|'lava'|'ring'|'timeout'|'goal';
-export interface Event {capture?:boolean;flagAction?:'taken'|'dropped'|'returned';impact?:number;contact?:'kick'|'bounce';ownGoal?:boolean;id:number; type:'flag'|'ballcontact'|'goal'|'eliminated'|'hit'|'fire'|'pickup'|'boost'|'win'|'fall'|'bump'|'itemready'|'shockwave'|'crash'|'ricochet'; x:number; y:number; z:number; player:number;source?:number;blocked?:boolean;remaining?:number;cause?:HitCause;fromX?:number;fromZ?:number;team?:'blue'|'orange';}
+export type HitCause='bolt'|'seeker'|'mine'|'ram'|'pulse'|'fall'|'lava'|'ring'|'timeout'|'goal'|'reactor';
+export interface Event {capture?:boolean;flagAction?:'taken'|'dropped'|'returned';impact?:number;contact?:'kick'|'bounce';ownGoal?:boolean;id:number; type:'reactorcharge'|'reactorbeam'|'flag'|'ballcontact'|'goal'|'eliminated'|'hit'|'fire'|'pickup'|'boost'|'win'|'fall'|'bump'|'itemready'|'shockwave'|'crash'|'ricochet'; x:number; y:number; z:number; player:number;source?:number;blocked?:boolean;remaining?:number;cause?:HitCause;fromX?:number;fromZ?:number;team?:'blue'|'orange';}
 export interface Config {soccer?:boolean;arena:Arena; humans:number; bots:number; difficulty:'easy'|'normal'|'hard'; duration:number;speedClass?:50|100|150;drivers?:number[];shuffleMaps?:boolean;mapQueue?:Arena[];championship?:boolean;}
 export interface State {ctf?:CaptureFlags;lighting?:Lighting;winningTeam?:'blue'|'orange';config:Config; championship?:Championship; ball?:Football; karts:Kart[]; shots:Shot[]; boxes:Box[]; time:number; countdown:number; phase:'countdown'|'playing'|'finished'; winner:number|null; tick:number; seed:number; serial:number; events:Event[];}
 export const clamp=(v:number,a:number,b:number)=>Math.max(a,Math.min(b,v));
@@ -92,7 +93,7 @@ export function nav(arena:Arena):NavPoint[] {
  }
  const points=layoutNav(arena).map(p=>({x:p.x*ARENA_SCALE[arena],z:p.z*ARENA_SCALE[arena],y:ground(arena,p.x*ARENA_SCALE[arena],p.z*ARENA_SCALE[arena])}));
  if(arena==='glacier')for(const x of [-38,-20,0,20,38])for(const z of [-24,0,12,24])if(expansionHeight('glacier',x,z,-Infinity)===0)points.push({x:x*ARENA_SCALE.glacier,z:z*ARENA_SCALE.glacier,y:0});
- return points;
+ return points.filter(p=>p.y>-10);
 }
 function layoutNav(arena:Arena):{x:number;z:number}[] {
  if(isExpansion(arena))return expansionNav(arena);
@@ -116,7 +117,7 @@ export function createState(config:Config):State {
   const a=id/count*Math.PI*2;
   const radius=(isExpansion(config.arena)?7:config.arena==='sky'?8:config.arena==='fortress'?18:21)*ARENA_SCALE[config.arena];
   let x=Math.sin(a)*radius,z=Math.cos(a)*radius;
-  if(config.arena==='starcore'){x=Math.sin(a)*38*ARENA_SCALE.starcore;z=Math.cos(a)*38*ARENA_SCALE.starcore;}if(config.arena==='crypt'){x=(28+Math.sin(a)*7)*ARENA_SCALE.crypt;z=(-36+Math.cos(a)*7)*ARENA_SCALE.crypt;}
+  if(config.arena==='starcore'){x=Math.sin(a)*38*ARENA_SCALE.starcore;z=Math.cos(a)*38*ARENA_SCALE.starcore;}if(config.arena==='crypt'){x=Math.sin(a)*62*ARENA_SCALE.crypt;z=Math.cos(a)*62*ARENA_SCALE.crypt;}
   if(config.arena==='fortress'){const lane=6*ARENA_SCALE.fortress;if(Math.abs(x)<Math.abs(z))x=clamp(x,-lane,lane);else z=clamp(z,-lane,lane);}
   const driver=id<config.humans?config.drivers![id]:(available.shift()??id%8);
   return {orb:false,stats:newRoundStats(),id,driver,name:DRIVER_NAMES[driver],bot:id>=config.humans,x,z,y:ground(config.arena,x,z,0),angle:a+Math.PI,vx:0,vz:0,vy:0,speed:0,steering:0,yawRate:0,reverseTime:0,driftSide:0,driftSlip:0,pushX:0,pushZ:0,bumpCooldown:0,balloons:3,inv:0,item:null,roulette:0,rouletteSeed:0,rouletteStop:false,itemFlash:0,boost:0,ram:0,shield:0,drift:0,cooldown:0,hopHeld:false,fireHeld:false,target:0,stuck:0,kills:0,damage:0,hits:0};
@@ -206,7 +207,10 @@ export function botGoal(s:State,k:Kart){
   if(regroup.goal)return {goal:regroup.goal,foe,tactic:'regroup'};
  }
  const close=enemies.reduce((a,b)=>distance(k,a)<distance(k,b)?a:b),fragile=enemies.length>1&&k.balloons===1&&!k.shield&&k.item!=='boost'&&k.ram<=0,pressure=fragile&&distance(k,close)<26;
- if(s.time<=45&&Math.hypot(k.x,k.z)>dangerRadius(s)*.8)return {goal:{x:0,z:0,y:0},foe,tactic:'ring'};
+ if(s.config.arena==='starcore'){
+  const r=Math.hypot(k.x,k.z),reactor=reactorAt(s.config.duration-s.time);
+  if(r<REACTOR.dangerRadius+10&&(reactor.phase!=='idle'||r<REACTOR.holeRadius+12)||s.time<=45&&r>dangerRadius(s)*.9){const a=Math.atan2(k.x,k.z);return {goal:{x:Math.sin(a)*80,z:Math.cos(a)*80,y:0},foe,tactic:'ring'};}
+ }else if(s.time<=45&&Math.hypot(k.x,k.z)>dangerRadius(s)*.8)return {goal:{x:0,z:0,y:0},foe,tactic:'ring'};
 
  if(s.ctf){const box=!k.item&&!k.roulette&&!s.ctf.flags.some(f=>f.carrier===k.id)?s.boxes.filter(b=>b.respawn<=0&&distance(k,b)<42).sort((a,b)=>distance(k,a)-distance(k,b))[0]:undefined;return {goal:box??flagBotGoal(s,k),foe,tactic:box?'rearm':'flag'};}
  if(pressure&&!(k.item==='pulse'&&distance(k,foe)<8)){
@@ -298,7 +302,7 @@ export function drive(s:State,k:Kart,input:Input,dt:number) {
  k.hopHeld=input.hop;
  k.vy-=21*dt;k.y+=k.vy*dt;
  const h=ground(s.config.arena,k.x,k.z,k.y+.4);if(k.y<h&&(k.y>h-1.5)){k.y=h;k.vy=0;}
- if(k.y<(s.config.arena==='castle'||s.config.arena==='crypt'?-4:-14)){damage(s,k,k.id,{cause:s.config.arena==='castle'||s.config.arena==='crypt'?'lava':'fall'});k.x=0;k.z=0;k.y=ground(s.config.arena,0,0)+1;k.vy=0;k.speed=0;k.boost=0;k.ram=0;k.vx=0;k.vz=0;k.pushX=0;k.pushZ=0;k.inv=3;emit(s,'fall',k);}
+ if(k.y<(s.config.arena==='castle'||s.config.arena==='crypt'?-4:-14)){damage(s,k,k.id,{cause:s.config.arena==='castle'||s.config.arena==='crypt'?'lava':s.config.arena==='starcore'?'reactor':'fall'});k.x=0;k.z=s.config.arena==='starcore'?80:0;k.y=ground(s.config.arena,k.x,k.z)+1;k.vy=0;k.speed=0;k.boost=0;k.ram=0;k.vx=0;k.vz=0;k.pushX=0;k.pushZ=0;k.inv=3;emit(s,'fall',k);}
  if(k.roulette>0){
   if(input.fire&&!k.fireHeld)k.rouletteStop=true;
   k.roulette=Math.max(0,k.roulette-dt);
@@ -355,7 +359,7 @@ export function advanceRicochet(s:State,p:Shot,dt:number){
   for(const k of s.karts){if((s.ball&&s.config.soccer||s.ctf)&&k.id!==p.owner&&soccerTeam(k)===soccerTeam(s.karts[p.owner]))continue;if(!k.balloons||Math.abs(k.y+.8-p.y)>1.7||(k.id===p.owner&&(p.bounces===0||p.age<.4)))continue;const dx=p.x-ox,dz=p.z-oz,t=clamp(((k.x-ox)*dx+(k.z-oz)*dz)/(dx*dx+dz*dz||1),0,1);if(Math.hypot(k.x-ox-dx*t,k.z-oz-dz*t)<1.65){damage(s,k,p.owner,{cause:'bolt',fromX:k.x-Math.sin(p.angle)*5,fromZ:k.z-Math.cos(p.angle)*5});p.life=0;break;}}
  }
 }
-export function dangerRadius(s:State){const start=(s.config.arena==='neon'||s.config.arena==='sky'?1.35:Math.SQRT2)*arenaExtent(s.config.arena);return s.time>45?start:Math.max(7,start*s.time/45);}
+export function dangerRadius(s:State){const start=(s.config.arena==='neon'||s.config.arena==='sky'?1.35:Math.SQRT2)*arenaExtent(s.config.arena);return s.time>45?start:Math.max(s.config.arena==='starcore'?76:7,start*s.time/45);}
 export function finish(s:State) {
  if(s.ball||s.ctf){const alive=s.karts.filter(k=>k.balloons>0),teams=new Set(alive.map(soccerTeam));if(teams.size>1)return;s.winningTeam=alive.length?soccerTeam(alive[0]):undefined;s.winner=alive[0]?.id??null;s.phase='finished';emit(s,'win',alive[0]??s.karts[0],{team:s.winningTeam});scoreChampionship(s);return;}
  const alive=s.karts.filter(k=>k.balloons>0);
@@ -365,10 +369,14 @@ export function step(s:State,inputs:Record<number,Input>,dt=1/60) {
  if(s.phase==='finished')return;
  s.tick++;
  if(s.phase==='countdown'){s.countdown-=dt;if(s.countdown<=0)s.phase='playing';return;}
+ const beforeReactor=reactorAt(s.config.duration-s.time);
  s.time=Math.max(0,s.time-dt);
+ const reactor=reactorAt(s.config.duration-s.time);
+ if(s.config.arena==='starcore'&&reactor.phase!==beforeReactor.phase&&reactor.phase!=='idle'&&s.karts[0])emit(s,reactor.phase==='charging'?'reactorcharge':'reactorbeam',{...s.karts[0],x:0,y:0,z:0});
  for(const b of s.boxes)b.respawn=Math.max(0,b.respawn-dt);
  for(const k of s.karts){drive(s,k,k.bot?botInput(s,k):inputs[k.id]??idle(),dt);if(k.balloons<=0)continue;
   for(const b of s.boxes)if(!k.item&&!k.roulette&&b.respawn<=0&&distance(k,b)<2.5&&Math.abs(k.y-b.y)<2){beginRoulette(s,k,b);b.respawn=6;}
+  if(s.config.arena==='starcore'&&reactor.phase==='firing'&&Math.hypot(k.x,k.z)<REACTOR.dangerRadius&&k.reactorCycle!==reactor.cycle){k.reactorCycle=reactor.cycle;damage(s,k,k.id,{cause:'reactor',fromX:0,fromZ:0});}
   if(s.time<=45&&Math.hypot(k.x,k.z)>dangerRadius(s))damage(s,k,k.id,{cause:'ring'});
  }
  collideKarts(s);stepFootball(s,dt);

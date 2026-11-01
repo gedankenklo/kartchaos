@@ -1,0 +1,17 @@
+import * as T from 'three';
+import {REACTOR,reactorAt} from './reactor';
+export class ReactorVisual extends T.Group{
+ warning:T.Mesh;beam:T.Mesh;halo:T.Mesh;shock:T.Mesh;sparks:T.InstancedMesh;light:T.PointLight;
+ constructor(){super();this.name='reactorHazard';const glow=(color:string,opacity:number)=>new T.MeshBasicMaterial({color,transparent:true,opacity,depthWrite:false,blending:T.AdditiveBlending,side:T.DoubleSide});
+ this.warning=new T.Mesh(new T.RingGeometry(REACTOR.holeRadius+.3,REACTOR.dangerRadius,128),glow('#ff9e32',.3));(this.warning.material as T.MeshBasicMaterial).blending=T.NormalBlending;(this.warning.material as T.MeshBasicMaterial).toneMapped=false;this.warning.rotation.x=-Math.PI/2;this.warning.position.y=.12;this.add(this.warning);
+ this.beam=new T.Mesh(new T.CylinderGeometry(20,25,350,64,1,true),glow('#e4ffff',.95));(this.beam.material as T.Material).dispose();this.beam.material=new T.ShaderMaterial({uniforms:{time:{value:0}},transparent:true,depthWrite:false,blending:T.AdditiveBlending,side:T.FrontSide,vertexShader:'varying vec2 beamUv;void main(){beamUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',fragmentShader:'varying vec2 beamUv;uniform float time;void main(){float streak=pow(.5+.5*sin(beamUv.x*90.+beamUv.y*14.-time*21.),6.);float band=.5+.5*sin(beamUv.y*160.-time*32.);vec3 c=mix(vec3(.02,.38,.65),vec3(.8,1.,1.),.35+streak*.5+band*.15);gl_FragColor=vec4(c,.72);\n#include <colorspace_fragment>\n}'});this.beam.position.y=147;this.add(this.beam);
+ this.halo=new T.Mesh(new T.CylinderGeometry(29,35,350,64,1,true),glow('#40eaff',.25));(this.halo.material as T.MeshBasicMaterial).side=T.FrontSide;this.halo.position.y=147;this.add(this.halo);
+ this.shock=new T.Mesh(new T.TorusGeometry(REACTOR.dangerRadius,.8,8,128),glow('#a9ffff',.7));this.shock.rotation.x=-Math.PI/2;this.shock.position.y=.3;this.add(this.shock);
+ this.sparks=new T.InstancedMesh(new T.OctahedronGeometry(1),glow('#d1ffff',.8),80);this.add(this.sparks);this.light=new T.PointLight('#61eaff',0,170,1.6);this.light.position.y=24;this.add(this.light);this.traverse(o=>{o.raycast=()=>{};});this.update(0,false);
+ }
+ update(elapsed:number,playing:boolean,reduced=false){const r=reactorAt(elapsed),charging=playing&&r.phase==='charging',firing=playing&&r.phase==='firing',t=reduced?0:elapsed;
+ this.warning.visible=charging||firing;(this.warning.material as T.MeshBasicMaterial).opacity=firing?.5:.28+r.charge*.3+(reduced?0:Math.sin(t*(5+r.charge*14))*.08);
+ (this.beam.material as T.ShaderMaterial).uniforms.time.value=t;this.beam.visible=this.halo.visible=this.shock.visible=firing;this.beam.scale.setScalar(reduced?1:1+Math.sin(t*45)*.025);this.shock.scale.setScalar(reduced?1:1+Math.sin(t*18)*.025);
+ this.sparks.visible=charging||firing;const dummy=new T.Object3D();for(let i=0;i<80;i++){const a=i*2.399+t*(charging?.35:.8),radius=charging?REACTOR.holeRadius+3*(1-r.charge):28+Math.sin(i)*5;dummy.position.set(Math.sin(a)*radius,(i*7+t*(charging?9:65))%(charging?22:210)-4,Math.cos(a)*radius);dummy.scale.setScalar(charging?.3+r.charge*.5:1.1);dummy.updateMatrix();this.sparks.setMatrixAt(i,dummy.matrix);}this.sparks.instanceMatrix.needsUpdate=true;this.light.intensity=firing?25:charging?r.charge*9:0;
+ }
+}

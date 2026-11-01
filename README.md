@@ -185,3 +185,7 @@ v1.31: dramatic sudden-death intro and synchronized recurring audio/visual warni
 
 ## v1.32 arena redesigns
 Starcore Sphere now uses normal station driving with a reactor basin and raised outer ring; its name and starcore music folder are unchanged. Glacier Slide has stronger ice sliding and connected terraces. Cinder Crypt has a new asymmetric layout and Ember Keep-style animated lava. Starfall Citadels has tiered towers, elevated crossings and a surrounding space battle.
+
+
+## v1.33 connected Crypt and reactor hazard
+Cinder Crypt now has a continuous outer route, four ramp-and-bridge approaches across a lava moat, and two connected summit ramps. Starcore Sphere has an open reactor shaft and a periodic superlaser: five seconds of warning followed by a two-second blast. Keep clear of the marked central danger zone. Both names and music folders are unchanged.
