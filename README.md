@@ -160,3 +160,13 @@ v1.26: restored kart self-shadows, interpolated display poses and solid beach pa
 
 
 v1.27: final-duel aggression, Yard turbo use and held-item pop/jiggle.
+
+
+# KART CHAOS 64 — v1.28 Tide Depot pirate Capture the Flag
+
+Upload these contents into your existing GitHub repository root, merging folders. Keep existing MP3s. Commit and let Render rebuild with the current settings. Both client and server source must be updated together.
+
+Tide Depot keeps its name and public/music/depot soundtrack folder. The arena is rebuilt as a 232-metre pirate cove: blue and orange forts, tropical palms, sailing boats, an inlet with three bridge crossings, long approaches and elevated flank lookouts. Both art styles and day/night variants remain.
+
+
+Capture the enemy flag and return it to your base while your flag is home. Captures pop rival balloons; hits and Turbo Juice drop the flag. Team victory rules apply.

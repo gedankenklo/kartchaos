@@ -20,7 +20,7 @@ const TRACK_NAMES:Record<Arena,string[]>={fortress:['Courtyard Club','Ramp Rally
 export const MUSIC_TRACKS=ARENA_IDS.flatMap(arena=>TRACK_NAMES[arena].map((title,variant)=>{const base=MUSIC_THEMES[arena],pattern=variant===0?[...base.pattern,...base.pattern.slice().reverse()]:variant===1?[0,7,4,12,9,4,7,2,5,9,12,7,4,2,7,0]:[0,3,7,12,10,7,5,3,0,7,10,14,12,7,3,5];return {...base,id:arena+'-'+variant,arena,title,variant,root:base.root+(variant===1?2:variant===2?-2:0),bpm:base.bpm+(variant===1?8:variant===2?-8:0),pattern};}));
 export function selectMusicScene(playing:boolean,paused:boolean,arena:Arena):MusicScene{return !playing?'title':paused?'pause':arena;}
 function generatedArena(scene:MusicScene):Arena{return scene==='title'?'fortress':scene==='pause'?'sky':scene;}
-export function combatSound(event:{type:string;blocked?:boolean;cause?:string}){return event.type==='hit'&&event.blocked?'shieldhit':event.type==='hit'&&event.cause==='mine'?'mineblast':event.type==='boost'&&event.cause==='ram'?'turbo':event.type;}
+export function combatSound(event:{type:string;blocked?:boolean;cause?:string}){return event.type==='flag'?'pickup':event.type==='hit'&&event.blocked?'shieldhit':event.type==='hit'&&event.cause==='mine'?'mineblast':event.type==='boost'&&event.cause==='ram'?'turbo':event.type;}
 export type AudioChannel='music'|'engine'|'effects';
 export function normalizedVolume(value:number){return Number.isFinite(value)?clamp(value,0,1):0;}
 export class Sound {

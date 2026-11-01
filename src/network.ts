@@ -1,7 +1,7 @@
 import {drive,type Config,type Input,type State} from './sim';
 // Prediction may move a local kart, but only authority may publish event IDs.
 // Otherwise a predicted crash/fall can advance the UI past a later real hit.
-export function predictDrive(state:State,id:number,input:Input,dt:number){const events=state.events,serial=state.serial;state.events=[];try{drive(state,state.karts[id],input,dt);}finally{state.events=events;state.serial=serial;}}
+export function predictDrive(state:State,id:number,input:Input,dt:number){const events=state.events,serial=state.serial,ctf=state.ctf;if(ctf)state.ctf=structuredClone(ctf);state.events=[];try{drive(state,state.karts[id],input,dt);}finally{state.events=events;state.serial=serial;state.ctf=ctf;}}
 export interface RoomInfo {code:string; host:boolean; peers:{name:string;count:number;drivers?:number[];ready:boolean;connected:boolean}[]; config:Config;}
 export class Network {
  socket:WebSocket|null=null;state:State|null=null;room:RoomInfo|null=null;ids:number[]=[];seq=0;pending:{seq:number;inputs:Record<number,Input>}[]=[]; token='';code='';url='';status='';retries=0;closed=true;onChange:()=>void=()=>{};onState:()=>void=()=>{};timer:ReturnType<typeof setTimeout>|null=null;

@@ -1,0 +1,10 @@
+import {World} from '../src/render';
+import {createState,useItem} from '../src/sim';
+import {FLAG_BASES,stepFlags} from '../src/captureFlag';
+const canvas=document.querySelector<HTMLCanvasElement>('#game')!,world=new World(canvas),s=createState({arena:'depot',humans:2,bots:2,duration:300,difficulty:'normal'});s.phase='playing';s.lighting='day';let overview=true,last=performance.now();s.karts.forEach((k,i)=>Object.assign(k,{team:i%2?'orange':'blue',x:i%2?75:-75,z:i*9-12,y:0,bot:false}));const k=s.karts[0];world.build('depot');
+document.querySelector('#overview')!.addEventListener('click',()=>overview=!overview);
+document.querySelector('#take')!.addEventListener('click',()=>{const f=s.ctf!.flags[1];Object.assign(f,{...FLAG_BASES.orange,carrier:null,home:true,lock:0});Object.assign(k,FLAG_BASES.orange);k.ram=0;s.ctf!.cooldown=0;stepFlags(s,0);});
+document.querySelector('#drop')!.addEventListener('click',()=>{k.item='boost';useItem(s,k);});
+document.querySelector('#capture')!.addEventListener('click',()=>{const c=s.ctf!;Object.assign(c.flags[0],{...FLAG_BASES.blue,home:true,carrier:null});Object.assign(c.flags[1],{carrier:0,home:false});Object.assign(k,FLAG_BASES.blue);c.cooldown=0;stepFlags(s,0);});
+document.querySelector('#style')!.addEventListener('click',()=>world.setArtTrial(!world.artTrial));
+function frame(now:number){const dt=Math.min(.05,(now-last)/1000);last=now;world.sync(s,dt,now/1000);world.render(s,[0],!overview,new DOMRect(0,0,innerWidth,innerHeight),now/1000,dt,false);document.querySelector('#status')!.textContent='Blue '+s.ctf!.scores[0]+' : '+s.ctf!.scores[1]+' Orange · '+s.ctf!.flags.map(f=>f.team+': '+(f.home?'home':f.carrier!==null?'carried':'dropped')).join(' · ');requestAnimationFrame(frame);}requestAnimationFrame(frame);

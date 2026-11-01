@@ -7,7 +7,7 @@ export const ARENAS:Record<Arena,{name:string;size:string;scale:number;height:nu
  sky:{name:'Sky Platforms',size:'L · 138 M',scale:2.15,height:1,extent:37,note:'Open skies. Broad bridges. Dangerous edges.',icon:'☁'},
  neon:{name:'Neon Bowl',size:'L · 148 M',scale:2,height:1.25,extent:37,note:'Open rim. Wide banking. Watch the drop.',icon:'◎'},
  yard:{name:'Copper Yard',size:'S · 85 M',scale:1.25,height:1,extent:34,note:'Compact crossfire with room to powerslide.',icon:'▦'},
- depot:{name:'Tide Depot',size:'M · 136 M',scale:1.7,height:1.25,extent:40,note:'Raised piers, long ramps and broad channels.',icon:'≋'},
+ depot:{name:'Tide Depot',size:'L · 232 M',scale:2,height:1,extent:58,note:'Pirate forts. Steal their flag. Bring it home.',icon:'⚑'},
  quarry:{name:'Rift Quarry',size:'L · 208 M',scale:2,height:1.4,extent:52,note:'Three terraces. Wide valleys. Big ambushes.',icon:'▲'},
  castle:{name:'Ember Keep',size:'XL · 240 M',scale:2,height:1.2,extent:60,note:'Dark stone. Broad causeways. Open lava pits.',icon:'♜'},
  beach:{name:'Sunbreak Beach',size:'XL · 248 M',scale:2,height:1,extent:62,note:'Sweeping sand, boardwalks and a sunset coast.',icon:'☀'},
@@ -22,7 +22,11 @@ export interface Block {x:number;z:number;width:number;depth:number;height:numbe
 export interface Expansion {floor:string;alternate:string;wall:string;blocks:Block[];ramps:Ramp[];items:{x:number;z:number}[];}
 export const EXPANSIONS:Record<'yard'|'depot'|'quarry'|'castle'|'beach'|'stadium'|'foundry'|'harbour'|'ruins',Expansion>={
  yard:{floor:'#d4bda1',alternate:'#cbb291',wall:'#b7825e',blocks:[-1,1].flatMap(x=>[-1,1].map(z=>({x:x*15,z:z*15,width:7,depth:10,height:3.4,color:x===z?'#bd7957':'#849d9b'}))),ramps:[],items:[{x:0,z:0},{x:0,z:22},{x:0,z:-22},{x:22,z:0},{x:-22,z:0},{x:25,z:25},{x:-25,z:25},{x:25,z:-25},{x:-25,z:-25}]},
- depot:{floor:'#acced0',alternate:'#9fbfc3',wall:'#75959f',blocks:[{x:-20,z:-5,width:14,depth:30,height:4,driveable:true,color:'#789cb0'},{x:20,z:5,width:14,depth:30,height:4,driveable:true,color:'#d8ad86'}],ramps:[{axis:'z',from:-30,to:-20,cross:-20,width:8,bottom:0,top:4},{axis:'z',from:20,to:10,cross:-20,width:8,bottom:0,top:4},{axis:'z',from:-20,to:-10,cross:20,width:8,bottom:0,top:4},{axis:'z',from:30,to:20,cross:20,width:8,bottom:0,top:4}],items:[{x:0,z:0},{x:0,z:28},{x:0,z:-28},{x:-20,z:-5},{x:20,z:5},{x:-33,z:0},{x:33,z:0},{x:-30,z:32},{x:30,z:-32}]},
+ depot:{floor:'#d6bf91',alternate:'#ccb582',wall:'#8f7654',blocks:[
+ ...[-30,0,30].map(z=>({x:0,z,width:14,depth:z===0?18:12,height:2.5,driveable:true,color:'#9f7951'})),
+ ...[-1,1].flatMap(sign=>[-1,1].map(side=>({x:sign*45,z:side*23,width:9,depth:9,height:8,color:sign<0?'#6f98ad':'#bd8563'}))),
+ ...[-1,1].map(sign=>({x:sign*34,z:42,width:20,depth:12,height:5,driveable:true,color:'#a5906d'}))
+ ],ramps:[...[-30,0,30].flatMap(cross=>[-1,1].map(sign=>({axis:'x' as const,from:sign*19,to:sign*7,cross,width:cross===0?18:12,bottom:0,top:2.5}))),...[-1,1].map(sign=>({axis:'z' as const,from:18,to:36,cross:sign*34,width:10,bottom:0,top:5}))],items:[{x:-40,z:0},{x:40,z:0},{x:0,z:0},{x:0,z:30},{x:0,z:-30},{x:-25,z:18},{x:25,z:-18},{x:-34,z:42},{x:34,z:42},{x:-28,z:-43},{x:28,z:-43}]},
  quarry:{floor:'#dfc39b',alternate:'#d6b589',wall:'#b88665',blocks:[{x:-26,z:-24,width:24,depth:18,height:5,driveable:true,color:'#be8b70'},{x:26,z:-12,width:18,depth:34,height:7,driveable:true,color:'#b17c68'},{x:-12,z:28,width:34,depth:18,height:4.5,driveable:true,color:'#cc9e79'},{x:5,z:-41,width:8,depth:10,height:5,color:'#b4836b'},{x:39,z:38,width:8,depth:10,height:6,color:'#bb8c71'},{x:-41,z:2,width:8,depth:8,height:5,color:'#c39474'}],ramps:[{axis:'x',from:-5,to:-14,cross:-24,width:8,bottom:0,top:5},{axis:'z',from:-3,to:-15,cross:-26,width:8,bottom:0,top:5},{axis:'x',from:7,to:17,cross:-12,width:8,bottom:0,top:7},{axis:'z',from:25,to:5,cross:26,width:8,bottom:0,top:7},{axis:'z',from:5,to:19,cross:-12,width:9,bottom:0,top:4.5},{axis:'x',from:18,to:5,cross:28,width:8,bottom:0,top:4.5}],items:[{x:0,z:0},{x:-26,z:-24},{x:26,z:-12},{x:-12,z:28},{x:-42,z:30},{x:42,z:-30},{x:0,z:43},{x:-6,z:-43},{x:42,z:0},{x:-43,z:-30},{x:12,z:7}]},
  castle:{floor:'#555363',alternate:'#4b495a',wall:'#34313e',blocks:[...[-1,1].flatMap(x=>[-1,1].map(z=>({x:x*46,z:z*44,width:10,depth:10,height:10,color:'#454052'}))),{x:0,z:40,width:26,depth:16,height:6,driveable:true,color:'#625869'},{x:0,z:-43,width:22,depth:12,height:4,driveable:true,color:'#504b61'}],ramps:[{axis:'z',from:15,to:32,cross:0,width:12,bottom:0,top:6},{axis:'z',from:-19,to:-37,cross:0,width:10,bottom:0,top:4}],items:[{x:0,z:0},{x:0,z:40},{x:0,z:-43},{x:40,z:0},{x:-40,z:0},{x:44,z:23},{x:-44,z:-23},{x:23,z:42},{x:-23,z:-42},{x:0,z:17},{x:0,z:-20},{x:46,z:-20}]},
  beach:{floor:'#e6c99a',alternate:'#dec08c',wall:'#b39d80',blocks:[{x:-28,z:-22,width:26,depth:18,height:3,driveable:true,color:'#b58d65'},{x:28,z:22,width:28,depth:18,height:3,driveable:true,color:'#be9870'},{x:30,z:-30,width:9,depth:8,height:2.5,color:'#a9aba0'},{x:-33,z:32,width:10,depth:8,height:2.8,color:'#b1a594'}],ramps:[{axis:'x',from:-3,to:-15,cross:-22,width:12,bottom:0,top:3},{axis:'x',from:2,to:14,cross:22,width:12,bottom:0,top:3}],items:[{x:0,z:0},{x:-28,z:-22},{x:28,z:22},{x:-43,z:0},{x:43,z:0},{x:0,z:42},{x:0,z:-42},{x:-42,z:-43},{x:42,z:43},{x:40,z:-9},{x:-40,z:9},{x:-12,z:42},{x:12,z:-42}]},
@@ -76,7 +80,7 @@ export const isExpansion=(arena:Arena):arena is keyof typeof EXPANSIONS=>arena==
 export function expansionHeight(arena:keyof typeof EXPANSIONS,x:number,z:number):number {
  if(Math.abs(x)>ARENAS[arena].extent||Math.abs(z)>ARENAS[arena].extent)return -40;
  if(arena==='castle'&&lavaAt(x,z)||arena==='ruins'&&ruinsRavineAt(x,z))return -40;
- const layout=EXPANSIONS[arena];let height=0;
+ const layout=EXPANSIONS[arena];let height=arena==='depot'&&Math.abs(x)<7?-40:0;
  for(const b of layout.blocks)if(Math.abs(x-b.x)<=b.width/2&&Math.abs(z-b.z)<=b.depth/2)height=Math.max(height,b.height);
  for(const r of layout.ramps){const h=rampHeight(r,x,z);if(h!==undefined)height=Math.max(height,h);}
  return height;
@@ -84,6 +88,7 @@ export function expansionHeight(arena:keyof typeof EXPANSIONS,x:number,z:number)
 export function expansionNav(arena:keyof typeof EXPANSIONS):{x:number;z:number}[]{
  const e=ARENAS[arena].extent,points:{x:number;z:number}[]=[{x:0,z:0}],layout=EXPANSIONS[arena];
  for(const fx of [-.8,-.45,0,.45,.8])for(const fz of [-.8,-.45,0,.45,.8]){const x=fx*e,z=fz*e;if(expansionHeight(arena,x,z)>=0&&expansionHeight(arena,x,z)<.05)points.push({x,z});}
+ if(arena==='depot')for(const x of [-52,-34,-20,20,34,52])for(const z of [-52,-36,-12,0,12,36,52])if(expansionHeight(arena,x,z)===0)points.push({x,z});
  for(const b of layout.blocks)if(b.driveable){points.push({x:b.x,z:b.z});for(const sx of [-1,1])for(const sz of [-1,1])points.push({x:b.x+sx*(b.width/2-2),z:b.z+sz*(b.depth/2-2)});}
  for(const r of layout.ramps){points.push(r.axis==='x'?{x:r.from,z:r.cross}:{x:r.cross,z:r.from},r.axis==='x'?{x:r.to,z:r.cross}:{x:r.cross,z:r.to});}
  return points;
