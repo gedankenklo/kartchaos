@@ -1,5 +1,5 @@
 import {newRoundStats,statsFor,type RoundStats} from './matchStats';
-import {createFootball,stepFootball,soccerTeam,assignSoccerTeams,soccerBotGoal,type Football} from './football';
+import {createFootball,stepFootball,soccerTeam,assignSoccerTeams,type Football} from './football';
 import {createChampionship,scoreChampionship,type Championship} from './championship';
 // Shared by browser and authoritative server. All distances are metres, time seconds.
 import {FORT,fortressSolidHeight,skyHeight,neonHeight,FORT_BRIDGES,FORT_RAMPS} from './terrain';
@@ -23,7 +23,7 @@ export interface Kart {team?:'blue'|'orange';stats?:RoundStats;id:number; driver
 export interface Shot {id:number; owner:number; kind:'bolt'|'seeker'|'mine'; x:number; z:number; y:number; angle:number; life:number; age?:number; bounces?:number; }
 export interface Box {x:number; z:number; y:number; respawn:number;}
 export type HitCause='bolt'|'seeker'|'mine'|'ram'|'pulse'|'fall'|'lava'|'ring'|'timeout'|'goal';
-export interface Event {ownGoal?:boolean;id:number; type:'goal'|'eliminated'|'hit'|'fire'|'pickup'|'boost'|'win'|'fall'|'bump'|'itemready'|'shockwave'|'crash'|'ricochet'; x:number; y:number; z:number; player:number;source?:number;blocked?:boolean;remaining?:number;cause?:HitCause;fromX?:number;fromZ?:number;team?:'blue'|'orange';}
+export interface Event {impact?:number;contact?:'kick'|'bounce';ownGoal?:boolean;id:number; type:'ballcontact'|'goal'|'eliminated'|'hit'|'fire'|'pickup'|'boost'|'win'|'fall'|'bump'|'itemready'|'shockwave'|'crash'|'ricochet'; x:number; y:number; z:number; player:number;source?:number;blocked?:boolean;remaining?:number;cause?:HitCause;fromX?:number;fromZ?:number;team?:'blue'|'orange';}
 export interface Config {soccer?:boolean;arena:Arena; humans:number; bots:number; difficulty:'easy'|'normal'|'hard'; duration:number;speedClass?:50|100|150;drivers?:number[];shuffleMaps?:boolean;mapQueue?:Arena[];championship?:boolean;}
 export interface State {winningTeam?:'blue'|'orange';config:Config; championship?:Championship; ball?:Football; karts:Kart[]; shots:Shot[]; boxes:Box[]; time:number; countdown:number; phase:'countdown'|'playing'|'finished'; winner:number|null; tick:number; seed:number; serial:number; events:Event[];}
 export const clamp=(v:number,a:number,b:number)=>Math.max(a,Math.min(b,v));
@@ -169,7 +169,6 @@ export function botGoal(s:State,k:Kart){
  const enemies=s.karts.filter(o=>o.id!==k.id&&o.balloons>0&&(!s.ball||!s.config.soccer||soccerTeam(o)!==soccerTeam(k))).sort((a,b)=>(distance(k,a)+Math.abs(k.y-a.y)*3-(3-a.balloons)*6)-(distance(k,b)+Math.abs(k.y-b.y)*3-(3-b.balloons)*6));const foe=enemies[0];if(!foe)return {goal:k,foe:k,tactic:'idle'};
  const close=enemies.reduce((a,b)=>distance(k,a)<distance(k,b)?a:b),fragile=k.balloons===1&&!k.shield,pressure=fragile&&distance(k,close)<26;
  if(s.time<=45&&Math.hypot(k.x,k.z)>dangerRadius(s)*.8)return {goal:{x:0,z:0,y:0},foe,tactic:'ring'};
- if(s.ball&&s.config.soccer)return {goal:soccerBotGoal(s,k),foe,tactic:'soccer'};
 
  if(pressure&&!(k.item==='pulse'&&distance(k,foe)<8)){
   const cached=retreatGoals.get(k);if(cached&&s.tick-cached.tick<30)return {goal:cached.goal,foe,tactic:'retreat'};
@@ -201,12 +200,12 @@ export function botInput(s:State,k:Kart):Input {
  const travel=Math.hypot(k.vx,k.vz)>2?Math.atan2(k.vx,k.vz):k.angle,look=Math.max(3,Math.abs(k.speed)*.55);
  const aheadX=k.x+Math.sin(travel)*look,aheadZ=k.z+Math.cos(travel)*look;
  const unsafe=!clearPath(s.config.arena,k,{x:aheadX,z:aheadZ,y:ground(s.config.arena,aheadX,aheadZ,k.y+.35)});
- const cruise=tactic==='soccer'&&s.ball&&distance(k,s.ball)<18?.65/scale:hazardMap?.7/Math.sqrt(scale):pace,corner=clamp(1-Math.abs(error)*.85,.1,1);
+ const cruise=hazardMap?.7/Math.sqrt(scale):pace,corner=clamp(1-Math.abs(error)*.85,.1,1);
  const throttle=Math.min(pace,cruise,corner,unsafe?.13:1,edge?.1:1),desiredSpeed=20*scale*throttle;
  const braking=k.speed>desiredSpeed+2&&(unsafe||Math.abs(error)>.65);
  const boostSafe=clearPath(s.config.arena,k,{x:k.x+Math.sin(k.angle)*31*scale*2.1,z:k.z+Math.cos(k.angle)*31*scale*2.1,y:k.y});
  const fire=!!k.item&&(k.item==='shield'&&(range<24||k.balloons===1)||k.item==='boost'&&boostSafe&&!unsafe&&Math.abs(error)<.25&&(tactic==='retreat'||aim<.45&&range<38&&visible)||k.item==='mine'&&range<14&&(aim>1.6||tactic==='retreat')||k.item==='pulse'&&range<8&&sameLevel||(k.item==='bolt'||k.item==='seeker')&&visible&&sameLevel&&aim<(k.item==='seeker'?.85:.25)&&range<50);
- return {gas:braking?-1:throttle,steer:clamp(error*1.8,-1,1),drift:tactic!=='soccer'&&!hazardMap&&!unsafe&&Math.abs(error)>.5&&Math.abs(error)<1.2&&Math.abs(k.speed)>10,hop:false,fire};
+ return {gas:braking?-1:throttle,steer:clamp(error*1.8,-1,1),drift:!hazardMap&&!unsafe&&Math.abs(error)>.5&&Math.abs(error)<1.2&&Math.abs(k.speed)>10,hop:false,fire};
 }
 export function drive(s:State,k:Kart,input:Input,dt:number) {
  if(k.balloons<=0)return;

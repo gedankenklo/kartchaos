@@ -20,7 +20,7 @@ export class Network {
     this.onState();
    }
   };
-  ws.onclose=()=>{clearTimeout(timeout);if(this.closed)return;this.status='Connection lost. Reconnecting…';this.onChange();if(this.token&&this.retries++<6)this.timer=setTimeout(()=>this.open('resume',count,config),Math.min(4000,600*this.retries));else {this.status='Server unavailable. Check the address or start the included Node server.';this.onChange();}};
+  ws.onclose=()=>{clearTimeout(timeout);if(this.closed)return;this.status='Connection lost. Reconnecting…';this.onChange();if(this.token&&this.retries++<6)this.timer=setTimeout(()=>this.open('resume',count,config),Math.min(4000,600*this.retries));else {this.status='The game server is unavailable. It may be waking up; please try again in a moment.';this.onChange();}};
   ws.onerror=()=>{};
  }
  send(m:unknown){if(this.socket?.readyState===WebSocket.OPEN)this.socket.send(JSON.stringify(m));}
