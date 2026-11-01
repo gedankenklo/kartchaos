@@ -1,9 +1,9 @@
 import {ruinsRavineAt} from './newArenaRules';
-import {rampHeight,type Ramp} from './terrain';
+import {FORT,rampHeight,type Ramp} from './terrain';
 export type Arena='fortress'|'sky'|'neon'|'yard'|'depot'|'quarry'|'castle'|'beach'|'stadium'|'foundry'|'harbour'|'ruins';
 export const ARENA_IDS:Arena[]=['fortress','sky','neon','yard','depot','quarry','castle','beach','stadium','foundry','harbour','ruins'];
 export const ARENAS:Record<Arena,{name:string;size:string;scale:number;height:number;extent:number;note:string;icon:string}>={
- fortress:{name:'The Fortress',size:'XL · 269 M',scale:2.4,height:1.5,extent:56,note:'Four blocks. Three floors. Endless escapes.',icon:'⚑'},
+ fortress:{name:'The Fortress',size:'XL · 307 M',scale:2.4,height:1.5,extent:FORT.extent,note:'Four blocks. Three floors. Endless escapes.',icon:'⚑'},
  sky:{name:'Sky Platforms',size:'L · 138 M',scale:2.15,height:1,extent:37,note:'Open skies. Broad bridges. Dangerous edges.',icon:'☁'},
  neon:{name:'Neon Bowl',size:'L · 148 M',scale:2,height:1.25,extent:37,note:'Open rim. Wide banking. Watch the drop.',icon:'◎'},
  yard:{name:'Copper Yard',size:'S · 85 M',scale:1.25,height:1,extent:34,note:'Compact crossfire with room to powerslide.',icon:'▦'},

@@ -144,3 +144,5 @@ Version 1.19: Neon rim markers are solid shared-shape bumpers for karts and rico
 Version 1.20: all six held items have small 3D models behind and beside each kart, visible to rivals after roulette settles. Existing item HUD is unchanged. Displays clear on use/elimination/results and respect reduced motion. Fortress upper bridge outer edges align with upper platform edges; underpasses and ramp bypass lanes remain clear.
 
 Version 1.21: Foundry conveyors push at 10 m/s instead of 3.5 m/s. Stripe motion matches their physical velocity. Both directions, all speed classes and airborne isolation are checked.
+
+Version 1.22: Fortress extent grows to 64 layout units (307 m across), adding 19.2 m of ground on every side around the existing blocks and ramps. Pines follow the shared boundary and keep their canopies outside.
