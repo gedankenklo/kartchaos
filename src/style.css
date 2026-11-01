@@ -58,3 +58,11 @@
 .team-guide{position:absolute;top:100px;left:18px;display:flex;align-items:center;gap:8px;max-width:90%;padding:8px 12px;border-left:4px solid var(--team);border-radius:5px;background:#182336df;color:#fff5df;font-size:11px;letter-spacing:.05em}.team-guide strong{color:var(--team)}.team-guide span{font-size:25px;color:var(--team)}.split-screen .team-guide{top:40px;font-size:9px;padding:5px 8px}
 
 .team-guide{top:auto;bottom:110px;left:50%;transform:translateX(-50%);white-space:nowrap}.split-screen .team-guide{top:auto;bottom:95px}.team-guide strong{white-space:nowrap}@media(max-width:640px){.team-guide{bottom:115px;font-size:9px;padding:5px 7px;gap:5px}}
+
+/* Stack shared match notices so scores, danger warnings and hit feedback cannot overlap. */
+.match-notices{position:fixed;top:116px;left:50%;transform:translateX(-50%);z-index:38;display:flex;flex-direction:column;align-items:center;gap:8px;width:max-content;max-width:calc(100vw - 24px);pointer-events:none}
+.match-notices .goal-score,.match-notices .danger-text,.match-notices .battle-feedback{position:static;transform:none;max-width:100%;margin:0}
+.match-notices .danger-text{white-space:normal;text-align:center}
+.match-notices .battle-feedback{width:100%}
+.match-notices>:empty{display:none}
+@media(max-width:650px){.match-notices{top:106px;gap:6px}}
