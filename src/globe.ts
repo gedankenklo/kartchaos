@@ -1,0 +1,10 @@
+import * as T from 'three';
+export const GLOBE_RADIUS=120;
+type Point={x:number;z:number;orb?:boolean};
+export function globeFrame(p:Point){const lon=p.x/GLOBE_RADIUS,lat=p.z/GLOBE_RADIUS;return {up:new T.Vector3(Math.sin(lon)*Math.cos(lat),Math.cos(lon)*Math.cos(lat),Math.sin(lat)),east:new T.Vector3(Math.cos(lon),-Math.sin(lon),0),north:new T.Vector3(-Math.sin(lon)*Math.sin(lat),-Math.cos(lon)*Math.sin(lat),Math.cos(lat))};}
+export function globeDistance(a:Point,b:Point){return Math.acos(Math.max(-1,Math.min(1,globeFrame(a).up.dot(globeFrame(b).up))))*GLOBE_RADIUS;}
+export function globeDelta(a:Point,b:Point){const f=globeFrame(a),up=globeFrame(b).up,d=globeDistance(a,b),t=up.addScaledVector(f.up,-up.dot(f.up));if(t.length()<1e-8)t.copy(f.north);t.normalize().multiplyScalar(d);return {x:t.dot(f.east),z:t.dot(f.north)};}
+export function advanceGlobe(p:Point,dx:number,dz:number,angle=0){const f=globeFrame(p),length=Math.hypot(dx,dz);if(length<1e-9)return {x:p.x,z:p.z,angle};const tangent=f.east.clone().multiplyScalar(dx).addScaledVector(f.north,dz).normalize(),next=f.up.clone().multiplyScalar(Math.cos(length/GLOBE_RADIUS)).addScaledVector(tangent,Math.sin(length/GLOBE_RADIUS)).normalize(),q=new T.Quaternion().setFromUnitVectors(f.up,next),forward=f.east.clone().multiplyScalar(Math.sin(angle)).addScaledVector(f.north,Math.cos(angle)).applyQuaternion(q),point={x:Math.atan2(next.x,next.y)*GLOBE_RADIUS,z:Math.asin(Math.max(-1,Math.min(1,next.z)))*GLOBE_RADIUS},nf=globeFrame(point);return {...point,angle:Math.atan2(forward.dot(nf.east),forward.dot(nf.north))};}
+export function globeHeight(x:number,z:number){const d=globeDistance({x,z},{x:105,z:30});return d<27?-10*Math.pow(1-(d/27)**2,2):0;}
+export function globePosition(p:Point,y=0){return globeFrame(p).up.multiplyScalar(GLOBE_RADIUS+y).add(new T.Vector3(0,-GLOBE_RADIUS,0));}
+export function globeQuaternion(p:Point){const f=globeFrame(p);return new T.Quaternion().setFromRotationMatrix(new T.Matrix4().makeBasis(f.east,f.up,f.north));}

@@ -1,8 +1,14 @@
+import {starfallWalkable,cryptLavaAt} from './extraArenaRules';
 import {ruinsRavineAt} from './newArenaRules';
 import {FORT,rampHeight,type Ramp} from './terrain';
-export type Arena='fortress'|'sky'|'neon'|'yard'|'depot'|'quarry'|'castle'|'beach'|'stadium'|'foundry'|'harbour'|'ruins';
-export const ARENA_IDS:Arena[]=['fortress','sky','neon','yard','depot','quarry','castle','beach','stadium','foundry','harbour','ruins'];
+export type Arena='fortress'|'sky'|'neon'|'yard'|'depot'|'quarry'|'castle'|'beach'|'stadium'|'foundry'|'harbour'|'ruins'|'starfall'|'glacier'|'crypt'|'starcore';
+export const ARENA_IDS:Arena[]=['fortress','sky','neon','yard','depot','quarry','castle','beach','stadium','foundry','harbour','ruins','starfall','glacier','crypt','starcore'];
 export const ARENAS:Record<Arena,{name:string;size:string;scale:number;height:number;extent:number;note:string;icon:string}>={
+ starfall:{name:'Starfall Citadels',size:'XXL · 442 M',scale:2.4,height:1.5,extent:92,note:'Space CTF. Twin citadels. Three routes above a planet.',icon:'✦'},
+ glacier:{name:'Glacier Slide',size:'XL · 280 M',scale:2,height:1.4,extent:70,note:'Full ice. Sliding bowls. Frozen ridges.',icon:'❅'},
+ crypt:{name:'Cinder Crypt',size:'XL · 264 M',scale:2,height:1.6,extent:66,note:'Haunted battlements. Lava moats. Crumbling crypts.',icon:'☠'},
+ starcore:{name:'Starcore Sphere',size:'GLOBE · 754 M',scale:1,height:1,extent:Math.PI*120,note:'Drive all around a battle globe. Dip into the reactor dish.',icon:'◉'},
+
  fortress:{name:'The Fortress',size:'XL · 307 M',scale:2.4,height:1.5,extent:FORT.extent,note:'Four blocks. Three floors. Endless escapes.',icon:'⚑'},
  sky:{name:'Sky Platforms',size:'L · 138 M',scale:2.15,height:1,extent:37,note:'Open skies. Broad bridges. Dangerous edges.',icon:'☁'},
  neon:{name:'Neon Bowl',size:'L · 148 M',scale:2,height:1.25,extent:37,note:'Open rim. Wide banking. Watch the drop.',icon:'◎'},
@@ -20,7 +26,11 @@ export const LAVA_PITS=[-1,1].flatMap(x=>[-1,1].map(z=>({x:x*23,z:z*21,width:18,
 export function lavaAt(x:number,z:number){return LAVA_PITS.some(p=>Math.abs(x-p.x)<p.width/2&&Math.abs(z-p.z)<p.depth/2);}
 export interface Block {x:number;z:number;width:number;depth:number;height:number;driveable?:boolean;color:string;}
 export interface Expansion {floor:string;alternate:string;wall:string;blocks:Block[];ramps:Ramp[];items:{x:number;z:number}[];}
-export const EXPANSIONS:Record<'yard'|'depot'|'quarry'|'castle'|'beach'|'stadium'|'foundry'|'harbour'|'ruins',Expansion>={
+export const EXPANSIONS:Record<'yard'|'depot'|'quarry'|'castle'|'beach'|'stadium'|'foundry'|'harbour'|'ruins'|'starfall'|'glacier'|'crypt',Expansion>={
+ starfall:{floor:'#596278',alternate:'#626b83',wall:'#303749',blocks:[...[-1,1].flatMap(sign=>[-1,1].map(side=>({x:sign*76,z:side*22,width:14,depth:14,height:24,color:sign<0?'#647db0':'#a16f88'}))),...[-1,1].map(sign=>({x:sign*60,z:24,width:16,depth:14,height:5,driveable:true,color:'#7c7c9b'}))],ramps:[...[-1,1].map(sign=>({axis:'z' as const,from:0,to:17,cross:sign*60,width:10,bottom:0,top:5}))],items:[{x:0,z:0},{x:0,z:28},{x:0,z:-28},{x:-35,z:0},{x:35,z:0},{x:-60,z:24},{x:60,z:24},{x:-75,z:0},{x:75,z:0},{x:-35,z:-12},{x:35,z:12}]},
+ glacier:{floor:'#a7d6e4',alternate:'#bbdfe9',wall:'#537e9c',blocks:[{x:0,z:0,width:24,depth:24,height:3,driveable:true,color:'#d4edf1'},...[-1,1].map(sign=>({x:sign*43,z:sign*27,width:16,depth:38,height:7,driveable:true,color:'#7caabd'})),...[-1,1].map(sign=>({x:sign*24,z:-sign*43,width:10,depth:10,height:6,color:'#82afc5'}))],ramps:[{axis:'x',from:-28,to:-12,cross:0,width:14,bottom:0,top:3},{axis:'x',from:28,to:12,cross:0,width:14,bottom:0,top:3},...[-1,1].map(sign=>({axis:'z' as const,from:-sign*10,to:sign*8,cross:sign*43,width:12,bottom:0,top:7}))],items:[{x:0,z:0},{x:-43,z:-27},{x:43,z:27},{x:-48,z:46},{x:48,z:-46},{x:0,z:48},{x:0,z:-48},{x:-28,z:28},{x:28,z:-28},{x:-52,z:0},{x:52,z:0}]},
+ crypt:{floor:'#51475e',alternate:'#62526b',wall:'#302b40',blocks:[...[-1,1].flatMap(sign=>[-1,1].map(side=>({x:sign*49,z:side*49,width:14,depth:14,height:16,color:'#49445f'}))),{x:0,z:-41,width:40,depth:18,height:7,driveable:true,color:'#76607e'},{x:0,z:42,width:34,depth:18,height:4,driveable:true,color:'#695b76'},{x:0,z:0,width:14,depth:40,height:3,driveable:true,color:'#8b7787'}],ramps:[{axis:'z',from:-12,to:-32,cross:0,width:14,bottom:3,top:7},{axis:'z',from:27,to:33,cross:0,width:12,bottom:0,top:4},{axis:'x',from:-25,to:-7,cross:0,width:12,bottom:0,top:3},{axis:'x',from:25,to:7,cross:0,width:12,bottom:0,top:3}],items:[{x:0,z:0},{x:0,z:-41},{x:0,z:42},{x:-45,z:0},{x:45,z:0},{x:-28,z:-40},{x:28,z:40},{x:-45,z:47},{x:45,z:-47},{x:-28,z:0},{x:28,z:0}]},
+
  yard:{floor:'#d4bda1',alternate:'#cbb291',wall:'#b7825e',blocks:[-1,1].flatMap(x=>[-1,1].map(z=>({x:x*15,z:z*15,width:7,depth:10,height:3.4,color:x===z?'#bd7957':'#849d9b'}))),ramps:[],items:[{x:0,z:0},{x:0,z:22},{x:0,z:-22},{x:22,z:0},{x:-22,z:0},{x:25,z:25},{x:-25,z:25},{x:25,z:-25},{x:-25,z:-25}]},
  depot:{floor:'#d6bf91',alternate:'#ccb582',wall:'#8f7654',blocks:[
  ...[-30,0,30].map(z=>({x:0,z,width:14,depth:z===0?18:12,height:2.5,driveable:true,color:'#9f7951'})),
@@ -76,11 +86,11 @@ export const EXPANSIONS:Record<'yard'|'depot'|'quarry'|'castle'|'beach'|'stadium
 {axis:'x',from:1,to:19,cross:44,width:12,bottom:0,top:4}],items:[
 {x:0,z:0},{x:0,z:-26},{x:-16,z:-28},{x:16,z:-28},{x:-43,z:-2},{x:30,z:44},{x:-26,z:24},{x:8,z:24},{x:48,z:14},{x:-46,z:-44},{x:42,z:-48},{x:-28,z:47},{x:0,z:55}]},
 };
-export const isExpansion=(arena:Arena):arena is keyof typeof EXPANSIONS=>arena==='yard'||arena==='depot'||arena==='quarry'||arena==='castle'||arena==='beach'||arena==='stadium'||arena==='foundry'||arena==='harbour'||arena==='ruins';
+export const isExpansion=(arena:Arena):arena is keyof typeof EXPANSIONS=>arena==='yard'||arena==='depot'||arena==='quarry'||arena==='castle'||arena==='beach'||arena==='stadium'||arena==='foundry'||arena==='harbour'||arena==='ruins'||arena==='starfall'||arena==='glacier'||arena==='crypt';
 export function expansionHeight(arena:keyof typeof EXPANSIONS,x:number,z:number):number {
  if(Math.abs(x)>ARENAS[arena].extent||Math.abs(z)>ARENAS[arena].extent)return -40;
  if(arena==='castle'&&lavaAt(x,z)||arena==='ruins'&&ruinsRavineAt(x,z))return -40;
- const layout=EXPANSIONS[arena];let height=arena==='depot'&&Math.abs(x)<7?-40:0;
+ const layout=EXPANSIONS[arena];let height=arena==='depot'&&Math.abs(x)<7||arena==='starfall'&&!starfallWalkable(x,z)||arena==='crypt'&&cryptLavaAt(x,z)?-40:0;
  for(const b of layout.blocks)if(Math.abs(x-b.x)<=b.width/2&&Math.abs(z-b.z)<=b.depth/2)height=Math.max(height,b.height);
  for(const r of layout.ramps){const h=rampHeight(r,x,z);if(h!==undefined)height=Math.max(height,h);}
  return height;
@@ -88,6 +98,7 @@ export function expansionHeight(arena:keyof typeof EXPANSIONS,x:number,z:number)
 export function expansionNav(arena:keyof typeof EXPANSIONS):{x:number;z:number}[]{
  const e=ARENAS[arena].extent,points:{x:number;z:number}[]=[{x:0,z:0}],layout=EXPANSIONS[arena];
  for(const fx of [-.8,-.45,0,.45,.8])for(const fz of [-.8,-.45,0,.45,.8]){const x=fx*e,z=fz*e;if(expansionHeight(arena,x,z)>=0&&expansionHeight(arena,x,z)<.05)points.push({x,z});}
+ if(arena==='starfall')for(const x of [-84,-60,-35,0,35,60,84])for(const z of [-28,-14,0,14,28])if(expansionHeight(arena,x,z)===0)points.push({x,z});
  if(arena==='depot')for(const x of [-52,-34,-20,20,34,52])for(const z of [-52,-36,-12,0,12,36,52])if(expansionHeight(arena,x,z)===0)points.push({x,z});
  for(const b of layout.blocks)if(b.driveable){points.push({x:b.x,z:b.z});for(const sx of [-1,1])for(const sz of [-1,1])points.push({x:b.x+sx*(b.width/2-2),z:b.z+sz*(b.depth/2-2)});}
  for(const r of layout.ramps){points.push(r.axis==='x'?{x:r.from,z:r.cross}:{x:r.cross,z:r.from},r.axis==='x'?{x:r.to,z:r.cross}:{x:r.cross,z:r.to});}

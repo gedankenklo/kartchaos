@@ -3,7 +3,7 @@ import {createNeonCityGround} from './neonScenery';
 import * as T from 'three';
 import {ARENAS,type Arena} from './arenas';
 
-export const backdropFloorHeight=(arena:Arena)=>arena==='harbour'?-.6:arena==='ruins'?-35:arena==='beach'?-.35:arena==='castle'?-60:arena==='sky'||arena==='neon'?-210:-1.5*ARENAS[arena].height;
+export const backdropFloorHeight=(arena:Arena)=>arena==='harbour'?-.6:arena==='ruins'?-35:arena==='beach'?-.35:(arena==='castle'||arena==='crypt')?-60:arena==='sky'||arena==='neon'?-210:-1.5*ARENAS[arena].height;
 
 // Distant scenery is separate from driving surfaces and camera collision geometry.
 export class Landscape extends T.Group {
@@ -11,17 +11,18 @@ export class Landscape extends T.Group {
 
  constructor(arena:Arena,trial=false,lighting:Lighting=defaultLighting(arena)){
   super();
+  if(arena==='starfall'||arena==='starcore'){this.horizon='#070b1b';this.sky=new T.Mesh(new T.SphereGeometry(1700,24,12),new T.MeshBasicMaterial({color:'#070b1b',side:T.BackSide,depthWrite:false}));this.sky.renderOrder=-1000;this.sky.frustumCulled=false;this.add(this.sky);const stars:number[]=[];for(let i=0;i<1100;i++){const z=1-2*(i+.5)/1100,a=i*2.399,r=Math.sqrt(1-z*z);stars.push(Math.sin(a)*r*1400,z*1400,Math.cos(a)*r*1400);}this.add(new T.Points(new T.BufferGeometry().setAttribute('position',new T.Float32BufferAttribute(stars,3)),new T.PointsMaterial({color:'#d4e5ff',size:2.3})));const planet=new T.Mesh(new T.SphereGeometry(220,64,32),new T.ShaderMaterial({uniforms:{},vertexShader:'varying vec3 p;void main(){p=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',fragmentShader:'varying vec3 p;void main(){vec3 n=normalize(p);float land=sin(n.x*17.+sin(n.y*11.)*2.)*sin(n.z*13.+n.y*5.);vec3 c=mix(vec3(.06,.22,.48),vec3(.25,.49,.32),smoothstep(.05,.35,land));float cloud=smoothstep(.6,.9,sin(n.y*38.+sin(n.x*21.))*sin(n.z*31.));c=mix(c,vec3(.85,.91,1.),cloud*.72);gl_FragColor=vec4(c*(.45+.55*max(0.,dot(n,normalize(vec3(-1.,1.,1.))))),1.);}' }));planet.position.set(300,-280,-650);this.add(planet);const ring=new T.Mesh(new T.TorusGeometry(232,3,8,96),new T.MeshBasicMaterial({color:'#728bff',transparent:true,opacity:.45}));ring.position.copy(planet.position);ring.rotation.x=.5;this.add(ring);return;}
   const desert=arena==='quarry',coast=arena==='depot'||arena==='beach'||arena==='harbour',night=lighting==='night',sunset=lighting==='sunset',floating=arena==='sky';
   const deepNight=night;
   const top=sunset?'#795b83':deepNight?'#080e20':trial&&arena==='fortress'?'#8fbfcf':night?'#443667':desert?'#76bce0':'#74b7dd';
-  this.horizon=sunset?'#e9ac83':night?(arena==='castle'?'#302032':'#182b48'):arena==='beach'?'#eddbc5':deepNight?(arena==='castle'?'#302032':'#182b48'):trial&&arena==='fortress'?'#eee4c5':night?'#e7a4aa':desert?'#f6d8ac':'#e1eee2';
+  this.horizon=sunset?'#e9ac83':night?((arena==='castle'||arena==='crypt')?'#302032':'#182b48'):arena==='beach'?'#eddbc5':deepNight?((arena==='castle'||arena==='crypt')?'#302032':'#182b48'):trial&&arena==='fortress'?'#eee4c5':night?'#e7a4aa':desert?'#f6d8ac':'#e1eee2';
   const skyMaterial=new T.ShaderMaterial({side:T.BackSide,depthWrite:false,uniforms:{top:{value:new T.Color(top)},horizon:{value:new T.Color(this.horizon)},sun:{value:new T.Vector3(-.5,sunset?.18:.32,.65).normalize()},sunColor:{value:new T.Color(night?'#dceaff':'#ffe3a0')}},vertexShader:'varying vec3 direction;void main(){direction=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',fragmentShader:'varying vec3 direction;uniform vec3 top;uniform vec3 horizon;uniform vec3 sun;uniform vec3 sunColor;void main(){vec3 d=normalize(direction);vec3 c=mix(horizon,top,smoothstep(0.,.8,max(d.y,0.)));float glow=pow(max(dot(d,sun),0.),32.);float disc=smoothstep(.9987,.9993,dot(d,sun));c=mix(c,sunColor,glow*.28+disc*.72);gl_FragColor=vec4(c,1.);#include <tonemapping_fragment>\n#include <colorspace_fragment>\n}'});
   // Shader chunks must begin on their own preprocessor line.
   skyMaterial.fragmentShader=skyMaterial.fragmentShader.replace(';#include',';\n#include');
   this.sky=new T.Mesh(new T.SphereGeometry(1700,32,16),skyMaterial);this.sky.renderOrder=-1000;this.sky.frustumCulled=false;this.add(this.sky);
-  const groundColor=arena==='harbour'&&!night?'#b6d2dc':night?'#26394e':sunset?'#966e78':coast?'#73b8c6':desert?'#d2a77e':'#9bbd8d';
+  const groundColor=(arena==='harbour'||arena==='glacier')&&!night?'#b6d2dc':night?'#26394e':sunset?'#966e78':coast?'#73b8c6':desert?'#d2a77e':'#9bbd8d';
   const floor:T.Mesh<T.CircleGeometry,T.Material>=new T.Mesh(new T.CircleGeometry(1450,96),new T.MeshBasicMaterial({color:groundColor}));floor.rotation.x=-Math.PI/2;floor.position.y=backdropFloorHeight(arena);this.add(floor);
-  const colors=sunset?['#8e6a78','#785b72','#5e4e69']:deepNight?(arena==='castle'?['#39304b','#2c2b45','#25263b']:['#324056','#29374b','#233246']):trial&&arena==='fortress'?['#81a48a','#9bb6a0','#bbcbb7']:night?['#b294b6','#8c80a7','#73769c']:desert?['#c99577','#c3a08b','#b7a6a0']:coast?['#8bad9d','#9ebbb0','#afc7bf']:['#87a889','#9bb49c','#acc5b7'];
+  const colors=arena==='glacier'?['#527a9d','#7399b6','#a3bfce']:sunset?['#8e6a78','#785b72','#5e4e69']:deepNight?((arena==='castle'||arena==='crypt')?['#39304b','#2c2b45','#25263b']:['#324056','#29374b','#233246']):trial&&arena==='fortress'?['#81a48a','#9bb6a0','#bbcbb7']:night?['#b294b6','#8c80a7','#73769c']:desert?['#c99577','#c3a08b','#b7a6a0']:coast?['#8bad9d','#9ebbb0','#afc7bf']:['#87a889','#9bb49c','#acc5b7'];
   for(let ring=2;ring>=0;ring--){
    const radius=330+ring*210,vertices:number[]=[];
    for(let i=0;i<96;i++){

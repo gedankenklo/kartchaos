@@ -15,6 +15,10 @@ stadium = Floodlight Stadium
 foundry = Clockwork Foundry
 harbour = Frostbite Harbour
 ruins = Overgrown Ruins
+starfall = Starfall Citadels (space CTF)
+glacier = Glacier Slide
+crypt = Cinder Crypt
+starcore = Starcore Sphere
 
 Examples: public/music/beach/Sunset.mp3 or public/music/castle/01-Dark-Keep.mp3.
 Keep files directly inside the arena folder. Each arena round chooses a random starting MP3. Further tracks play in alphabetical

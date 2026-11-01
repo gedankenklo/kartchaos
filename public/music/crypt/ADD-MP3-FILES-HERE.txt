@@ -1,0 +1,1 @@
+Put MP3 files for Cinder Crypt directly in this folder. A random track is picked when the arena loads. Empty folders use generated music. Upload this file too so GitHub retains the folder.

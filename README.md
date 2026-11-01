@@ -173,3 +173,8 @@ Capture the enemy flag and return it to your base while your flag is home. Captu
 
 
 v1.29: results-screen Shuffle maps is reachable by controller and highlights the full row.
+
+
+## v1.30
+
+Four new arenas: Starfall Citadels (CTF), Glacier Slide, Cinder Crypt and Starcore Sphere. Music defaults to 10%, preserving saved settings. New MP3 folders are starfall, glacier, crypt and starcore.
