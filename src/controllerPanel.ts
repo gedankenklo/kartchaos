@@ -1,5 +1,5 @@
 import type {Controls} from './input';
-export const GAME_VERSION='1.7.0';
+export const GAME_VERSION='1.8.0';
 export const DEVELOPER='Benjamin Luikenga';
 export function controllerPanel(count:number){return `<section class="controller-panel" aria-label="Local controller setup"><h3>READY TO DRIVE?</h3><p>Connect a controller and press a button. Check your inputs here.</p>${Array.from({length:count},(_,slot)=>`<div class="controller-row" data-controller-slot="${slot}"><label>P${slot+1} input<select data-pad="${slot}" aria-label="Player ${slot+1} input device"></select></label><span class="controller-status" role="status"></span><div class="controller-test"><label>Steer <meter data-meter="steer" min="-1" max="1" value="0"></meter></label><label>Gas <meter data-meter="gas" min="0" max="1" value="0"></meter></label><label>Brake <meter data-meter="brake" min="0" max="1" value="0"></meter></label><output class="controller-actions">—</output></div></div>`).join('')}</section>`;}
 export function updateControllerPanels(controls:Controls){
@@ -18,6 +18,7 @@ export function updateControllerPanels(controls:Controls){
   row.querySelector('output')!.textContent=actions||'—';
  }
 }
+
 
 
 

@@ -1,3 +1,4 @@
+import {eventShake} from './celebrations';
 import {ArenaLife} from './arenaLife';
 import {ArenaAtmosphere} from './visualPolish';
 import {ChaosDirector} from './broadcast';
@@ -22,7 +23,7 @@ const mat=(color:string,extra={})=>new T.MeshStandardMaterial({color,roughness:.
 const materials=new Map<string,T.MeshStandardMaterial>();
 function material(c:string){if(!materials.has(c))materials.set(c,mat(c));return materials.get(c)!;}
 export class World {
- impactShakes=new Map<number,number>();spectatorTargets=new Map<number,number>();
+ impactShakes=new Map<number,{until:number;duration:number;strength:number}>();spectatorTargets=new Map<number,number>();
  eliminations=new Map<number,{age:number;x:number;y:number;z:number;angle:number}>();
  previewBounds=new T.Box3();details?:ArenaDetails;ballModel?:T.Group;
  life?:ArenaLife;atmosphere?:ArenaAtmosphere;flair:'full'|'reduced'='full';fill!:T.DirectionalLight;
@@ -191,7 +192,7 @@ export class World {
  sync(s:State,dt:number,now:number,localIds?:number[]){this.battleEffects.reduced=this.reduced||this.flair==='reduced';
   if(s.config.arena!==this.map){this.build(s.config.arena);this.boxes=[];}
   for(const [id,m] of this.models)if(!s.karts.some(k=>k.id===id&&(k.driver??k.id)===m.userData.driverId)){this.disposeGroup(m);this.kartGroup.remove(m);this.models.delete(id);}
-  for(const e of s.events)if(e.id>this.lastEvent){if(e.type==='hit'&&e.cause==='mine'&&!e.blocked)this.impactShakes.set(e.player,now+.4);if(e.type==='eliminated')this.eliminations.set(e.player,{age:0,x:e.x,y:e.y,z:e.z,angle:s.karts[e.player]?.angle??0});const model=this.models.get(e.player);if(model&&(e.type==='hit'||e.type==='pickup'||e.type==='itemready')){model.userData.emoteUntil=now+.55;model.userData.emoteKind=e.type==='hit'?'hit':'pickup';}if(e.type==='hit'&&!e.blocked&&e.source!==e.player){const source=this.models.get(e.source!);if(source){source.userData.emoteUntil=now+.5;source.userData.emoteKind='confirmed';}}}
+  for(const e of s.events)if(e.id>this.lastEvent){if(e.type==='shockwave'||e.type==='hit'&&e.cause==='mine')for(const kart of s.karts){const shake=eventShake(e,kart);if(shake)this.impactShakes.set(kart.id,{...shake,until:now+shake.duration});}if(e.type==='eliminated')this.eliminations.set(e.player,{age:0,x:e.x,y:e.y,z:e.z,angle:s.karts[e.player]?.angle??0});const model=this.models.get(e.player);if(model&&(e.type==='hit'||e.type==='pickup'||e.type==='itemready')){model.userData.emoteUntil=now+.55;model.userData.emoteKind=e.type==='hit'?'hit':'pickup';}if(e.type==='hit'&&!e.blocked&&e.source!==e.player){const source=this.models.get(e.source!);if(source){source.userData.emoteUntil=now+.5;source.userData.emoteKind='confirmed';}}}
   for(const k of s.karts){const m=this.models.get(k.id)??this.kart(k.id,k.driver??k.id);m.userData.celebrating=s.phase==='finished'&&s.winner===k.id;m.userData.reduced=this.reduced;const elimination=this.eliminations.get(k.id);if(elimination&&k.balloons===0){elimination.age+=dt;const pose=eliminationPose(elimination.age,this.reduced);m.visible=pose.visible;m.position.set(elimination.x,elimination.y+pose.rise,elimination.z);m.rotation.set(pose.tilt,elimination.angle+pose.spin,pose.tilt);m.scale.setScalar(pose.scale);animateKart(m,{...k,speed:0,steering:0,drift:0},dt,now);m.getObjectByName('shield')!.visible=false;continue;}m.scale.setScalar(1);m.visible=k.balloons>0&&(k.inv<=0||Math.floor(now*14)%2===0);if(localIds&&!localIds.includes(k.id)&&m.position.distanceTo(new T.Vector3(k.x,k.y,k.z))<12){m.position.lerp(new T.Vector3(k.x,k.y,k.z),1-Math.exp(-dt*14));m.rotation.y+=angleDiff(k.angle,m.rotation.y)*(1-Math.exp(-dt*14));}else{m.position.set(k.x,k.y,k.z);m.rotation.y=k.angle;}
    const forward=Math.sin(k.angle),along=Math.cos(k.angle),slope=ground(s.config.arena,k.x+forward,k.z+along,k.y)-ground(s.config.arena,k.x-forward,k.z-along,k.y);
    const grounded=k.y<ground(s.config.arena,k.x,k.z,k.y)+.2,pitch=grounded&&Math.abs(slope)<2?-Math.atan2(slope,2):0;m.rotation.x+=(pitch-m.rotation.x)*(1-Math.exp(-dt*12));m.rotation.z=0;m.userData.driftSide=k.driftSide;m.userData.grounded=grounded;
@@ -241,7 +242,7 @@ export class World {
    this.cameraRay.set(origin,arm.normalize());this.cameraRay.far=length;let hit=this.cameraRay.intersectObject(this.cameraTerrain,true)[0];if(hit&&hit.distance<4.5){const raised=target.clone();raised.y=Math.min(chosen.y+10.8,ceiling(s.config.arena,tx,tz,chosen.y)-.45);const lifted=raised.clone().sub(origin),liftLength=lifted.length();this.cameraRay.set(origin,lifted.normalize());this.cameraRay.far=liftLength;const higherHit=this.cameraRay.intersectObject(this.cameraTerrain,true)[0];if(!higherHit||higherHit.distance>hit.distance+1){target.copy(raised);arm.copy(lifted);hit=higherHit;}}if(hit)target.copy(origin).addScaledVector(arm,Math.max(1.3,hit.distance-.55));
    const lookTarget=new T.Vector3(chosen.x+Math.sin(yaw)*3.5,chosen.y+1.45,chosen.z+Math.cos(yaw)*3.5);
    if(fresh){cam.position.copy(target);cam.userData.targetId=chosen.id;cam.userData.look=lookTarget.clone();}else cam.position.lerp(target,1-Math.exp(-dt*(hit?22:10)));
-   (cam.userData.look as T.Vector3).lerp(lookTarget,1-Math.exp(-dt*14));cam.lookAt(cam.userData.look as T.Vector3);const shake=(this.impactShakes.get(chosen.id)??0)-now;if(shake>0&&!this.reduced&&this.flair==='full'){cam.position.x+=Math.sin(now*59)*shake*.45;cam.position.y+=Math.cos(now*47)*shake*.3;cam.lookAt(cam.userData.look as T.Vector3);}cam.fov+=(62+Math.max(0,Math.abs(chosen.speed)-14)*.22+(chosen.boost>0?2:0)-cam.fov)*(1-Math.exp(-dt*5));cam.aspect=vw/vh;cam.updateProjectionMatrix();r.setViewport(x,y,vw,vh);r.setScissor(x,y,vw,vh);r.setScissorTest(true);this.landscape!.follow(cam);r.render(this.scene,cam);
+   (cam.userData.look as T.Vector3).lerp(lookTarget,1-Math.exp(-dt*14));cam.lookAt(cam.userData.look as T.Vector3);const shakeState=this.impactShakes.get(chosen.id),shake=shakeState?Math.max(0,(shakeState.until-now)/shakeState.duration)*shakeState.strength:0;if(shake>0&&!this.reduced&&this.flair==='full'){cam.position.x+=Math.sin(now*59)*shake;cam.position.y+=Math.cos(now*47)*shake*.65;cam.lookAt(cam.userData.look as T.Vector3);}cam.fov+=(62+Math.max(0,Math.abs(chosen.speed)-14)*.22+(chosen.boost>0?2:0)-cam.fov)*(1-Math.exp(-dt*5));cam.aspect=vw/vh;cam.updateProjectionMatrix();r.setViewport(x,y,vw,vh);r.setScissor(x,y,vw,vh);r.setScissorTest(true);this.landscape!.follow(cam);r.render(this.scene,cam);
   });
   if(count===3){this.director.update(s);if(this.broadcastMode==='camera'){
    const focus=this.director.focus(s),cam=this.broadcastCamera,angle=this.director.shotAngle+.7,target=new T.Vector3(focus.x-Math.sin(angle)*27,focus.y+25,focus.z-Math.cos(angle)*27);
@@ -253,6 +254,7 @@ export class World {
  }
  reset(){this.impactShakes.clear();this.director.reset();delete this.broadcastCamera.userData.shot;this.spectatorTargets.clear();this.eliminations.clear();for(const model of this.models.values()){model.scale.setScalar(1);model.rotation.set(0,0,0);}this.battleEffects.clearBursts();this.lastEvent=0;for(const c of this.cameras)delete c.userData.targetId;for(const model of this.models.values()){delete model.userData.skid;delete model.userData.balloonMotion;delete model.userData.previousSpeed;}for(const mark of this.skidMarks){this.fx.remove(mark.mesh);mark.mesh.geometry.dispose();(mark.mesh.material as T.Material).dispose();}this.skidMarks=[];for(const p of this.particles){this.fx.remove(p.mesh);p.mesh.geometry.dispose();}this.particles=[];}
 }
+
 
 
 
