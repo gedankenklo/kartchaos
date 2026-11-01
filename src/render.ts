@@ -1,3 +1,5 @@
+import {IceReflection} from './iceReflection';
+import {glacierIceAt} from './glacierSurface';
 import {createGlacierStructures} from './glacierStructures';
 import {createHarbourDocks} from './harbourDocks';
 import {createRampSlab} from './rampSlab';
@@ -39,7 +41,7 @@ const mat=(color:string,extra={})=>new T.MeshStandardMaterial({color,roughness:.
 const materials=new Map<string,T.MeshStandardMaterial>();
 function material(c:string){if(!materials.has(c))materials.set(c,mat(c));return materials.get(c)!;}
 export class World {
- extraScenery?:ExtraArenaScenery;
+ iceReflection?:IceReflection;extraScenery?:ExtraArenaScenery;
  flagScene?:FlagScene;
  newSet?:NewArenaSet;
  lighting:Lighting='day';
@@ -76,6 +78,7 @@ export class World {
   const side=new T.BufferGeometry();const b0=[b[0],r.bottom,b[2]],c0=[c[0],r.bottom,c[2]];side.setAttribute('position',new T.Float32BufferAttribute([...a,...b0,...b,...d,...c,...c0],3));side.computeVertexNormals();const sm=this.mesh(side,'#b7a28c',parent);sm.material=this.textured('#b7a28c','stone',{side:T.DoubleSide});sm.receiveShadow=false;
  }
  build(arena:Arena){
+  if(this.iceReflection){this.iceReflection.removeFromParent();this.iceReflection.geometry.dispose();this.iceReflection.dispose();this.iceReflection=undefined;}
   this.newSet?.dispose();this.newSet=isNewArena(arena)?new NewArenaSet(arena):undefined;if(this.newSet){this.newSet.scale.set(ARENA_SCALE[arena],ARENA_HEIGHT[arena],ARENA_SCALE[arena]);this.scene.add(this.newSet);}
   this.life?.dispose();this.life=new ArenaLife(arena);this.scene.add(this.life);
   this.atmosphere?.dispose();this.atmosphere=new ArenaAtmosphere(arena);this.scene.add(this.atmosphere);
@@ -148,6 +151,7 @@ export class World {
   }
   const shadowExtent=Math.max(90,arenaExtent(arena)+16);Object.assign(this.sun.shadow.camera,{left:-shadowExtent,right:shadowExtent,top:shadowExtent,bottom:-shadowExtent});this.sun.shadow.camera.updateProjectionMatrix();
 
+  if(arena==='glacier'){this.iceReflection=new IceReflection();this.scene.add(this.iceReflection);for(const light of [this.sun,this.fill,this.hemi])light.layers.enable(2);}
   g.updateMatrixWorld(true);this.previewBounds.setFromObject(this.arenaGroup).expandByScalar(8);if(this.newSet){this.newSet.updateMatrixWorld(true);this.newSet.traverse(o=>{if(o instanceof T.Mesh&&!(o instanceof T.InstancedMesh)&&o.name!=='harbourAurora'){o.geometry.computeBoundingBox();if(o.geometry.boundingBox)this.previewBounds.union(o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld));}});}
  }
  deckMaterials(color:string,topLight=.2){const c=new T.Color(color),top=c.clone().lerp(new T.Color('#fff1cf'),topLight),side=c.clone().multiplyScalar(.88),bottom=c.clone().multiplyScalar(.65);return [toonMaterial(side),toonMaterial(side),toonMaterial(top),toonMaterial(bottom),toonMaterial(c),toonMaterial(c)];}
@@ -230,6 +234,7 @@ export class World {
    if((k.boost>0||k.drift>.1)&&Math.random()<.55&&!this.reduced)this.particle(k.x-forward*1.1,k.y+.2,k.z-along*1.1,k.boost>0?'#f5ae47':k.drift>1?'#5ecce4':'#d8c8a6',.22);
    if(k.driftSide&&grounded&&Math.abs(slope)<.2){const last=m.userData.skid as {x:number;z:number;t:number}|undefined;if(last&&now-last.t>.11){const dx=k.x-last.x,dz=k.z-last.z,len=Math.hypot(dx,dz);if(len>.15&&len<5){for(const side of [-1,1]){const ox=Math.cos(k.angle)*side*.82-forward*.9,oz=-Math.sin(k.angle)*side*.82-along*.9,px=-dz/len*.065,pz=dx/len*.065,y=k.y+.045;const geometry=new T.BufferGeometry();geometry.setAttribute('position',new T.Float32BufferAttribute([last.x+ox+px,y,last.z+oz+pz,k.x+ox+px,y,k.z+oz+pz,k.x+ox-px,y,k.z+oz-pz,last.x+ox+px,y,last.z+oz+pz,k.x+ox-px,y,k.z+oz-pz,last.x+ox-px,y,last.z+oz-pz],3));const mesh=new T.Mesh(geometry,new T.MeshBasicMaterial({color:'#655d59',transparent:true,opacity:.25,depthWrite:false,side:T.DoubleSide}));this.fx.add(mesh);this.skidMarks.push({mesh,life:4});}}m.userData.skid={x:k.x,z:k.z,t:now};}else if(!last)m.userData.skid={x:k.x,z:k.z,t:now};}else delete m.userData.skid;
   }
+  for(const [id,model] of this.models){const k=s.karts[id],reflect=s.config.arena==='glacier'&&!!k&&k.balloons>0&&glacierIceAt(k.x,k.z,k.y);model.traverse(o=>{if(reflect)o.layers.enable(2);else o.layers.disable(2);});}
   if(this.boxes.length!==s.boxes.length){for(const b of this.boxes){this.arenaGroup.remove(b);this.disposeGroup(b);}this.boxes=s.boxes.map(b=>{const g=createItemVisual();g.position.set(b.x,b.y+1.4,b.z);this.arenaGroup.add(g);return g;});}
   s.boxes.forEach((b,i)=>{const scale=boxGrowScale(b.respawn),model=this.boxes[i];model.visible=scale>0;animateItemVisual(model,this.reduced?0:now,i);const glow=model.getObjectByName('itemGlow');if(glow)glow.visible=this.flair==='full';model.scale.setScalar(scale);const halo=model.getObjectByName('growHalo') as T.Mesh;halo.visible=b.respawn>0&&scale>0;(halo.material as T.MeshBasicMaterial).opacity=clamp(b.respawn/.65,0,1)*.9;this.boxes[i].rotation.y=now*.8;this.boxes[i].position.y=b.y+1.6+Math.sin(now*2+i)*.25;});
   for(const [id,m]of this.shots)if(!s.shots.some(p=>p.id===id)){this.fx.remove(m);this.disposeGroup(m);this.shots.delete(id);}
@@ -251,6 +256,7 @@ export class World {
  cycleSpectator(s:State,id:number,direction:number){if(s.karts[id]?.balloons>0)return;const next=cycleSpectator(s,id,this.spectatorTargets.get(id),direction);if(next!==undefined)this.spectatorTargets.set(id,next);this.eliminations.delete(id);}
  viewKart(s:State,id:number){const out=this.eliminations.get(id),own=s.karts[id];return out&&out.age<ELIMINATION_TIME&&own?.balloons===0?{...own,x:out.x,y:out.y,z:out.z,angle:out.angle,speed:0,boost:0,driftSlip:0}:this.watched(s,id);}
  render(s:State,localIds:number[],playing:boolean,rect:DOMRect|undefined,now:number,dt:number,vertical:boolean){
+  if(this.iceReflection)this.iceReflection.visible=playing&&s.karts.some(k=>k.balloons>0&&glacierIceAt(k.x,k.z,k.y));
   this.renderer.shadowMap.needsUpdate=true;
   const trial=this.artTrial,mode=lightingFor(s.config.arena,s.lighting),lights=lightSettings(mode,trial);if(mode==='night'&&s.config.arena==='castle')Object.assign(lights,{sun:1.25,hemi:.62,fill:.22,environment:.4,sunColor:'#c9d6f2'});this.sun.intensity=lights.sun;this.hemi.intensity=lights.hemi;this.fill.intensity=lights.fill;this.scene.environmentIntensity=lights.environment;this.hemi.color.set(lights.skyColor);this.hemi.groundColor.set(lights.groundColor);this.sun.color.set(lights.sunColor);this.sun.position.set(mode==='sunset'?-120:-70,mode==='sunset'?70:130,75);this.sun.shadow.normalBias=trial?.28:.18;this.sun.shadow.bias=trial?-.0008:-.0002;this.renderer.toneMapping=T.ACESFilmicToneMapping;this.renderer.toneMappingExposure=lights.exposure;
   if(this.extraScenery){this.extraScenery.visible=true;for(const child of this.extraScenery.children)child.visible=playing||!!child.userData.terrain;}if(this.newSet){this.newSet.visible=true;const aurora=this.newSet.getObjectByName('harbourAurora');if(aurora)aurora.visible=playing;if(this.newSet.snow)this.newSet.snow.visible=playing;if(this.newSet.flies)this.newSet.flies.visible=playing&&this.lighting==='night';}if(this.life)this.life.visible=playing;if(this.atmosphere)this.atmosphere.visible=playing;this.landscape!.visible=playing;this.scene.background=new T.Color(playing?this.landscape!.horizon:'#f5f1e8');this.scene.fog=new T.Fog(playing?this.landscape!.horizon:'#f5f1e8',playing?270:s.config.arena==='starfall'||s.config.arena==='starcore'?2000:s.config.arena==='stadium'?900:500,playing?1450:s.config.arena==='starfall'||s.config.arena==='starcore'?4000:s.config.arena==='stadium'?1600:950);this.renderer.setClearColor('#f5f1e8');

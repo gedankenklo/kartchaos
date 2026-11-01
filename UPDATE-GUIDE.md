@@ -1,11 +1,13 @@
-# v1.33.3 — Glacier bridge geometry repair
+# v1.34 — Glacier grip, reflections and wall repair
 
-Upload these contents into your existing GitHub repository root, merging folders. This update contains fewer than 100 files and fits in one GitHub browser upload. Commit and let Render rebuild. Keep your MP3s. The client and server must be updated together.
+Upload the contents into your existing GitHub repository root, merging folders. This patch fits within one GitHub browser upload. Keep your MP3s. Update client and server together; commit and let Render rebuild.
 
-Glacier now uses a dedicated set of flat ice deck and ramp meshes. Thin rounded decks, separate legacy ramp shells and raised box-shaped border strips have been replaced. New edge markings are flat paint on the actual sloping surfaces. Deck tops meet the ramps at the same heights used by collision, while the ground-level underpasses remain open. Bridge sides and undersides have stable shading; deck-top and kart shadows remain. An upward launch underneath a bridge is now stopped by its underside rather than passing through the deck. Map size, ice handling and music folder stay unchanged.
+Glacier traction is now surface-specific. The base-level ice retains its sideways slide, long coasting and weaker braking. Ramps, ramp mouths and raised decks use normal tyre grip, coasting and braking. Ground-level ice beneath the bridges remains slippery.
 
-Manual local browser driving checks at 150cc covered the approach ramp to the 7m deck, the summit ascent/descent, connecting bridge to the 4.2m central deck, and the complete underpass crossing from x=-54m to x=54.6m at ground level. Both art styles and night lighting were visually checked. No browser rendering errors were reported in the final check.
+Glacier's block surfaces now form one exterior skin. Internal faces where the summit and suspended bridge overlap have been removed, eliminating their competing wall surfaces. The existing flat ramp markings and open underpasses remain.
 
-Validation: production build and all 221 tests passed. New tests check rendered surface heights against collision, all four driving routes at 50/100/150cc and 30/60fps, and underside collision during a high upward launch. All 48 two-minute navigation scenarios passed (96 simulated minutes); Glacier had zero falls at every speed and no persistent stalls.
+A soft planar reflection mirrors karts that are on the base ice. It is drawn only on the ground ice, with a transparent softened blend over the existing floor. Karts on ramps/raised decks or airborne are excluded from the reflection pass. Opaque ramps and platforms occlude the ice below them. The reflection pass draws kart layers rather than the whole surrounding landscape and restores viewport/scissor state for split-screen. Both art styles and day/night lighting are supported.
 
-Current source files include previous arena and held-item glow changes. No MP3 files or tracks.json are included, so your uploaded music stays in place.
+Validation: production build, all 224 automated tests and all 48 two-minute navigation scenarios (96 simulated minutes) passed. Tests cover ice/ramp traction and braking, the summit/bridge exterior wall, transparent reflection depth settings and all prior driving routes. Manual local browser checks covered ice reflections, ramp ascent, the close-up wall, both art styles, day/night and two-player split-screen. The final browser check reported no rendering errors.
+
+No MP3 files or tracks.json are included. Existing music folder names and uploaded tracks stay in place. Current runtime sources include previous updates.

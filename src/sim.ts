@@ -258,13 +258,14 @@ export function botInput(s:State,k:Kart):Input {
 export function drive(s:State,k:Kart,input:Input,dt:number) {
  if(k.balloons<=0)return;
  const floor=ground(s.config.arena,k.x,k.z,k.y),onGround=k.y<=floor+.15;
+ const surface=arenaSurface(s.config.arena,k.x,k.z,k.y),ice=s.config.arena==='glacier'&&surface.grip<1&&onGround;
  k.inv=Math.max(0,k.inv-dt);k.boost=Math.max(0,k.boost-dt);k.ram=Math.max(0,(k.ram??0)-dt);k.shield=Math.max(0,k.shield-dt);k.cooldown=Math.max(0,k.cooldown-dt);k.itemFlash=Math.max(0,(k.itemFlash??0)-dt);
  k.pushX=(k.pushX??0)*Math.exp(-2.8*dt);k.pushZ=(k.pushZ??0)*Math.exp(-2.8*dt);k.bumpCooldown=Math.max(0,(k.bumpCooldown??0)-dt);
  k.steering??=0;k.yawRate??=0;k.reverseTime??=0;k.driftSide??=0;k.driftSlip??=0;
  const settings=speedSettings(s.config.speedClass),scale=settings.scale,cruise=20*scale,maxSpeed=(k.boost>0?31:20)*scale;
  if(input.gas>0){k.reverseTime=0;if(k.speed<0)k.speed=Math.min(0,k.speed+38*dt);else {const target=cruise*input.gas;k.speed+=clamp(target-k.speed,-13*scale*dt,28*scale*(1-.35*Math.abs(k.speed)/cruise)*dt);}}
- else if(input.gas<0){if(k.speed>.1){k.speed=Math.max(0,k.speed-36*Math.pow(scale,1.35)*(s.config.arena==='glacier'?.4:1)*-input.gas*dt);k.reverseTime=0;}else {k.reverseTime+=dt;if(k.reverseTime>.16)k.speed=Math.max(-8*-input.gas,k.speed-13*-input.gas*dt);}}
- else {k.reverseTime=0;k.speed*=Math.exp(-(s.config.arena==='glacier'?.1:.65)*dt);if(Math.abs(k.speed)<.04)k.speed=0;}
+ else if(input.gas<0){if(k.speed>.1){k.speed=Math.max(0,k.speed-36*Math.pow(scale,1.35)*(ice?.4:1)*-input.gas*dt);k.reverseTime=0;}else {k.reverseTime+=dt;if(k.reverseTime>.16)k.speed=Math.max(-8*-input.gas,k.speed-13*-input.gas*dt);}}
+ else {k.reverseTime=0;k.speed*=Math.exp(-(ice?.1:.65)*dt);if(Math.abs(k.speed)<.04)k.speed=0;}
  if(k.boost>0)k.speed=Math.min(maxSpeed,Math.max(0,k.speed)+45*scale*dt);
  k.speed=clamp(k.speed,-8,maxSpeed);
  const steerResponse=Math.abs(input.steer)<Math.abs(k.steering)?24:16;
@@ -281,8 +282,8 @@ export function drive(s:State,k:Kart,input:Input,dt:number) {
  const targetSlip=drifting?k.driftSide*(.38+.26*Math.max(0,k.driftSide*k.steering)):0;
  k.driftSlip+=(targetSlip-k.driftSlip)*(1-Math.exp(-dt*(drifting?8:10)));
  const travel=k.angle-k.driftSlip,grip=drifting?6:onGround?14:2.2;
- const surface=arenaSurface(s.config.arena,k.x,k.z,k.y);const traction=1-Math.exp(-grip*settings.grip*surface.grip*dt);
- if(s.config.arena==='glacier'&&onGround){const fx=Math.sin(travel),fz=Math.cos(travel),forward=k.vx*fx+k.vz*fz,lateral=k.vx*fz-k.vz*fx,drive=forward+(k.speed-forward)*(1-Math.exp(-3*dt)),slide=lateral*Math.exp(-.38*dt);k.vx=fx*drive+fz*slide;k.vz=fz*drive-fx*slide;const v=Math.hypot(k.vx,k.vz);if(v>maxSpeed*1.15){k.vx*=maxSpeed*1.15/v;k.vz*=maxSpeed*1.15/v;}}else{k.vx+=(Math.sin(travel)*k.speed-k.vx)*traction;k.vz+=(Math.cos(travel)*k.speed-k.vz)*traction;}
+ const traction=1-Math.exp(-grip*settings.grip*surface.grip*dt);
+ if(ice){const fx=Math.sin(travel),fz=Math.cos(travel),forward=k.vx*fx+k.vz*fz,lateral=k.vx*fz-k.vz*fx,drive=forward+(k.speed-forward)*(1-Math.exp(-3*dt)),slide=lateral*Math.exp(-.38*dt);k.vx=fx*drive+fz*slide;k.vz=fz*drive-fx*slide;const v=Math.hypot(k.vx,k.vz);if(v>maxSpeed*1.15){k.vx*=maxSpeed*1.15/v;k.vz*=maxSpeed*1.15/v;}}else{k.vx+=(Math.sin(travel)*k.speed-k.vx)*traction;k.vz+=(Math.cos(travel)*k.speed-k.vz)*traction;}
  const oldX=k.x,oldZ=k.z;
  let nx=k.x+(k.vx+k.pushX+(onGround?surface.vx:0))*dt,nz=k.z+(k.vz+k.pushZ+(onGround?surface.vz:0))*dt;
  const newFloor=ground(s.config.arena,nx,nz,k.y);
