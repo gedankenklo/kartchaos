@@ -421,13 +421,13 @@ test('Glacier elevated ramps use closed slabs with upward top normals',()=>{
 
 import {REACTOR,reactorAt} from '../src/reactor';
 import {ReactorVisual} from '../src/reactorVisual';
-test('Crypt has four uninterrupted gate routes and two connected summit ramps',()=>{
+test('Crypt has four uninterrupted gate routes and four connected summit ramps',()=>{
  for(const sign of [-1,1])for(const axis of ['x','z'] as const){
   const point=(d:number)=>({x:axis==='x'?sign*d*2:0,z:axis==='z'?sign*d*2:0,y:d===70?0:4*ARENA_HEIGHT.crypt});
   assert.ok(clearPath('crypt',point(70),point(46)),'outer ramp must reach gate');
   assert.ok(clearPath('crypt',point(46),point(20)),'gate bridge must reach central platform');
  }
- for(const sign of [-1,1])assert.ok(clearPath('crypt',{x:sign*40,z:0,y:6.4},{x:sign*14,z:0,y:16}));
+ for(const sign of [-1,1])for(const axis of ['x','z'])assert.ok(clearPath('crypt',{x:axis==='x'?sign*40:0,z:axis==='z'?sign*40:0,y:6.4},{x:axis==='x'?sign*14:0,z:axis==='z'?sign*14:0,y:16}));
  const graph=navGraph('crypt'),start=graph.points.findIndex(p=>Math.abs(p.x)<1&&Math.abs(p.z)<1),seen=new Set([start]),queue=[start];
  while(queue.length)for(const edge of graph.edges[queue.shift()!])if(!seen.has(edge.to)){seen.add(edge.to);queue.push(edge.to);}
  for(const b of createState({...config,arena:'crypt'}).boxes)assert.ok([...seen].some(i=>distance(graph.points[i],b)<8&&Math.abs(graph.points[i].y-b.y)<1),'every pickup must be reachable from the central crypt');

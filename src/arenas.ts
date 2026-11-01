@@ -41,7 +41,8 @@ export const EXPANSIONS:Record<'yard'|'depot'|'quarry'|'castle'|'beach'|'stadium
  ],ramps:[...[-1,1].flatMap(sign=>[
  {axis:'x' as const,from:sign*68,to:sign*56,cross:0,width:14,bottom:0,top:4},
  {axis:'z' as const,from:sign*68,to:sign*56,cross:0,width:14,bottom:0,top:4},
- {axis:'x' as const,from:sign*20,to:sign*7,cross:0,width:10,bottom:4,top:10}])],
+ {axis:'x' as const,from:sign*20,to:sign*7,cross:0,width:10,bottom:4,top:10},
+ {axis:'z' as const,from:sign*20,to:sign*7,cross:0,width:10,bottom:4,top:10}])],
  items:[{x:0,z:0},{x:0,z:14},{x:0,z:-14},{x:-46,z:0},{x:46,z:0},{x:0,z:-46},{x:0,z:46},{x:-62,z:40},{x:62,z:-40},{x:40,z:62},{x:-40,z:-62},{x:62,z:40},{x:-62,z:-40}]},
  starcore:{floor:'#71849b',alternate:'#64778e',wall:'#354659',blocks:[...[-1,1].flatMap(sign=>[-1,1].map(side=>({x:sign*36,z:side*30,width:9,depth:11,height:4,color:'#66768d'})))],ramps:[],items:[...Array.from({length:8},(_,i)=>({x:Math.sin(i*Math.PI/4)*38,z:Math.cos(i*Math.PI/4)*38})),...Array.from({length:8},(_,i)=>({x:Math.sin(i*Math.PI/4)*70,z:Math.cos(i*Math.PI/4)*70}))]},
 
