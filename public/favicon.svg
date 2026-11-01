@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+<title>Kart Chaos 64</title>
+<rect x="1" y="1" width="62" height="62" rx="14" fill="#30303b" stroke="#f6e9ca" stroke-width="2"/>
+<g fill="none" stroke="#f6e9ca" stroke-width="1.3"><path d="M18 26 27 42M32 23V42M46 26 37 42"/></g>
+<g stroke="#30303b" stroke-width="1.5"><ellipse cx="18" cy="17" rx="8" ry="10" fill="#65c9b1"/><ellipse cx="46" cy="17" rx="8" ry="10" fill="#f37a59"/><ellipse cx="32" cy="13" rx="8" ry="10" fill="#f4ce58"/></g>
+<g fill="#fff4d8" opacity=".75"><ellipse cx="15" cy="13" rx="1.5" ry="3"/><ellipse cx="43" cy="13" rx="1.5" ry="3"/><ellipse cx="29" cy="9" rx="1.5" ry="3"/></g>
+<circle cx="32" cy="33" r="7" fill="#f6e9ca"/><path d="M25 33h14" stroke="#65c9b1" stroke-width="4"/>
+<g fill="#171a26" stroke="#f6e9ca" stroke-width="1"><rect x="9" y="41" width="9" height="16" rx="3"/><rect x="46" y="41" width="9" height="16" rx="3"/></g>
+<rect x="16" y="40" width="32" height="14" rx="4" fill="#ef6844" stroke="#30303b" stroke-width="2"/><path d="M29 41h6v10h-6z" fill="#f4ce58"/>
+<g fill="#fff4d8"><circle cx="23" cy="46" r="2"/><circle cx="41" cy="46" r="2"/><rect x="20" y="51" width="24" height="4" rx="2"/></g>
+</svg>

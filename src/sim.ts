@@ -75,7 +75,7 @@ export function nav(arena:Arena):NavPoint[] {
 }
 function layoutNav(arena:Arena):{x:number;z:number}[] {
  if(isExpansion(arena))return expansionNav(arena);
- if(arena==='sky')return [{x:0,z:0},{x:0,z:23},{x:23,z:0},{x:0,z:-23},{x:-23,z:0}];
+ if(arena==='sky')return [{x:0,z:0},...[-1,1].flatMap(x=>[-1,1].map(z=>({x:x*6,z:z*6}))),...[-1,1].flatMap(sign=>[14.5,25].flatMap(d=>[{x:0,z:sign*d},{x:sign*d,z:0}]))];
  if(arena==='neon')return [{x:0,z:0},...Array.from({length:12},(_,i)=>({x:Math.sin(i*Math.PI/6)*22,z:Math.cos(i*Math.PI/6)*22}))];
  return [];
 }
@@ -168,7 +168,7 @@ export function findWaypoint(s:State,k:Kart,goal:{x:number;z:number;y?:number}) 
 const retreatGoals=new WeakMap<Kart,{tick:number;goal:NavPoint}>();
 export function botGoal(s:State,k:Kart){
  const enemies=s.karts.filter(o=>o.id!==k.id&&o.balloons>0&&(!s.ball||!s.config.soccer||soccerTeam(o)!==soccerTeam(k))).sort((a,b)=>(distance(k,a)+Math.abs(k.y-a.y)*3-(3-a.balloons)*6)-(distance(k,b)+Math.abs(k.y-b.y)*3-(3-b.balloons)*6));const foe=enemies[0];if(!foe)return {goal:k,foe:k,tactic:'idle'};
- const close=enemies.reduce((a,b)=>distance(k,a)<distance(k,b)?a:b),fragile=k.balloons===1&&!k.shield,pressure=fragile&&distance(k,close)<26;
+ const close=enemies.reduce((a,b)=>distance(k,a)<distance(k,b)?a:b),fragile=k.balloons===1&&!k.shield&&!(s.config.arena==='sky'&&k.item==='boost'),pressure=fragile&&distance(k,close)<26;
  if(s.time<=45&&Math.hypot(k.x,k.z)>dangerRadius(s)*.8)return {goal:{x:0,z:0,y:0},foe,tactic:'ring'};
 
  if(pressure&&!(k.item==='pulse'&&distance(k,foe)<8)){
@@ -181,8 +181,10 @@ export function botGoal(s:State,k:Kart){
  if(!k.item&&!k.roulette&&boxes[0]&&(distance(k,boxes[0])<55||distance(k,foe)>35))return {goal:boxes[0],foe,tactic:'rearm'};
  const lead={x:foe.x+foe.vx*.28,z:foe.z+foe.vz*.28,y:foe.y};return {goal:clearPath(s.config.arena,foe,lead)?lead:foe,foe,tactic:'attack'};
 }
+const skyProgress=new WeakMap<Kart,{tick:number;x:number;z:number}>();
 const botRecovery=new WeakMap<Kart,{remaining:number;heading:number;reverse:boolean}>();
 export function botInput(s:State,k:Kart):Input {
+ if(s.config.arena==='sky'){const progress=skyProgress.get(k);if(!progress||s.tick<progress.tick||distance(k,progress)>4)skyProgress.set(k,{tick:s.tick,x:k.x,z:k.z});else if(s.tick-progress.tick>120){k.stuck=Math.max(k.stuck,.9);skyProgress.set(k,{tick:s.tick,x:k.x,z:k.z});}}
  let recovery=botRecovery.get(k);
  if(!recovery&&k.stuck>.8){
   // Commit to an escape instead of cancelling reverse as soon as the kart moves.
@@ -191,7 +193,7 @@ export function botInput(s:State,k:Kart):Input {
   const heading=headings.sort((a,b)=>Math.abs(angleDiff(a,k.angle))-Math.abs(angleDiff(b,k.angle)))[0]??k.angle+Math.PI;
   recovery={remaining:2.6,heading,reverse:safe(k.angle+Math.PI,6)};botRecovery.set(k,recovery);routes.delete(k);k.stuck=0;
  }
- if(recovery){const backing=recovery.reverse&&recovery.remaining>1.5,error=angleDiff(recovery.heading,k.angle);return {gas:backing?-1:.65,steer:clamp(error*1.8,-1,1)*(backing?-1:1),drift:false,hop:false,fire:false};}
+ if(recovery){const backing=recovery.reverse&&recovery.remaining>1.5,error=angleDiff(recovery.heading,k.angle);return {gas:backing?-1:s.config.arena==='sky'?.45:.65,steer:clamp(error*1.8,-1,1)*(backing?-1:1),drift:false,hop:false,fire:false};}
  const {goal,foe,tactic}=botGoal(s,k);if(foe===k)return idle();const wp=waypoint(s,k,goal);let desired=Math.atan2(wp.x-k.x,wp.z-k.z);
  for(const o of obstacles(s.config.arena))if(distance(k,o)<o.r+5&&Math.abs(angleDiff(Math.atan2(o.x-k.x,o.z-k.z),k.angle))<1.2)desired+=angleDiff(Math.atan2(o.x-k.x,o.z-k.z),k.angle)>0?-.7:.7;
  for(const hazard of s.shots){if(Math.abs(hazard.y-k.y)>3)continue;const d=distance(k,hazard);if(hazard.kind==='mine'&&(hazard.age??0)<MINE_ARM_TIME)continue;if(d< (hazard.kind==='mine'?8:10)&&Math.abs(angleDiff(Math.atan2(hazard.x-k.x,hazard.z-k.z),k.angle))<.9)desired+=angleDiff(Math.atan2(hazard.x-k.x,hazard.z-k.z),k.angle)>0?-.85:.85;}
@@ -201,11 +203,11 @@ export function botInput(s:State,k:Kart):Input {
  const travel=Math.hypot(k.vx,k.vz)>2?Math.atan2(k.vx,k.vz):k.angle,look=Math.max(3,Math.abs(k.speed)*.55);
  const aheadX=k.x+Math.sin(travel)*look,aheadZ=k.z+Math.cos(travel)*look;
  const unsafe=!clearPath(s.config.arena,k,{x:aheadX,z:aheadZ,y:ground(s.config.arena,aheadX,aheadZ,k.y+.35)});
- const cruise=hazardMap?.7/Math.sqrt(scale):pace,corner=clamp(1-Math.abs(error)*.85,.1,1);
+ const cruise=hazardMap?(s.config.arena==='sky'?.9:.7)/Math.sqrt(scale):pace,corner=clamp(1-Math.abs(error)*.85,.1,1);
  const throttle=Math.min(pace,cruise,corner,unsafe?.13:1,edge?.1:1),desiredSpeed=20*scale*throttle;
  const braking=k.speed>desiredSpeed+2&&(unsafe||Math.abs(error)>.65);
  const boostSafe=clearPath(s.config.arena,k,{x:k.x+Math.sin(k.angle)*31*scale*2.1,z:k.z+Math.cos(k.angle)*31*scale*2.1,y:k.y});
- const fire=!!k.item&&(k.item==='shield'&&(range<24||k.balloons===1)||k.item==='boost'&&boostSafe&&!unsafe&&Math.abs(error)<.25&&(tactic==='retreat'||aim<.45&&range<38&&visible)||k.item==='mine'&&range<14&&(aim>1.6||tactic==='retreat')||k.item==='pulse'&&range<8&&sameLevel||(k.item==='bolt'||k.item==='seeker')&&visible&&sameLevel&&aim<(k.item==='seeker'?.85:.25)&&range<50);
+ const fire=!!k.item&&(k.item==='shield'&&(range<24||k.balloons===1)||k.item==='boost'&&boostSafe&&!unsafe&&Math.abs(error)<.25&&(tactic==='retreat'||aim<.45&&(range<38||s.config.arena==='sky')&&visible)||k.item==='mine'&&range<14&&(aim>1.6||tactic==='retreat')||k.item==='pulse'&&range<8&&sameLevel||(k.item==='bolt'||k.item==='seeker')&&visible&&sameLevel&&aim<(k.item==='seeker'?.85:.25)&&range<50);
  return {gas:braking?-1:throttle,steer:clamp(error*1.8,-1,1),drift:!hazardMap&&!unsafe&&Math.abs(error)>.5&&Math.abs(error)<1.2&&Math.abs(k.speed)>10,hop:false,fire};
 }
 export function drive(s:State,k:Kart,input:Input,dt:number) {
