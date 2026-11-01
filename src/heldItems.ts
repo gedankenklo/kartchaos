@@ -17,7 +17,26 @@ export function createHeldItem(item:Item,toon=false){
 }
 export class HeldItemDisplay extends T.Group {
  item:Item|null=null;model?:T.Group;
- constructor(public toon=false){super();this.name='heldItemDisplay';this.visible=false;this.position.set(1.8,1.7,-1.45);}
- clearModel(){if(this.model){const geometries=new Set<T.BufferGeometry>(),materials=new Set<T.Material>();this.model.traverse(o=>{if(o instanceof T.Mesh){geometries.add(o.geometry);for(const m of Array.isArray(o.material)?o.material:[o.material])materials.add(m);}});geometries.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());this.remove(this.model);this.model=undefined;}this.item=null;}
- update(k:Pick<Kart,'item'|'roulette'|'balloons'|'id'>,now:number,reduced=false,playing=true){const item=playing&&k.balloons>0&&k.roulette<=0?k.item:null;if(item!==this.item){this.clearModel();if(item){this.model=createHeldItem(item,this.toon);this.add(this.model);this.item=item;}}this.visible=!!item;if(!this.model)return;const t=reduced?0:now;this.position.y=1.7+(reduced?0:Math.sin(t*2.1+k.id)*.055);this.model.rotation.set(0,Math.PI+(reduced?0:item==='shield'?Math.sin(t*.8)*.25:t*.35),reduced?0:Math.sin(t*1.4+k.id)*.035);}
+ motion=new T.Vector3();velocity=new T.Vector3();target=new T.Vector3();previousSpeed?:number;previousVy?:number;
+ constructor(public toon=false){super();this.name='heldItemDisplay';this.visible=false;this.position.set(1.8,1.55,-1.45);}
+ clearModel(){if(this.model){const geometries=new Set<T.BufferGeometry>(),materials=new Set<T.Material>();this.model.traverse(o=>{if(o instanceof T.Mesh){geometries.add(o.geometry);for(const m of Array.isArray(o.material)?o.material:[o.material])materials.add(m);}});geometries.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());this.remove(this.model);this.model=undefined;}this.item=null;this.motion.set(0,0,0);this.velocity.set(0,0,0);this.previousSpeed=this.previousVy=undefined;}
+ update(k:Pick<Kart,'item'|'roulette'|'balloons'|'id'>&Partial<Pick<Kart,'speed'|'yawRate'|'steering'|'angle'|'pushX'|'pushZ'|'vy'>>,now:number,reduced=false,playing=true,dt=1/60){
+  const item=playing&&k.balloons>0&&k.roulette<=0?k.item:null;
+  if(item!==this.item){this.clearModel();if(item){this.model=createHeldItem(item,this.toon);this.add(this.model);this.item=item;}}
+  this.visible=!!item;if(!this.model)return;
+  const clamp=(v:number,a:number,b:number)=>Math.max(a,Math.min(b,v)),speed=k.speed??0,vy=k.vy??0;
+  const acceleration=dt>0&&this.previousSpeed!==undefined?clamp((speed-this.previousSpeed)/dt,-50,50):0;
+  const landing=dt>0&&this.previousVy!==undefined?clamp((vy-this.previousVy)/dt,-60,60):0;
+  this.previousSpeed=speed;this.previousVy=vy;
+  const angle=k.angle??0,side=(k.pushX??0)*Math.cos(angle)-(k.pushZ??0)*Math.sin(angle),back=(k.pushX??0)*Math.sin(angle)+(k.pushZ??0)*Math.cos(angle);
+  const yaw=k.yawRate??(k.steering??0)*1.4,t=reduced?0:now;
+  const target=this.target.set(clamp(-yaw*speed*.006-side*.014+Math.sin(t*1.6+k.id)*.025,-.16,.28),clamp(-landing*.0018,-.08,.08),clamp(-acceleration*.006-speed*.002-back*.012+Math.cos(t*1.3+k.id)*.02,-.32,.2));
+  if(reduced){this.motion.set(0,0,0);this.velocity.set(0,0,0);}else{
+   // A damped spring gives the item inertia without frame-rate-dependent wobble.
+   let remaining=clamp(dt,0,.1);while(remaining>0){const h=Math.min(remaining,1/120);this.velocity.x+=(target.x-this.motion.x)*32*h;this.velocity.y+=(target.y-this.motion.y)*32*h;this.velocity.z+=(target.z-this.motion.z)*32*h;this.velocity.multiplyScalar(Math.exp(-8*h));this.motion.addScaledVector(this.velocity,h);remaining-=h;}
+   this.motion.x=clamp(this.motion.x,-.18,.32);this.motion.y=clamp(this.motion.y,-.1,.1);this.motion.z=clamp(this.motion.z,-.36,.24);
+  }
+  this.position.set(1.8+this.motion.x,1.55+this.motion.y+(reduced?0:Math.sin(t*2.1+k.id)*.045),-1.45+this.motion.z);
+  this.model.rotation.set(this.motion.z*.35,Math.PI+(reduced?0:item==='shield'?Math.sin(t*.8)*.25:t*.35),-this.motion.x*.8+(reduced?0:Math.sin(t*1.4+k.id)*.035));
+ }
 }

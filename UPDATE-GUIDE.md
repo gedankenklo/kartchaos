@@ -1,11 +1,11 @@
-# KART CHAOS 64 — v1.22 wider Fortress perimeter
+# KART CHAOS 64 — v1.23 held-item sway
 
-Upload the CONTENTS of this folder into your existing GitHub repository root. Merge folders, keep your MP3s, commit and let Render rebuild with its existing settings.
+Upload the CONTENTS of this folder into your existing GitHub repository root. Merge folders, preserve your MP3s, commit and let Render rebuild with the existing settings.
 
-The Fortress now measures approximately 307 m across, expanded from 269 m. Each outer wall is 19.2 m farther from the centre. This adds a much broader driving lane around the existing blocks and ground-level ramps, with approximately 30 m between ramp entrances and the wall. Blocks, ramps and the aligned upper bridges retain their existing positions.
+Held items now use a small damped spring: they lag through turns, trail acceleration, swing forward when braking and react to bumps and landing impulses. They settle naturally when those forces stop. Slow rotation and gentle idle movement remain. Motion is bounded beside the kart, and the anchor sits slightly lower to leave more room beneath swaying balloons. The shield remains readable. Reduced-motion mode keeps the held item still.
 
-The arena boundary is shared by rendering and simulation. Pines automatically move outward using that same boundary, with their full canopies outside the square arena. Preview, map scale, navigation and wall collision follow the new extent. Bird flocks remain included.
+This is visual feedback only; inventory, item use, driving physics and the item HUD are unchanged. It applies to all six held items and to rival karts through their existing state fields. All previous arena and gameplay improvements are included. Music folders and MP3 handling are unchanged: keep existing MP3 files.
 
-All earlier updates are included, including stronger conveyors, held-item models, team circles, battle feedback and results-controller defaults. Music folder names and MP3 handling remain unchanged. Preserve your existing MP3s.
+Validation: production build; 186 automated tests, including turn reversal, acceleration/braking, bounded motion, settling, reduced motion, cleanup and consistency at 30/60 fps; browser visual checks with simulated driving inputs and both art styles.
 
-Validation: production build; 183 automated tests including 150cc driving across all four outer ramp mouths and full-canopy clearance for every Fortress pine; 36 two-minute bot navigation scenarios, with no Fortress falls or persistent stalls; local browser review of the wider perimeter and tree placement.
+Developer browser fixture: /tests/held-items-browser.html; Motion / still toggles simulated driving forces.
