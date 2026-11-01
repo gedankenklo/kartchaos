@@ -181,3 +181,7 @@ Four new arenas: Starfall Citadels (CTF), Glacier Slide, Cinder Crypt and Starco
 
 
 v1.31: dramatic sudden-death intro and synchronized recurring audio/visual warning pulse.
+
+
+## v1.32 arena redesigns
+Starcore Sphere now uses normal station driving with a reactor basin and raised outer ring; its name and starcore music folder are unchanged. Glacier Slide has stronger ice sliding and connected terraces. Cinder Crypt has a new asymmetric layout and Ember Keep-style animated lava. Starfall Citadels has tiered towers, elevated crossings and a surrounding space battle.

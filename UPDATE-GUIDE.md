@@ -1,11 +1,12 @@
-# KART CHAOS 64 — v1.31 sudden-death sound and pulse
+# KART CHAOS 64 — v1.32 arena redesigns
 
-Upload these contents into your existing GitHub repository root, merging folders. Keep existing MP3 files. Commit and let Render rebuild.
+Upload the contents of this update into your existing GitHub repository root, merging folders. Keep your existing MP3 files. Commit and let Render rebuild. Update the client and server together.
 
-Sudden death begins with a bass impact, descending alarm and low rumble. An ongoing warning beat repeats every 1.15 seconds while sudden death is active. The warning label and containment boundary pulse on the same match-time rhythm, including the curved wall on Starcore Sphere.
+- Starcore Sphere: ordinary station driving replaces spherical gravity and projection. A reactor basin, sloping approaches, raised outer ring and decorative hull keep the space theme. The name, arena ID and starcore music folder are unchanged.
+- Cinder Crypt: asymmetric lava channels, separate towers, bridges and a raised cathedral replace the previous layout. Lava uses the same animated material as Ember Keep.
+- Starfall Citadels: larger tiered towers, raised central and flank crossings, and a surrounding battle with capital ships, fighters, laser fire and explosions.
+- Glacier Slide: much stronger sideways sliding, longer braking, connected terraces, a summit and a lower central deck.
 
-The intro plays once per round. Pausing stops further beats; resuming does not restart the intro. Late joining an active sudden-death round gets one intro. Results/end-of-round stops further cues. Sounds respect mute and the effects-volume setting. Reduced-motion mode keeps the visual warning steady while retaining audio cues.
+Both art styles, existing music defaults and sudden-death cues are retained. Your existing music folder names still work. The patch contains no MP3 files and does not replace tracks.json; the build scans your existing music automatically.
 
-Validation: production build; 205 automated tests, including intro deduplication, beat timing, pause/resume, late joining and round reset. All previous map and music updates are included.
-
-Preserve your MP3s. This patch includes placeholder files for all four v1.30 music folders, but contains no MP3s and does not replace tracks.json.
+Validation: production build; 208 automated tests; 48 navigation scenarios covering all 16 arenas at all three speeds (96 simulated minutes); successful captures on both CTF arenas at all three speeds; six online integration tests; browser visual checks. Starcore navigation runs had no falls at any speed.

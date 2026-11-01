@@ -1,5 +1,3 @@
-import {collideGlobeKarts,stepGlobeShots} from './globeBattle';
-import {advanceGlobe,globeDistance,globeDelta,globeHeight} from './globe';
 import {createFlags,assignFlagTeams,stepFlags,dropFlag,flagBotGoal,type CaptureFlags} from './captureFlag';
 import {BEACH_PALMS} from './beachProps';
 import {CASTLE_LAMPS} from './castleProps';
@@ -36,9 +34,8 @@ export interface Config {soccer?:boolean;arena:Arena; humans:number; bots:number
 export interface State {ctf?:CaptureFlags;lighting?:Lighting;winningTeam?:'blue'|'orange';config:Config; championship?:Championship; ball?:Football; karts:Kart[]; shots:Shot[]; boxes:Box[]; time:number; countdown:number; phase:'countdown'|'playing'|'finished'; winner:number|null; tick:number; seed:number; serial:number; events:Event[];}
 export const clamp=(v:number,a:number,b:number)=>Math.max(a,Math.min(b,v));
 export const angleDiff=(a:number,b:number)=>Math.atan2(Math.sin(a-b),Math.cos(a-b));
-export const distance=(a:{x:number;z:number},b:{x:number;z:number})=>(a as {orb?:boolean}).orb&&(b as {orb?:boolean}).orb?globeDistance(a,b):Math.hypot(a.x-b.x,a.z-b.z);
+export const distance=(a:{x:number;z:number},b:{x:number;z:number})=>Math.hypot(a.x-b.x,a.z-b.z);
 export function ground(arena:Arena,x:number,z:number,referenceY=Infinity):number {
- if(arena==='starcore')return globeHeight(x,z);
  if(arena==='fortress'){
   const lx=x/ARENA_SCALE.fortress,lz=z/ARENA_SCALE.fortress,solid=fortressSolidHeight(lx,lz);
   const h=solid< -10?solid:solid*ARENA_HEIGHT.fortress;
@@ -70,7 +67,7 @@ export function layoutObstacles(arena:Arena):{x:number;z:number;r:number;height?
 }
 export interface NavPoint {x:number;z:number;y:number;}
 export function nav(arena:Arena):NavPoint[] {
- if(arena==='starcore')return Array.from({length:24},(_,i)=>{const x=(i%8/8*2-1)*Math.PI*120,z=(Math.floor(i/8)-1)*85;return {x,z,y:globeHeight(x,z)};});
+
  if(arena==='fortress'){
   const points:NavPoint[]=[{x:0,z:0,y:0}];
   for(const sign of [-1,1])for(const d of [7,FORT.center,FORT.center+FORT.half+3,FORT.extent-7])points.push({x:0,z:sign*d,y:0},{x:sign*d,z:0,y:0});
@@ -106,14 +103,15 @@ export function createState(config:Config):State {
   const a=id/count*Math.PI*2;
   const radius=(isExpansion(config.arena)?7:config.arena==='sky'?8:config.arena==='fortress'?18:21)*ARENA_SCALE[config.arena];
   let x=Math.sin(a)*radius,z=Math.cos(a)*radius;
+  if(config.arena==='starcore'){x=Math.sin(a)*38*ARENA_SCALE.starcore;z=Math.cos(a)*38*ARENA_SCALE.starcore;}if(config.arena==='crypt'){x=(28+Math.sin(a)*7)*ARENA_SCALE.crypt;z=(-36+Math.cos(a)*7)*ARENA_SCALE.crypt;}
   if(config.arena==='fortress'){const lane=6*ARENA_SCALE.fortress;if(Math.abs(x)<Math.abs(z))x=clamp(x,-lane,lane);else z=clamp(z,-lane,lane);}
   const driver=id<config.humans?config.drivers![id]:(available.shift()??id%8);
-  return {orb:config.arena==='starcore',stats:newRoundStats(),id,driver,name:DRIVER_NAMES[driver],bot:id>=config.humans,x,z,y:ground(config.arena,x,z,0),angle:a+Math.PI,vx:0,vz:0,vy:0,speed:0,steering:0,yawRate:0,reverseTime:0,driftSide:0,driftSlip:0,pushX:0,pushZ:0,bumpCooldown:0,balloons:3,inv:0,item:null,roulette:0,rouletteSeed:0,rouletteStop:false,itemFlash:0,boost:0,ram:0,shield:0,drift:0,cooldown:0,hopHeld:false,fireHeld:false,target:0,stuck:0,kills:0,damage:0,hits:0};
+  return {orb:false,stats:newRoundStats(),id,driver,name:DRIVER_NAMES[driver],bot:id>=config.humans,x,z,y:ground(config.arena,x,z,0),angle:a+Math.PI,vx:0,vz:0,vy:0,speed:0,steering:0,yawRate:0,reverseTime:0,driftSide:0,driftSlip:0,pushX:0,pushZ:0,bumpCooldown:0,balloons:3,inv:0,item:null,roulette:0,rouletteSeed:0,rouletteStop:false,itemFlash:0,boost:0,ram:0,shield:0,drift:0,cooldown:0,hopHeld:false,fireHeld:false,target:0,stuck:0,kills:0,damage:0,hits:0};
  });
  if(config.arena==='stadium')assignSoccerTeams(karts);if(config.arena==='depot'||config.arena==='starfall')assignFlagTeams(karts,config.arena);
- const points=(config.arena==='starcore'?Array.from({length:24},(_,i)=>({x:(i%8/8*2-1)*Math.PI*120,z:(Math.floor(i/8)-1)*85})):isExpansion(config.arena)?EXPANSIONS[config.arena].items:config.arena==='fortress'?FORT_ITEMS:config.arena==='sky'?[{x:0,z:0},{x:0,z:24},{x:24,z:0},{x:0,z:-24},{x:-24,z:0},{x:0,z:10},{x:10,z:0},{x:0,z:-10},{x:-10,z:0}]:[0,1,2,3,4,5,6,7].map(i=>({x:Math.sin(i*Math.PI/4)*20,z:Math.cos(i*Math.PI/4)*20}))).map((p:{x:number;z:number;y?:number})=>({x:p.x*ARENA_SCALE[config.arena],z:p.z*ARENA_SCALE[config.arena],y:p.y===undefined?undefined:p.y*ARENA_HEIGHT[config.arena]}));
+ const points=(isExpansion(config.arena)?EXPANSIONS[config.arena].items:config.arena==='fortress'?FORT_ITEMS:config.arena==='sky'?[{x:0,z:0},{x:0,z:24},{x:24,z:0},{x:0,z:-24},{x:-24,z:0},{x:0,z:10},{x:10,z:0},{x:0,z:-10},{x:-10,z:0}]:[0,1,2,3,4,5,6,7].map(i=>({x:Math.sin(i*Math.PI/4)*20,z:Math.cos(i*Math.PI/4)*20}))).map((p:{x:number;z:number;y?:number})=>({x:p.x*ARENA_SCALE[config.arena],z:p.z*ARENA_SCALE[config.arena],y:p.y===undefined?undefined:p.y*ARENA_HEIGHT[config.arena]}));
  const championship=config.championship?createChampionship(config,karts):undefined;
- return {ctf:config.arena==='depot'||config.arena==='starfall'?createFlags(config.arena):undefined,lighting:chooseLighting(config.arena),config,championship,ball:config.arena==='stadium'?createFootball():undefined,karts,shots:[],boxes:points.map(p=>({...p,orb:config.arena==='starcore',y:p.y??ground(config.arena,p.x,p.z),respawn:0})),time:config.duration,countdown:3,phase:'countdown',winner:null,tick:0,seed:728463,serial:0,events:[]};
+ return {ctf:config.arena==='depot'||config.arena==='starfall'?createFlags(config.arena):undefined,lighting:chooseLighting(config.arena),config,championship,ball:config.arena==='stadium'?createFootball():undefined,karts,shots:[],boxes:points.map(p=>({...p,orb:false,y:p.y??ground(config.arena,p.x,p.z),respawn:0})),time:config.duration,countdown:3,phase:'countdown',winner:null,tick:0,seed:728463,serial:0,events:[]};
 }
 export function nextRoundState(previous:State,settings:Config=previous.config):State {
  const cup=previous.championship;if(cup&&!cup.completed){const config={...settings,championship:true,arena:cup.schedule[cup.round],drivers:previous.config.drivers,humans:previous.config.humans,bots:previous.config.bots};const next=createState(config);next.championship={...cup,round:cup.round+1,scored:false,standings:cup.standings.map(row=>({...row})),schedule:[...cup.schedule]};return next;}
@@ -148,11 +146,10 @@ export function useItem(s:State,k:Kart) {
  if(type==='pulse'){emit(s,'shockwave',k);for(const o of s.karts)if(o.id!==k.id&&distance(o,k)<9&&Math.abs(o.y-k.y)<4)damage(s,o,k.id,{cause:'pulse',fromX:k.x,fromZ:k.z});return;}
  if(type==='bolt'||type==='seeker')statsFor(k).projectilesFired++;
  const back=type==='mine'?-2.8:2.3;
- const spawn=k.orb?advanceGlobe(k,Math.sin(k.angle)*back,Math.cos(k.angle)*back,k.angle):{x:k.x+Math.sin(k.angle)*back,z:k.z+Math.cos(k.angle)*back,angle:k.angle};
+ const spawn={x:k.x+Math.sin(k.angle)*back,z:k.z+Math.cos(k.angle)*back,angle:k.angle};
  s.shots.push({orb:k.orb,id:++s.serial,owner:k.id,kind:type,x:spawn.x,z:spawn.z,y:k.y+(type==='bolt'?.65:1),angle:spawn.angle,life:type==='mine'?25:type==='bolt'?8:5,age:0,bounces:0});
 }
 export function clearPath(arena:Arena,a:{x:number;z:number;y?:number},b:{x:number;z:number;y?:number}) {
- if(arena==='starcore')return true;
  let prev=a.y??ground(arena,a.x,a.z);
  const steps=Math.ceil(distance(a,b)/1.8);
  for(let i=1;i<=steps;i++){const x=a.x+(b.x-a.x)*i/steps,z=a.z+(b.z-a.z)*i/steps,h=ground(arena,x,z,prev+.35);if(arena==='fortress'&&Math.max(Math.abs(x),Math.abs(z))>(ARENAS[arena].extent-1.25)*ARENA_SCALE[arena]-1.1||h< -10||Math.abs(h-prev)>1.6||arena==='neon'&&neonRimContact(x,z,1.4,h+.5,.5)||obstacles(arena).some(o=>h<(o.height??2)&&Math.hypot(x-o.x,z-o.z)<o.r+1.4))return false;prev=h;}return Math.abs(prev-(b.y??ground(arena,b.x,b.z)))<1.6;
@@ -196,10 +193,10 @@ export function botGoal(s:State,k:Kart){
   if(regroup.goal)return {goal:regroup.goal,foe,tactic:'regroup'};
  }
  const close=enemies.reduce((a,b)=>distance(k,a)<distance(k,b)?a:b),fragile=enemies.length>1&&k.balloons===1&&!k.shield&&k.item!=='boost'&&k.ram<=0,pressure=fragile&&distance(k,close)<26;
- if(s.time<=45&&(k.orb?globeDistance(k,{x:0,z:0}):Math.hypot(k.x,k.z))>dangerRadius(s)*.8)return {goal:{x:0,z:0,y:0},foe,tactic:'ring'};
+ if(s.time<=45&&Math.hypot(k.x,k.z)>dangerRadius(s)*.8)return {goal:{x:0,z:0,y:0},foe,tactic:'ring'};
 
  if(s.ctf){const box=!k.item&&!k.roulette&&!s.ctf.flags.some(f=>f.carrier===k.id)?s.boxes.filter(b=>b.respawn<=0&&distance(k,b)<42).sort((a,b)=>distance(k,a)-distance(k,b))[0]:undefined;return {goal:box??flagBotGoal(s,k),foe,tactic:box?'rearm':'flag'};}
- if(!k.orb&&pressure&&!(k.item==='pulse'&&distance(k,foe)<8)){
+ if(pressure&&!(k.item==='pulse'&&distance(k,foe)<8)){
   const cached=retreatGoals.get(k);if(cached&&s.tick-cached.tick<30)return {goal:cached.goal,foe,tactic:'retreat'};
   const candidates=navGraph(s.config.arena).points.filter(p=>distance(k,p)>7&&Math.hypot(p.x,p.z)<(s.time<=45?dangerRadius(s)*.75:arenaExtent(s.config.arena)));
   const score=(p:NavPoint)=>Math.min(...enemies.map(e=>distance(p,e)))*.8+(!clearPath(s.config.arena,close,p)?18:0)+Math.min(10,p.y)*.7-distance(k,p)*.3-s.shots.filter(m=>m.kind==='mine'&&distance(m,p)<7).length*60;
@@ -207,13 +204,12 @@ export function botGoal(s:State,k:Kart){
  }
  const boxes=s.boxes.filter(b=>b.respawn<=0).sort((a,b)=>(distance(k,a)+Math.abs(k.y-a.y)*2)-(distance(k,b)+Math.abs(k.y-b.y)*2));
  if(!k.item&&!k.roulette&&boxes[0]&&(distance(k,boxes[0])<55||distance(k,foe)>35))return {goal:boxes[0],foe,tactic:'rearm'};
- if(k.orb)return {goal:foe,foe,tactic:'attack'};
  const lead={x:foe.x+foe.vx*.28,z:foe.z+foe.vz*.28,y:foe.y};return {goal:clearPath(s.config.arena,foe,lead)?lead:foe,foe,tactic:'attack'};
 }
 const skyProgress=new WeakMap<Kart,{tick:number;x:number;z:number}>();
 const botRecovery=new WeakMap<Kart,{remaining:number;heading:number;reverse:boolean}>();
 export function botInput(s:State,k:Kart):Input {
- if(s.config.arena==='sky'||s.config.arena==='fortress'){const progress=skyProgress.get(k);if(!progress||s.tick<progress.tick||distance(k,progress)>4)skyProgress.set(k,{tick:s.tick,x:k.x,z:k.z});else if(s.tick-progress.tick>120){k.stuck=Math.max(k.stuck,.9);skyProgress.set(k,{tick:s.tick,x:k.x,z:k.z});}}
+ if(s.config.arena==='sky'||s.config.arena==='fortress'||s.config.arena==='glacier'){const progress=skyProgress.get(k);if(!progress||s.tick<progress.tick||distance(k,progress)>4)skyProgress.set(k,{tick:s.tick,x:k.x,z:k.z});else if(s.tick-progress.tick>120){k.stuck=Math.max(k.stuck,.9);skyProgress.set(k,{tick:s.tick,x:k.x,z:k.z});}}
  let recovery=botRecovery.get(k);
  if(!recovery&&k.stuck>.8){
   // Commit to an escape instead of cancelling reverse as soon as the kart moves.
@@ -223,12 +219,12 @@ export function botInput(s:State,k:Kart):Input {
   recovery={remaining:2.6,heading,reverse:safe(k.angle+Math.PI,6)};botRecovery.set(k,recovery);routes.delete(k);k.stuck=0;
  }
  if(recovery){const backing=recovery.reverse&&recovery.remaining>1.5,error=angleDiff(recovery.heading,k.angle);return {gas:backing?-1:s.config.arena==='sky'?.45:.65,steer:clamp(error*1.8,-1,1)*(backing?-1:1),drift:false,hop:false,fire:false};}
- const {goal,foe,tactic}=botGoal(s,k);if(foe===k)return idle();const wp=waypoint(s,k,goal),delta=s.config.arena==='starcore'?globeDelta(k,goal):{x:wp.x-k.x,z:wp.z-k.z};let desired=Math.atan2(delta.x,delta.z);
+ const {goal,foe,tactic}=botGoal(s,k);if(foe===k)return idle();const wp=waypoint(s,k,goal),delta={x:wp.x-k.x,z:wp.z-k.z};let desired=Math.atan2(delta.x,delta.z);
  for(const o of obstacles(s.config.arena))if(distance(k,o)<o.r+5&&Math.abs(angleDiff(Math.atan2(o.x-k.x,o.z-k.z),k.angle))<1.2)desired+=angleDiff(Math.atan2(o.x-k.x,o.z-k.z),k.angle)>0?-.7:.7;
  for(const hazard of s.shots){if(Math.abs(hazard.y-k.y)>3)continue;const d=distance(k,hazard);if(hazard.kind==='mine'&&(hazard.age??0)<MINE_ARM_TIME)continue;if(d< (hazard.kind==='mine'?8:10)&&Math.abs(angleDiff(Math.atan2(hazard.x-k.x,hazard.z-k.z),k.angle))<.9)desired+=angleDiff(Math.atan2(hazard.x-k.x,hazard.z-k.z),k.angle)>0?-.85:.85;}
- const error=angleDiff(desired,k.angle),aim=Math.abs(angleDiff(s.config.arena==='starcore'?Math.atan2(globeDelta(k,foe).x,globeDelta(k,foe).z):Math.atan2(foe.x-k.x,foe.z-k.z),k.angle)),range=distance(k,foe),sameLevel=Math.abs(k.y-foe.y)<3,visible=clearPath(s.config.arena,k,foe),diff=s.config.difficulty;
+ const error=angleDiff(desired,k.angle),aim=Math.abs(angleDiff(Math.atan2(foe.x-k.x,foe.z-k.z),k.angle)),range=distance(k,foe),sameLevel=Math.abs(k.y-foe.y)<3,visible=clearPath(s.config.arena,k,foe),diff=s.config.difficulty;
  const pace=diff==='easy'?.65:diff==='hard'?1:.85,ahead=Math.max(7,Math.abs(k.speed)*.65),edge=s.config.arena==='sky'&&ground('sky',k.x+Math.sin(k.angle)*ahead,k.z+Math.cos(k.angle)*ahead)< -10;
-  const scale=speedSettings(s.config.speedClass).scale,hazardMap=s.config.arena==='starfall'||s.config.arena==='glacier'||s.config.arena==='crypt'||s.config.arena==='depot'||s.config.arena==='sky'||s.config.arena==='castle'||s.config.arena==='neon'||s.config.arena==='ruins';
+  const scale=speedSettings(s.config.speedClass).scale,hazardMap=s.config.arena==='starcore'||s.config.arena==='starfall'||s.config.arena==='glacier'||s.config.arena==='crypt'||s.config.arena==='depot'||s.config.arena==='sky'||s.config.arena==='castle'||s.config.arena==='neon'||s.config.arena==='ruins';
  const travel=Math.hypot(k.vx,k.vz)>2?Math.atan2(k.vx,k.vz):k.angle,look=Math.max(3,Math.abs(k.speed)*.55);
  const aheadX=k.x+Math.sin(travel)*look,aheadZ=k.z+Math.cos(travel)*look;
  const unsafe=!clearPath(s.config.arena,k,{x:aheadX,z:aheadZ,y:ground(s.config.arena,aheadX,aheadZ,k.y+.35)});
@@ -250,8 +246,8 @@ export function drive(s:State,k:Kart,input:Input,dt:number) {
  k.steering??=0;k.yawRate??=0;k.reverseTime??=0;k.driftSide??=0;k.driftSlip??=0;
  const settings=speedSettings(s.config.speedClass),scale=settings.scale,cruise=20*scale,maxSpeed=(k.boost>0?31:20)*scale;
  if(input.gas>0){k.reverseTime=0;if(k.speed<0)k.speed=Math.min(0,k.speed+38*dt);else {const target=cruise*input.gas;k.speed+=clamp(target-k.speed,-13*scale*dt,28*scale*(1-.35*Math.abs(k.speed)/cruise)*dt);}}
- else if(input.gas<0){if(k.speed>.1){k.speed=Math.max(0,k.speed-36*Math.pow(scale,1.35)*-input.gas*dt);k.reverseTime=0;}else {k.reverseTime+=dt;if(k.reverseTime>.16)k.speed=Math.max(-8*-input.gas,k.speed-13*-input.gas*dt);}}
- else {k.reverseTime=0;k.speed*=Math.exp(-.65*dt);if(Math.abs(k.speed)<.04)k.speed=0;}
+ else if(input.gas<0){if(k.speed>.1){k.speed=Math.max(0,k.speed-36*Math.pow(scale,1.35)*(s.config.arena==='glacier'?.4:1)*-input.gas*dt);k.reverseTime=0;}else {k.reverseTime+=dt;if(k.reverseTime>.16)k.speed=Math.max(-8*-input.gas,k.speed-13*-input.gas*dt);}}
+ else {k.reverseTime=0;k.speed*=Math.exp(-(s.config.arena==='glacier'?.1:.65)*dt);if(Math.abs(k.speed)<.04)k.speed=0;}
  if(k.boost>0)k.speed=Math.min(maxSpeed,Math.max(0,k.speed)+45*scale*dt);
  k.speed=clamp(k.speed,-8,maxSpeed);
  const steerResponse=Math.abs(input.steer)<Math.abs(k.steering)?24:16;
@@ -269,27 +265,26 @@ export function drive(s:State,k:Kart,input:Input,dt:number) {
  k.driftSlip+=(targetSlip-k.driftSlip)*(1-Math.exp(-dt*(drifting?8:10)));
  const travel=k.angle-k.driftSlip,grip=drifting?6:onGround?14:2.2;
  const surface=arenaSurface(s.config.arena,k.x,k.z,k.y);const traction=1-Math.exp(-grip*settings.grip*surface.grip*dt);
- k.vx+=(Math.sin(travel)*k.speed-k.vx)*traction;
- k.vz+=(Math.cos(travel)*k.speed-k.vz)*traction;
+ if(s.config.arena==='glacier'&&onGround){const fx=Math.sin(travel),fz=Math.cos(travel),forward=k.vx*fx+k.vz*fz,lateral=k.vx*fz-k.vz*fx,drive=forward+(k.speed-forward)*(1-Math.exp(-3*dt)),slide=lateral*Math.exp(-.38*dt);k.vx=fx*drive+fz*slide;k.vz=fz*drive-fx*slide;const v=Math.hypot(k.vx,k.vz);if(v>maxSpeed*1.15){k.vx*=maxSpeed*1.15/v;k.vz*=maxSpeed*1.15/v;}}else{k.vx+=(Math.sin(travel)*k.speed-k.vx)*traction;k.vz+=(Math.cos(travel)*k.speed-k.vz)*traction;}
  const oldX=k.x,oldZ=k.z;
  let nx=k.x+(k.vx+k.pushX+(onGround?surface.vx:0))*dt,nz=k.z+(k.vz+k.pushZ+(onGround?surface.vz:0))*dt;
  const newFloor=ground(s.config.arena,nx,nz,k.y);
  // Remove only the velocity into the wall. Never bounce the throttle into reverse.
  const crash=()=>{if(k.cooldown<=0&&Math.hypot(k.vx+k.pushX,k.vz+k.pushZ)>5){k.cooldown=.65;emit(s,'crash',k);}};
  const slide=(normalX:number,normalZ:number)=>{if((k.vx+k.pushX)*normalX+(k.vz+k.pushZ)*normalZ>5)crash();const external=k.pushX*normalX+k.pushZ*normalZ;if(external>0){k.pushX-=normalX*external;k.pushZ-=normalZ*external;}const into=k.vx*normalX+k.vz*normalZ;if(into<=0)return;const ratio=into/Math.max(1,Math.hypot(k.vx,k.vz));k.vx-=normalX*into;k.vz-=normalZ*into;k.speed*=ratio>.94?.28:1-.06*ratio;};
- if(s.config.arena!=='starcore'&&newFloor>k.y+.85){const freeX=ground(s.config.arena,nx,k.z,k.y)<=k.y+.85,freeZ=ground(s.config.arena,k.x,nz,k.y)<=k.y+.85;if(freeX&&(!freeZ||Math.abs(k.vx)>Math.abs(k.vz))){slide(0,Math.sign(nz-k.z));nz=k.z;}else if(freeZ){slide(Math.sign(nx-k.x),0);nx=k.x;}else{crash();nx=k.x;nz=k.z;k.vx=0;k.vz=0;k.pushX=0;k.pushZ=0;k.speed*=.28;}}
- if(s.config.arena!=='sky'&&s.config.arena!=='neon'&&s.config.arena!=='starcore'){
+ if(newFloor>k.y+.85){const freeX=ground(s.config.arena,nx,k.z,k.y)<=k.y+.85,freeZ=ground(s.config.arena,k.x,nz,k.y)<=k.y+.85;if(freeX&&(!freeZ||Math.abs(k.vx)>Math.abs(k.vz))){slide(0,Math.sign(nz-k.z));nz=k.z;}else if(freeZ){slide(Math.sign(nx-k.x),0);nx=k.x;}else{crash();nx=k.x;nz=k.z;k.vx=0;k.vz=0;k.pushX=0;k.pushZ=0;k.speed*=.28;}}
+ if(s.config.arena!=='sky'&&s.config.arena!=='neon'){
   const scale=ARENA_SCALE[s.config.arena];
   {const limit=(ARENAS[s.config.arena].extent-1.25)*scale-1.1;if(Math.abs(nx)>limit){slide(Math.sign(nx),0);nx=clamp(nx,-limit,limit);}if(Math.abs(nz)>limit){slide(0,Math.sign(nz));nz=clamp(nz,-limit,limit);}}
  }
  for(const o of obstacles(s.config.arena)){const d=Math.hypot(nx-o.x,nz-o.z);if(d<o.r+1.1&&k.y<(o.height??2)){const normalX=(nx-o.x)/(d||1),normalZ=(nz-o.z)/(d||1);slide(-normalX,-normalZ);nx=o.x+normalX*(o.r+1.15);nz=o.z+normalZ*(o.r+1.15);}}
  if(s.config.arena==='neon'){const contact=neonRimContact(nx,nz,1.1,k.y+.7,.7);if(contact){const {normalX,normalZ}=contact;const into=k.vx*normalX+k.vz*normalZ;if(into<0){crash();k.vx-=1.45*into*normalX;k.vz-=1.45*into*normalZ;k.speed*=.6;}const push=k.pushX*normalX+k.pushZ*normalZ;if(push<0){k.pushX-=1.4*push*normalX;k.pushZ-=1.4*push*normalZ;}nx=contact.x;nz=contact.z;}}
- if(s.config.arena==='starcore'){const moved=advanceGlobe(k,nx-k.x,nz-k.z,k.angle),turn=angleDiff(moved.angle,k.angle),sin=Math.sin(turn),cos=Math.cos(turn),vx=k.vx;k.vx=vx*cos+k.vz*sin;k.vz=k.vz*cos-vx*sin;k.angle=moved.angle;nx=moved.x;nz=moved.z;}
+
  k.x=nx;k.z=nz;
  if(input.hop&&!k.hopHeld&&onGround)k.vy=7;
  k.hopHeld=input.hop;
  k.vy-=21*dt;k.y+=k.vy*dt;
- const h=ground(s.config.arena,k.x,k.z,k.y+.4);if(k.y<h&&(s.config.arena==='starcore'||k.y>h-1.5)){k.y=h;k.vy=0;}
+ const h=ground(s.config.arena,k.x,k.z,k.y+.4);if(k.y<h&&(k.y>h-1.5)){k.y=h;k.vy=0;}
  if(k.y<(s.config.arena==='castle'||s.config.arena==='crypt'?-4:-14)){damage(s,k,k.id,{cause:s.config.arena==='castle'||s.config.arena==='crypt'?'lava':'fall'});k.x=0;k.z=0;k.y=ground(s.config.arena,0,0)+1;k.vy=0;k.speed=0;k.boost=0;k.ram=0;k.vx=0;k.vz=0;k.pushX=0;k.pushZ=0;k.inv=3;emit(s,'fall',k);}
  if(k.roulette>0){
   if(input.fire&&!k.fireHeld)k.rouletteStop=true;
@@ -302,7 +297,6 @@ export function drive(s:State,k:Kart,input:Input,dt:number) {
 }
 // Collision impulse is independent of tire traction, so shoves persist through steering.
 export function collideKarts(s:State){
- if(s.config.arena==='starcore'){collideGlobeKarts(s);return;}
  for(let i=0;i<s.karts.length;i++)for(let j=i+1;j<s.karts.length;j++){
   const a=s.karts[i],b=s.karts[j],d=distance(a,b);
   if(!a.balloons||!b.balloons||d>=2.3||Math.abs(a.y-b.y)>=1.7)continue;
@@ -348,7 +342,7 @@ export function advanceRicochet(s:State,p:Shot,dt:number){
   for(const k of s.karts){if((s.ball&&s.config.soccer||s.ctf)&&k.id!==p.owner&&soccerTeam(k)===soccerTeam(s.karts[p.owner]))continue;if(!k.balloons||Math.abs(k.y+.8-p.y)>1.7||(k.id===p.owner&&(p.bounces===0||p.age<.4)))continue;const dx=p.x-ox,dz=p.z-oz,t=clamp(((k.x-ox)*dx+(k.z-oz)*dz)/(dx*dx+dz*dz||1),0,1);if(Math.hypot(k.x-ox-dx*t,k.z-oz-dz*t)<1.65){damage(s,k,p.owner,{cause:'bolt',fromX:k.x-Math.sin(p.angle)*5,fromZ:k.z-Math.cos(p.angle)*5});p.life=0;break;}}
  }
 }
-export function dangerRadius(s:State){const start=s.config.arena==='starcore'?Math.PI*120:(s.config.arena==='neon'||s.config.arena==='sky'?1.35:Math.SQRT2)*arenaExtent(s.config.arena);return s.time>45?start:Math.max(7,start*s.time/45);}
+export function dangerRadius(s:State){const start=(s.config.arena==='neon'||s.config.arena==='sky'?1.35:Math.SQRT2)*arenaExtent(s.config.arena);return s.time>45?start:Math.max(7,start*s.time/45);}
 export function finish(s:State) {
  if(s.ball||s.ctf){const alive=s.karts.filter(k=>k.balloons>0),teams=new Set(alive.map(soccerTeam));if(teams.size>1)return;s.winningTeam=alive.length?soccerTeam(alive[0]):undefined;s.winner=alive[0]?.id??null;s.phase='finished';emit(s,'win',alive[0]??s.karts[0],{team:s.winningTeam});scoreChampionship(s);return;}
  const alive=s.karts.filter(k=>k.balloons>0);
@@ -362,10 +356,10 @@ export function step(s:State,inputs:Record<number,Input>,dt=1/60) {
  for(const b of s.boxes)b.respawn=Math.max(0,b.respawn-dt);
  for(const k of s.karts){drive(s,k,k.bot?botInput(s,k):inputs[k.id]??idle(),dt);if(k.balloons<=0)continue;
   for(const b of s.boxes)if(!k.item&&!k.roulette&&b.respawn<=0&&distance(k,b)<2.5&&Math.abs(k.y-b.y)<2){beginRoulette(s,k,b);b.respawn=6;}
-  if(s.time<=45&&(k.orb?globeDistance(k,{x:0,z:0}):Math.hypot(k.x,k.z))>dangerRadius(s))damage(s,k,k.id,{cause:'ring'});
+  if(s.time<=45&&Math.hypot(k.x,k.z)>dangerRadius(s))damage(s,k,k.id,{cause:'ring'});
  }
  collideKarts(s);stepFootball(s,dt);
- if(s.config.arena==='starcore')stepGlobeShots(s,dt);else for(const p of s.shots){p.life-=dt;if(p.kind!=='bolt')p.age=(p.age??0)+dt;if(p.kind==='bolt'){advanceRicochet(s,p,dt);continue;}
+ for(const p of s.shots){p.life-=dt;if(p.kind!=='bolt')p.age=(p.age??0)+dt;if(p.kind==='bolt'){advanceRicochet(s,p,dt);continue;}
   if(p.kind==='seeker'){const target=s.karts.filter(k=>k.id!==p.owner&&k.balloons>0&&(!(s.ball&&s.config.soccer||s.ctf)||soccerTeam(k)!==soccerTeam(s.karts[p.owner]))).sort((a,b)=>distance(p,a)-distance(p,b))[0];if(target){p.angle+=clamp(angleDiff(Math.atan2(target.x-p.x,target.z-p.z),p.angle),-2*dt,2*dt);p.y+=(target.y+1-p.y)*dt*3;}}
   const ox=p.x,oz=p.z,velocity=p.kind==='mine'?0:38*speedSettings(s.config.speedClass).scale;
   p.x+=Math.sin(p.angle)*velocity*dt;p.z+=Math.cos(p.angle)*velocity*dt;

@@ -1,0 +1,2 @@
+import * as T from 'three';
+export function createLavaMaterial(){return new T.ShaderMaterial({uniforms:{time:{value:0}},vertexShader:'varying vec2 uvp;void main(){uvp=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',fragmentShader:'varying vec2 uvp;uniform float time;void main(){float flow=sin(uvp.x*28.+sin(uvp.y*22.+time)*2.+time*.6)*sin(uvp.y*25.-time*.7);vec3 c=mix(vec3(.65,.035,.005),vec3(1.,.65,.055),smoothstep(-.2,.8,flow));gl_FragColor=vec4(c,1.);\n#include <tonemapping_fragment>\n#include <colorspace_fragment>\n}'});}

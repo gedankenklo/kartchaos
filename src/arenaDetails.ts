@@ -1,3 +1,4 @@
+import {createLavaMaterial} from './lavaSurface';
 import {BEACH_PALMS} from './beachProps';
 import {CASTLE_LAMPS} from './castleProps';
 export const FICTIONAL_SPONSORS=['TURBO JUICE','BUBBLE CO.','ROOK RACING','MANGO FIZZ','PLUM POWER','PITSTOP 64','NEON TIRES','CHAOS CLUB'];
@@ -11,7 +12,7 @@ export class ArenaDetails extends T.Group {
  const box=(color:string,x:number,y:number,z:number,w:number,h:number,d:number)=>{const m:T.Mesh<T.BoxGeometry,T.Material>=new T.Mesh(new T.BoxGeometry(w,h,d),new T.MeshStandardMaterial({color,roughness:.8}));m.position.set(x,y,z);m.castShadow=m.receiveShadow=true;this.add(m);return m;};
  
  if(arena==='castle'){
-  for(const pit of LAVA_PITS){const material=new T.ShaderMaterial({uniforms:{time:{value:0}},vertexShader:'varying vec2 uvp;void main(){uvp=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',fragmentShader:'varying vec2 uvp;uniform float time;void main(){float flow=sin(uvp.x*28.+sin(uvp.y*22.+time)*2.+time*.6)*sin(uvp.y*25.-time*.7);vec3 c=mix(vec3(.65,.035,.005),vec3(1.,.65,.055),smoothstep(-.2,.8,flow));gl_FragColor=vec4(c,1.);\n#include <tonemapping_fragment>\n#include <colorspace_fragment>\n}'});this.lava.push(material);const surface=new T.Mesh(new T.PlaneGeometry(pit.width,pit.depth),material);surface.rotation.x=-Math.PI/2;surface.position.set(pit.x,-2.2,pit.z);surface.raycast=()=>{};this.add(surface);for(const sign of [-1,1]){box('#d58d54',pit.x,.04,pit.z+sign*(pit.depth/2+.18),pit.width+.6,.09,.3);box('#d58d54',pit.x+sign*(pit.width/2+.18),.04,pit.z,.3,.09,pit.depth+.6);}}
+  for(const pit of LAVA_PITS){const material=createLavaMaterial();this.lava.push(material);const surface=new T.Mesh(new T.PlaneGeometry(pit.width,pit.depth),material);surface.rotation.x=-Math.PI/2;surface.position.set(pit.x,-2.2,pit.z);surface.raycast=()=>{};this.add(surface);for(const sign of [-1,1]){box('#d58d54',pit.x,.04,pit.z+sign*(pit.depth/2+.18),pit.width+.6,.09,.3);box('#d58d54',pit.x+sign*(pit.width/2+.18),.04,pit.z,.3,.09,pit.depth+.6);}}
   for(const x of [-46,46])for(const z of [-44,44]){for(let i=0;i<4;i++)for(const sign of [-1,1]){box('#77707e',x-4+i*2.7,10.6,z+sign*4.6,1.2,1.2,1.2);box('#77707e',x+sign*4.6,10.6,z-4+i*2.7,1.2,1.2,1.2);}const roof=new T.Mesh(new T.ConeGeometry(5.8,6,4),new T.MeshStandardMaterial({color:'#302f45'}));roof.rotation.y=Math.PI/4;roof.position.set(x,14,z);this.add(roof);}
   for(const {x,z,width,height} of CASTLE_LAMPS){box('#393543',x,height/2,z,width,height,width);const flame=new T.Mesh(new T.OctahedronGeometry(.5),new T.MeshBasicMaterial({color:'#ffb45f'}));flame.position.set(x,3.4,z);this.add(flame);}
  }
