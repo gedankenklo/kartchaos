@@ -1,21 +1,11 @@
-# KART CHAOS 64 — v1.15 update
+# KART CHAOS 64 — v1.18 pickup clearance and team circles
 
-Upload the CONTENTS of this folder into your existing repository root. Merge the public folder; keep your existing MP3 files. Commit and let Render rebuild using its existing settings.
+Upload the CONTENTS of this folder into your existing GitHub repository root. Merge folders and preserve your MP3 files. Commit and let Render rebuild with the existing settings.
 
-Three new large arenas bring the total to twelve:
-- Clockwork Foundry: moving conveyors, raised factory lanes, rotating gears, glowing furnaces and chimney smoke.
-- Frostbite Harbour: slippery central ice, grippy raised docks, an icebreaker, snowfall and a night aurora.
-- Overgrown Ruins: jungle terraces, wide causeways, ravine drops, waterfalls and night fireflies.
+Fortress item boxes have moved inward onto safe areas of the lower and upper decks. Their explicit floor heights preserve bridge underpasses. Every pickup has a full 4.5 m radius of supporting surface, including those on bridges.
 
-All three support Original and Soft toon, random day/night, all speed classes, bots, split-screen and online rooms.
+Stadium team indicators remain classic football-style circles. The old small torus was largely hidden by the kart and tyres. A wider, flat blue/orange ring now extends beyond the tyres, with a dark outside border. Team colours retain their visibility in daylight and at night, in both art styles. The ring follows the ground when hopping, and remains properly occluded by terrain.
 
-New MP3 folders (visible README placeholders keep them on GitHub):
-- public/music/foundry/
-- public/music/harbour/
-- public/music/ruins/
+All previous features, the three vertical arenas, next-round controller default, and music folder names are retained. Do not remove or replace existing MP3s when merging this update.
 
-Put MP3s directly in the matching folder and commit them. Music selection must be Auto. Each arena load picks a random starting MP3, then continues through its playlist. Empty folders use the new generated music. The build recreates tracks.json automatically. Existing music folders and MP3s stay in place.
-
-Validation: production build; 171 automated tests; 36 two-minute bot navigation scenarios; 6 multiplayer integration tests. Local browser visual checks completed.
-
-Aurora correction: both ends now fade smoothly to transparent instead of showing hard rectangular edges.
+Validation: production build, 176 automated tests, 36 two-minute bot navigation scenarios, and browser visual checks of daylight/night rings, both art styles, and Fortress pickup placement.

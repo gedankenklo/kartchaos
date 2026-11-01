@@ -4,7 +4,7 @@ import {newRoundStats,statsFor,type RoundStats} from './matchStats';
 import {createFootball,stepFootball,soccerTeam,assignSoccerTeams,type Football} from './football';
 import {createChampionship,scoreChampionship,type Championship} from './championship';
 // Shared by browser and authoritative server. All distances are metres, time seconds.
-import {FORT,fortressSolidHeight,skyHeight,neonHeight,FORT_BRIDGES,FORT_RAMPS} from './terrain';
+import {FORT,fortressSolidHeight,skyHeight,neonHeight,FORT_BRIDGES,FORT_RAMPS,FORT_ITEMS} from './terrain';
 import {ARENAS,ARENA_IDS,isExpansion,expansionHeight,expansionNav,EXPANSIONS,type Arena} from './arenas';
 export type {Arena} from './arenas';
 export {ARENA_IDS} from './arenas';
@@ -101,7 +101,7 @@ export function createState(config:Config):State {
   return {stats:newRoundStats(),id,driver,name:DRIVER_NAMES[driver],bot:id>=config.humans,x,z,y:ground(config.arena,x,z,0),angle:a+Math.PI,vx:0,vz:0,vy:0,speed:0,steering:0,yawRate:0,reverseTime:0,driftSide:0,driftSlip:0,pushX:0,pushZ:0,bumpCooldown:0,balloons:3,inv:0,item:null,roulette:0,rouletteSeed:0,rouletteStop:false,itemFlash:0,boost:0,ram:0,shield:0,drift:0,cooldown:0,hopHeld:false,fireHeld:false,target:0,stuck:0,kills:0,damage:0,hits:0};
  });
  if(config.arena==='stadium')assignSoccerTeams(karts);
- const points=(isExpansion(config.arena)?EXPANSIONS[config.arena].items:config.arena==='fortress'?[{x:0,z:0},...[-1,1].flatMap(s=>[{x:0,z:s*28,y:0},{x:s*28,z:0,y:0}]),...[-1,1].flatMap(sx=>[-1,1].flatMap(sz=>[{x:sx*20,z:sz*35},{x:sx*12,z:sz*20},{x:sx*23,z:sz*23}])),...FORT_BRIDGES.map(b=>({x:b.x,z:b.z,y:b.y}))]:config.arena==='sky'?[{x:0,z:0},{x:0,z:24},{x:24,z:0},{x:0,z:-24},{x:-24,z:0},{x:0,z:10},{x:10,z:0},{x:0,z:-10},{x:-10,z:0}]:[0,1,2,3,4,5,6,7].map(i=>({x:Math.sin(i*Math.PI/4)*20,z:Math.cos(i*Math.PI/4)*20}))).map((p:{x:number;z:number;y?:number})=>({x:p.x*ARENA_SCALE[config.arena],z:p.z*ARENA_SCALE[config.arena],y:p.y===undefined?undefined:p.y*ARENA_HEIGHT[config.arena]}));
+ const points=(isExpansion(config.arena)?EXPANSIONS[config.arena].items:config.arena==='fortress'?FORT_ITEMS:config.arena==='sky'?[{x:0,z:0},{x:0,z:24},{x:24,z:0},{x:0,z:-24},{x:-24,z:0},{x:0,z:10},{x:10,z:0},{x:0,z:-10},{x:-10,z:0}]:[0,1,2,3,4,5,6,7].map(i=>({x:Math.sin(i*Math.PI/4)*20,z:Math.cos(i*Math.PI/4)*20}))).map((p:{x:number;z:number;y?:number})=>({x:p.x*ARENA_SCALE[config.arena],z:p.z*ARENA_SCALE[config.arena],y:p.y===undefined?undefined:p.y*ARENA_HEIGHT[config.arena]}));
  const championship=config.championship?createChampionship(config,karts):undefined;
  return {lighting:chooseLighting(config.arena),config,championship,ball:config.arena==='stadium'?createFootball():undefined,karts,shots:[],boxes:points.map(p=>({...p,y:p.y??ground(config.arena,p.x,p.z),respawn:0})),time:config.duration,countdown:3,phase:'countdown',winner:null,tick:0,seed:728463,serial:0,events:[]};
 }

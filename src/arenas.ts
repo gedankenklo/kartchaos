@@ -12,9 +12,9 @@ export const ARENAS:Record<Arena,{name:string;size:string;scale:number;height:nu
  castle:{name:'Ember Keep',size:'XL · 240 M',scale:2,height:1.2,extent:60,note:'Dark stone. Broad causeways. Open lava pits.',icon:'♜'},
  beach:{name:'Sunbreak Beach',size:'XL · 248 M',scale:2,height:1,extent:62,note:'Sweeping sand, boardwalks and a sunset coast.',icon:'☀'},
  stadium:{name:'Floodlight Stadium',size:'XL · 256 M',scale:2,height:1,extent:64,note:'Random teams. Bonus goals pop rival balloons.',icon:'⚽'},
- foundry:{name:'Clockwork Foundry',size:'L · 232 M',scale:2,height:1,extent:58,note:'Moving belts. Brass machinery. Broad factory lanes.',icon:'⚙'},
- harbour:{name:'Frostbite Harbour',size:'XL · 248 M',scale:2,height:1,extent:62,note:'Slippery ice. Grippy docks. An icebreaker at anchor.',icon:'❄'},
- ruins:{name:'Overgrown Ruins',size:'XL · 256 M',scale:2,height:1,extent:64,note:'Jungle courtyards. Temple terraces. Ravine causeways.',icon:'❧'},
+ foundry:{name:'Clockwork Foundry',size:'L · 232 M',scale:2,height:2,extent:58,note:'Moving belts. Brass machinery. Two-level furnace deck. Elevated horseshoe. Conveyor crossings.',icon:'⚙'},
+ harbour:{name:'Frostbite Harbour',size:'XL · 248 M',scale:2,height:2,extent:62,note:'Ice basin. Tall dock lookout. Stepped L-shaped docks.',icon:'❄'},
+ ruins:{name:'Overgrown Ruins',size:'XL · 256 M',scale:2,height:2.5,extent:64,note:'Towering temple. High terraces. Twin ravine crossings.',icon:'❧'},
 };
 export const LAVA_PITS=[-1,1].flatMap(x=>[-1,1].map(z=>({x:x*23,z:z*21,width:18,depth:18})));
 export function lavaAt(x:number,z:number){return LAVA_PITS.some(p=>Math.abs(x-p.x)<p.width/2&&Math.abs(z-p.z)<p.depth/2);}
@@ -27,9 +27,50 @@ export const EXPANSIONS:Record<'yard'|'depot'|'quarry'|'castle'|'beach'|'stadium
  castle:{floor:'#555363',alternate:'#4b495a',wall:'#34313e',blocks:[...[-1,1].flatMap(x=>[-1,1].map(z=>({x:x*46,z:z*44,width:10,depth:10,height:10,color:'#454052'}))),{x:0,z:40,width:26,depth:16,height:6,driveable:true,color:'#625869'},{x:0,z:-43,width:22,depth:12,height:4,driveable:true,color:'#504b61'}],ramps:[{axis:'z',from:15,to:32,cross:0,width:12,bottom:0,top:6},{axis:'z',from:-19,to:-37,cross:0,width:10,bottom:0,top:4}],items:[{x:0,z:0},{x:0,z:40},{x:0,z:-43},{x:40,z:0},{x:-40,z:0},{x:44,z:23},{x:-44,z:-23},{x:23,z:42},{x:-23,z:-42},{x:0,z:17},{x:0,z:-20},{x:46,z:-20}]},
  beach:{floor:'#e6c99a',alternate:'#dec08c',wall:'#b39d80',blocks:[{x:-28,z:-22,width:26,depth:18,height:3,driveable:true,color:'#b58d65'},{x:28,z:22,width:28,depth:18,height:3,driveable:true,color:'#be9870'},{x:30,z:-30,width:9,depth:8,height:2.5,color:'#a9aba0'},{x:-33,z:32,width:10,depth:8,height:2.8,color:'#b1a594'}],ramps:[{axis:'x',from:-3,to:-15,cross:-22,width:12,bottom:0,top:3},{axis:'x',from:2,to:14,cross:22,width:12,bottom:0,top:3}],items:[{x:0,z:0},{x:-28,z:-22},{x:28,z:22},{x:-43,z:0},{x:43,z:0},{x:0,z:42},{x:0,z:-42},{x:-42,z:-43},{x:42,z:43},{x:40,z:-9},{x:-40,z:9},{x:-12,z:42},{x:12,z:-42}]},
  stadium:{floor:'#417959',alternate:'#396f51',wall:'#35465c',blocks:[...[-1,1].flatMap(x=>[-1,1].map(z=>({x:x*51,z:z*26,width:4,depth:7,height:1.6,color:x>0?'#6a9fb6':'#c2916b'})))],ramps:[],items:[{x:-30,z:-35},{x:30,z:-35},{x:-30,z:35},{x:30,z:35},{x:-40,z:0},{x:40,z:0},{x:0,z:43},{x:0,z:-43},{x:-22,z:0},{x:22,z:0},{x:-10,z:23},{x:10,z:-23}]},
- foundry:{floor:'#8b9293',alternate:'#7f878c',wall:'#706455',blocks:[...[-1,1].map(x=>({x:x*26,z:0,width:16,depth:40,height:4,driveable:true,color:'#9f8158'})),...[-1,1].flatMap(x=>[-1,1].map(z=>({x:x*43,z:z*40,width:6,depth:7,height:4,color:'#74665a'})))],ramps:[...[-1,1].flatMap(x=>[-1,1].map(z=>({axis:'z' as const,from:z*34,to:z*20,cross:x*26,width:10,bottom:0,top:4})))],items:[{x:0,z:0},{x:0,z:-24},{x:0,z:24},{x:-26,z:0},{x:26,z:0},{x:-43,z:0},{x:43,z:0},{x:0,z:44},{x:0,z:-44},{x:-42,z:22},{x:42,z:-22}]},
- harbour:{floor:'#d6e4e6',alternate:'#c7dce3',wall:'#9aafbd',blocks:[...[-1,1].map(z=>({x:0,z:z*32,width:66,depth:12,height:2.5,driveable:true,color:'#9e9783'})),...[-1,1].flatMap(x=>[-1,1].map(z=>({x:x*44,z:z*36,width:6,depth:7,height:3.5,color:'#8a9b9f'})))],ramps:[...[-1,1].flatMap(z=>[-20,20].map(x=>({axis:'z' as const,from:z*12,to:z*26,cross:x,width:10,bottom:0,top:2.5})))],items:[{x:0,z:0},{x:-20,z:0},{x:20,z:0},{x:0,z:-32},{x:0,z:32},{x:-44,z:0},{x:44,z:0},{x:0,z:48},{x:0,z:-48},{x:40,z:20},{x:-40,z:-20},{x:20,z:46},{x:-20,z:-46}]},
- ruins:{floor:'#a3b88b',alternate:'#93a878',wall:'#6c7d62',blocks:[...[-1,1].flatMap(x=>[-1,1].map(z=>({x:x*26,z:z*24,width:22,depth:20,height:4.5,driveable:true,color:'#a3a080'}))),...[-1,1].map(z=>({x:0,z:z*24,width:30,depth:8,height:4.5,driveable:true,color:'#a4a688'})),...[-1,1].map(x=>({x:x*48,z:0,width:6,depth:6,height:7,color:'#8e9478'}))],ramps:[...[-1,1].flatMap(x=>[-1,1].flatMap(z=>[{axis:'z' as const,from:z*2,to:z*14,cross:x*26,width:10,bottom:0,top:4.5},{axis:'x' as const,from:x*49,to:x*37,cross:z*24,width:10,bottom:0,top:4.5}]))],items:[{x:0,z:0},{x:0,z:-24},{x:0,z:24},{x:-26,z:-24},{x:26,z:-24},{x:-26,z:24},{x:26,z:24},{x:0,z:45},{x:0,z:-45},{x:48,z:45},{x:-48,z:-45},{x:-48,z:45},{x:48,z:-45}]},
+ foundry:{floor:'#8b9293',alternate:'#7f878c',wall:'#706455',blocks:[
+...[-1,1].flatMap(x=>[-1,1].map(z=>({x:x*11,z:z*10,width:8,depth:8,height:9,color:'#665746'}))),
+{x:-30,z:-16,width:18,depth:34,height:4,driveable:true,color:'#9f8158'},
+{x:-5,z:-38,width:84,depth:24,height:4,driveable:true,color:'#9f8158'},
+{x:25,z:-20,width:12,depth:24,height:4,driveable:true,color:'#9f8158'},
+{x:-5,z:-42,width:30,depth:12,height:8,driveable:true,color:'#a88b5d'},
+{x:-32,z:37,width:10,depth:10,height:5,color:'#74665a'},
+{x:34,z:30,width:12,depth:8,height:5,color:'#74665a'}],ramps:[
+{axis:'z',from:19,to:1,cross:-30,width:12,bottom:0,top:4},
+{axis:'z',from:10,to:-8,cross:25,width:12,bottom:0,top:4},
+{axis:'x',from:49,to:31,cross:-20,width:10,bottom:0,top:4},
+{axis:'x',from:-39,to:-20,cross:-42,width:10,bottom:4,top:8},
+{axis:'x',from:29,to:10,cross:-42,width:10,bottom:4,top:8}],items:[
+{x:0,z:24},{x:0,z:-24},{x:-30,z:-16},{x:-5,z:-42},{x:25,z:-20},{x:-47,z:0},{x:46,z:0},{x:0,z:45},{x:-47,z:42},{x:46,z:46},{x:0,z:0},{x:43,z:-20}]},
+ harbour:{floor:'#d6e4e6',alternate:'#c7dce3',wall:'#9aafbd',blocks:[
+{x:-35,z:-32,width:42,depth:14,height:2.5,driveable:true,color:'#9e9783'},
+{x:-49,z:-10,width:14,depth:30,height:2.5,driveable:true,color:'#9e9783'},
+{x:34,z:20,width:14,depth:48,height:4,driveable:true,color:'#9e9783'},
+{x:6,z:43,width:70,depth:12,height:4,driveable:true,color:'#9e9783'},
+{x:34,z:43,width:14,depth:12,height:7,driveable:true,color:'#a8aaa0'},
+{x:-13,z:10,width:12,depth:10,height:2.7,color:'#8db4c4'},
+{x:12,z:-19,width:10,depth:14,height:3.2,color:'#a6c9d3'},
+{x:-5,z:-43,width:6,depth:8,height:4,color:'#8a9b9f'}],ramps:[
+{axis:'x',from:2,to:-14,cross:-32,width:12,bottom:0,top:2.5},
+{axis:'x',from:-24,to:-42,cross:-5,width:12,bottom:0,top:2.5},
+{axis:'x',from:9,to:27,cross:8,width:12,bottom:0,top:4},
+{axis:'z',from:19,to:37,cross:-10,width:12,bottom:0,top:4},
+{axis:'z',from:19,to:37,cross:34,width:10,bottom:4,top:7},
+{axis:'x',from:-5,to:27,cross:43,width:10,bottom:4,top:7}],items:[
+{x:0,z:0},{x:-30,z:10},{x:20,z:-2},{x:-35,z:-32},{x:-49,z:-10},{x:34,z:43},{x:-10,z:43},{x:47,z:-38},{x:0,z:-53},{x:48,z:48},{x:-43,z:40},{x:4,z:30},{x:32,z:-31}]},
+ ruins:{floor:'#a3b88b',alternate:'#93a878',wall:'#6c7d62',blocks:[
+{x:0,z:-25,width:44,depth:30,height:3,driveable:true,color:'#a3a080'},
+{x:0,z:-26,width:26,depth:18,height:6,driveable:true,color:'#b5ad88'},
+{x:-43,z:-2,width:14,depth:22,height:3,driveable:true,color:'#939b78'},
+{x:30,z:44,width:22,depth:16,height:4,driveable:true,color:'#a4a688'},
+{x:44,z:-26,width:6,depth:8,height:8,color:'#8e9478'},
+{x:-48,z:45,width:6,depth:6,height:7,color:'#8e9478'}],ramps:[
+{axis:'z',from:8,to:-10,cross:-15,width:10,bottom:0,top:3},
+{axis:'z',from:8,to:-10,cross:15,width:10,bottom:0,top:3},
+{axis:'z',from:-10,to:-17,cross:0,width:10,bottom:3,top:6},
+{axis:'z',from:-47,to:-35,cross:0,width:10,bottom:0,top:6},
+{axis:'z',from:25,to:9,cross:-46,width:8,bottom:0,top:3},
+{axis:'x',from:1,to:19,cross:44,width:12,bottom:0,top:4}],items:[
+{x:0,z:0},{x:0,z:-26},{x:-16,z:-28},{x:16,z:-28},{x:-43,z:-2},{x:30,z:44},{x:-26,z:24},{x:8,z:24},{x:48,z:14},{x:-46,z:-44},{x:42,z:-48},{x:-28,z:47},{x:0,z:55}]},
 };
 export const isExpansion=(arena:Arena):arena is keyof typeof EXPANSIONS=>arena==='yard'||arena==='depot'||arena==='quarry'||arena==='castle'||arena==='beach'||arena==='stadium'||arena==='foundry'||arena==='harbour'||arena==='ruins';
 export function expansionHeight(arena:keyof typeof EXPANSIONS,x:number,z:number):number {

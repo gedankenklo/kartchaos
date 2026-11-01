@@ -254,7 +254,42 @@ test('same-map rematches reroll lighting and may legitimately repeat night',t=>{
 test('cup rounds independently select the next arenas lighting including Keep sunset',t=>{const first=createState({...config,championship:true});first.lighting='night';first.championship!.schedule[1]='castle';first.phase='finished';t.mock.method(Math,'random',()=>.1);const next=nextRoundState(first);assert.equal(next.config.arena,'castle');assert.equal(next.lighting,'sunset');});
 import {arenaSurface,isNewArena,NEW_ARENAS,ruinsRavineAt} from '../src/newArenaRules';
 import {NewArenaSet,createNewArenaFloor} from '../src/newArenaVisuals';
-test('new arenas have traversable ramps, reachable upper routes and twelve-map integration',()=>{for(const arena of NEW_ARENAS){assert.ok(ARENA_IDS.includes(arena));assert.ok(isNewArena(arena));const s=createState({...config,arena});s.phase='playing';for(const r of EXPANSIONS[arena].ramps){const k=s.karts[0],sign=Math.sign(r.to-r.from);Object.assign(k,{x:(r.axis==='x'?r.from:r.cross)*2,z:(r.axis==='z'?r.from:r.cross)*2,y:0,speed:0,vx:0,vz:0,vy:0,angle:r.axis==='x'?sign*Math.PI/2:sign>0?0:Math.PI});let reached=false;for(let i=0;i<240;i++){drive(s,k,{...idle(),gas:1},1/60);if((r.axis==='x'?k.x/2-r.to:k.z/2-r.to)*sign>.2){assert.equal(k.y,r.top);reached=true;break;}}assert.ok(reached,arena+' ramp');}const graph=navGraph(arena),seen=new Set([0]),queue=[0];while(queue.length){for(const edge of graph.edges[queue.shift()!])if(!seen.has(edge.to)){seen.add(edge.to);queue.push(edge.to);}}assert.equal(seen.size,graph.points.length,arena+' disconnected navigation');}});
+test('new arenas have traversable ramps, reachable upper routes and twelve-map integration',()=>{for(const arena of NEW_ARENAS){assert.ok(ARENA_IDS.includes(arena));assert.ok(isNewArena(arena));const s=createState({...config,arena});s.phase='playing';for(const r of EXPANSIONS[arena].ramps){const k=s.karts[0],sign=Math.sign(r.to-r.from);Object.assign(k,{x:(r.axis==='x'?r.from:r.cross)*2,z:(r.axis==='z'?r.from:r.cross)*2,y:r.bottom*ARENA_HEIGHT[arena],speed:0,vx:0,vz:0,vy:0,angle:r.axis==='x'?sign*Math.PI/2:sign>0?0:Math.PI});let reached=false;for(let i=0;i<240;i++){drive(s,k,{...idle(),gas:1},1/60);if((r.axis==='x'?k.x/2-r.to:k.z/2-r.to)*sign>.2){assert.equal(k.y,r.top*ARENA_HEIGHT[arena]);reached=true;break;}}assert.ok(reached,arena+' ramp');}const graph=navGraph(arena),seen=new Set([0]),queue=[0];while(queue.length){for(const edge of graph.edges[queue.shift()!])if(!seen.has(edge.to)){seen.add(edge.to);queue.push(edge.to);}}assert.equal(seen.size,graph.points.length,arena+' disconnected navigation');}});
 test('Foundry conveyors move grounded karts while ice preserves lateral momentum and docks grip',()=>{const s=createState({...config,arena:'foundry'}),k=s.karts[0];s.phase='playing';Object.assign(k,{x:0,z:-48,y:0,angle:0,speed:0,vx:0,vz:0});for(let i=0;i<60;i++)drive(s,k,idle(),1/60);assert.ok(k.x>3&&k.x<4);assert.equal(arenaSurface('foundry',0,-48,4).vx,0);assert.equal(arenaSurface('harbour',0,0,0).grip,.28);assert.equal(arenaSurface('harbour',0,64,2.5).grip,1);const slide=(arena:'yard'|'harbour')=>{const state=createState({...config,arena}),driver=state.karts[0];state.phase='playing';Object.assign(driver,{x:0,z:0,y:0,angle:Math.PI/2,speed:20,vx:0,vz:20});drive(state,driver,{...idle(),gas:1},1/60);return driver.vz;};assert.ok(slide('harbour')>slide('yard'));});
-test('Ruins ravines have real floor openings while their causeways remain driveable',()=>{assert.ok(ruinsRavineAt(0,18.5));assert.equal(ground('ruins',0,37),-40);assert.equal(ground('ruins',0,48),4.5);const floor=createNewArenaFloor('ruins');floor.updateMatrixWorld(true);const ray=new T.Raycaster(new T.Vector3(0,10,18.5),new T.Vector3(0,-1,0));assert.equal(ray.intersectObject(floor).length,0);ray.set(new T.Vector3(0,10,0),new T.Vector3(0,-1,0));assert.ok(ray.intersectObject(floor).length>0);floor.geometry.dispose();(floor.material as T.Material).dispose();});
+test('Ruins ravines have real floor openings while their causeways remain driveable',()=>{assert.ok(ruinsRavineAt(0,24));assert.equal(ground('ruins',0,48),-40);assert.equal(ground('ruins',16,48),0);const floor=createNewArenaFloor('ruins');floor.updateMatrixWorld(true);const ray=new T.Raycaster(new T.Vector3(0,10,24),new T.Vector3(0,-1,0));assert.equal(ray.intersectObject(floor).length,0);ray.set(new T.Vector3(0,10,0),new T.Vector3(0,-1,0));assert.ok(ray.intersectObject(floor).length>0);floor.geometry.dispose();(floor.material as T.Material).dispose();});
 test('new arena scenery animates, supports reduced effects and keeps auroras/fireflies night-only',()=>{for(const arena of NEW_ARENAS){const set=new NewArenaSet(arena);set.update(2,false,'night');assert.ok(set.children.length>0);if(set.aurora)assert.ok(set.aurora.uniforms.alpha.value>0);if(set.flies)assert.equal(set.flies.visible,true);set.update(4,true,'day');if(set.aurora)assert.equal(set.aurora.uniforms.alpha.value,0);if(set.flies)assert.equal(set.flies.visible,false);if(set.snow)assert.equal(set.snow.geometry.drawRange.count,32);const ray=new T.Raycaster();set.traverse(o=>{const hits:any[]=[];o.raycast(ray,hits);assert.equal(hits.length,0);});set.dispose();assert.equal(set.parent,null);}});
+
+test('redesigned upper routes join across broad corners and all new pickups are reachable',()=>{
+ for(const route of [
+  {arena:'foundry' as const,points:[[-30,-16],[-30,-30],[25,-30],[25,-20]]},
+  {arena:'harbour' as const,points:[[-35,-32],[-49,-32],[-49,-10]]},
+  {arena:'harbour' as const,points:[[34,20],[34,43],[-10,43]]}
+ ])for(let i=1;i<route.points.length;i++){
+  const a=route.points[i-1],b=route.points[i];assert.ok(clearPath(route.arena,{x:a[0]*2,z:a[1]*2},{x:b[0]*2,z:b[1]*2}),route.arena+' upper corner');
+ }
+ for(const arena of NEW_ARENAS){const graph=navGraph(arena);for(const box of createState({...config,arena}).boxes)assert.ok(graph.points.some(p=>clearPath(arena,p,box)&&clearPath(arena,box,p)),arena+' unreachable pickup '+JSON.stringify(box));}
+ for(const x of [-26,8])for(let z=15;z<=33;z++)assert.equal(ground('ruins',x*2,z*2),0);
+});
+
+test('new vertical routes remain driveable across ramp widths at every engine class',()=>{
+ for(const arena of NEW_ARENAS)for(const cc of [50,100,150] as const)for(const r of EXPANSIONS[arena].ramps)for(const offset of [-r.width/2+1,0,r.width/2-1]){
+  const s=createState({...config,arena,speedClass:cc}),k=s.karts[0],sign=Math.sign(r.to-r.from),h=ARENA_HEIGHT[arena];s.phase='playing';
+  Object.assign(k,{x:(r.axis==='x'?r.from:r.cross+offset)*2,z:(r.axis==='z'?r.from:r.cross+offset)*2,y:r.bottom*h,angle:r.axis==='x'?sign*Math.PI/2:sign>0?0:Math.PI,speed:0,vx:0,vz:0,vy:0});
+  let reached=false;for(let i=0;i<360;i++){drive(s,k,{...idle(),gas:1},1/60);assert.ok(k.y>=r.bottom*h-.1,arena+' falls through incline');if(((r.axis==='x'?k.x:k.z)/2-r.to)*sign>.2){assert.equal(k.y,r.top*h,arena+' wrong landing');reached=true;break;}}
+  assert.ok(reached,arena+' ramp blocked at '+cc+' offset '+offset);
+ }
+ for(const arena of NEW_ARENAS)assert.ok(Math.max(...EXPANSIONS[arena].blocks.filter(b=>b.driveable).map(b=>b.height*ARENA_HEIGHT[arena]))>=14);
+});
+
+test('Ruins ramps and water channels have separate footprints, exterior ponds stay outside',()=>{
+ for(const r of EXPANSIONS.ruins.ramps){const x0=r.axis==='x'?Math.min(r.from,r.to):r.cross-r.width/2,x1=r.axis==='x'?Math.max(r.from,r.to):r.cross+r.width/2,z0=r.axis==='z'?Math.min(r.from,r.to):r.cross-r.width/2,z1=r.axis==='z'?Math.max(r.from,r.to):r.cross+r.width/2;
+  for(let x=x0+.2;x<x1;x+=.5)for(let z=z0+.2;z<z1;z+=.5)assert.equal(ruinsRavineAt(x,z),false,'water under ramp');
+ }
+ const set=new NewArenaSet('ruins');set.updateMatrixWorld(true);const ponds:T.Object3D[]=[];
+ set.traverse(o=>{if(o.name==='exteriorWaterfallPond'){const b=new T.Box3().setFromObject(o);assert.ok(b.min.x>ARENAS.ruins.extent||b.max.x< -ARENAS.ruins.extent);ponds.push(o);}});assert.equal(ponds.length,2);set.dispose();
+});
+
+
+import {createTeamMarker} from '../src/teamMarker';
+test('Fortress pickups have a full driving margin on their intended floor',()=>{const s=createState({...config,arena:'fortress'});for(const box of s.boxes)for(let i=0;i<32;i++){const a=i*Math.PI/16;assert.equal(ground('fortress',box.x+Math.cos(a)*4.5,box.z+Math.sin(a)*4.5,box.y),box.y,'pickup too close to ledge '+JSON.stringify(box));}});
+test('soccer team circles extend beyond kart wheels and keep their colour in daylight',()=>{const marker=createTeamMarker('#ff9c52');assert.ok(marker.geometry.parameters.innerRadius>2);assert.ok(marker.geometry.parameters.outerRadius>2.4);assert.equal(marker.material.toneMapped,false);assert.equal(marker.material.depthWrite,false);assert.equal(marker.material.depthTest,true);assert.equal(marker.material.side,T.DoubleSide);assert.equal(marker.children.length,1);marker.traverse(o=>{if(o instanceof T.Mesh){o.geometry.dispose();(o.material as T.Material).dispose();}});});

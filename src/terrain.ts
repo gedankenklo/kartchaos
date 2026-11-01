@@ -14,6 +14,8 @@ for(const sign of [-1,1]){
  FORT_BRIDGES.push({x:sign*33,z:0,width:5,depth:40,y:11,thickness:.6});
  FORT_BRIDGES.push({x:0,z:sign*33,width:40,depth:5,y:11,thickness:.6});
 }
+// Pickups sit inside their intended floor; explicit heights preserve underpasses.
+export const FORT_ITEMS=[{x:0,z:0,y:0},...[-1,1].flatMap(s=>[{x:0,z:s*28,y:0},{x:s*28,z:0,y:0}]),...[-1,1].flatMap(sx=>[-1,1].flatMap(sz=>[{x:sx*14,z:sz*36,y:FORT.lower},{x:sx*14,z:sz*16,y:FORT.lower},{x:sx*28,z:sz*28,y:FORT.upper}])),...FORT_BRIDGES.map(b=>({x:b.x,z:b.z,y:b.y}))];
 export function rampHeight(r:Ramp,x:number,z:number):number|undefined {
  const along=r.axis==='x'?x:z,cross=r.axis==='x'?z:x,t=(along-r.from)/(r.to-r.from);
  if(t< -1e-7||t>1+1e-7||Math.abs(cross-r.cross)>r.width/2)return undefined;

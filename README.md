@@ -132,3 +132,9 @@ sky, neon, yard, depot, quarry, castle, beach and stadium. Files are discovered 
 In Auto music mode, each arena plays its MP3s in filename order on repeat. Empty
 folders or failed MP3s fall back to generated music. Explicit generated-track
 selections still override Auto. See `public/music/README.md` for the folder mapping.
+
+Version 1.16: twelve arenas, including a redesigned Foundry horseshoe and furnace cross, asymmetric Harbour ice basin and L-shaped docks, and a stepped Ruins temple with two ravine crossings. Scenery is visible in rotating previews. Music folder names remain foundry, harbour and ruins.
+
+Version 1.17: Foundry upper platform 16 m, Harbour lookout 14 m, Ruins temple 15 m. Ruins water and ramp footprints are separate. Results preselect the next-round action instead of restoring the speed selector; intentional picker focus is preserved.
+
+Version 1.18: Fortress pickups have 4.5 m supporting-surface clearance. Stadium team markers are wider flat football-style rings with daylight-stable colour and a dark border, projected to the ground beneath jumping karts.
