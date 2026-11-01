@@ -1,18 +1,18 @@
 // Shared surfaces for the renderer, driving, weapons and bot navigation.
-export const FORT={extent:48,center:20,half:12,lower:6,upperCenter:24,upperHalf:5,upper:11,bridgeWidth:6,bridgeThickness:.6} as const;
+export const FORT={extent:56,center:24,half:16,lower:6,upperCenter:28,upperHalf:8,upper:11,bridgeWidth:8,bridgeThickness:.6} as const;
 export interface Ramp {axis:'x'|'z'; from:number; to:number; cross:number; width:number; bottom:number; top:number;}
 export interface Bridge {x:number;z:number;width:number;depth:number;y:number;thickness:number;}
 export const FORT_RAMPS:Ramp[]=[];
 export const FORT_BRIDGES:Bridge[]=[];
 for(const sx of [-1,1])for(const sz of [-1,1]){
- FORT_RAMPS.push({axis:'z',from:sz*42,to:sz*32,cross:sx*20,width:5.5,bottom:0,top:6});
- FORT_RAMPS.push({axis:'x',from:sx*12,to:sx*19,cross:sz*24,width:4,bottom:6,top:11});
+ FORT_RAMPS.push({axis:'z',from:sz*50,to:sz*40,cross:sx*24,width:8,bottom:0,top:6});
+ FORT_RAMPS.push({axis:'x',from:sx*12,to:sx*20,cross:sz*26,width:6,bottom:6,top:11});
 }
 for(const sign of [-1,1]){
- FORT_BRIDGES.push({x:sign*20,z:0,width:6,depth:16,y:6,thickness:.6});
- FORT_BRIDGES.push({x:0,z:sign*20,width:16,depth:6,y:6,thickness:.6});
- FORT_BRIDGES.push({x:sign*27,z:0,width:4,depth:38,y:11,thickness:.6});
- FORT_BRIDGES.push({x:0,z:sign*27,width:38,depth:4,y:11,thickness:.6});
+ FORT_BRIDGES.push({x:sign*24,z:0,width:8,depth:16,y:6,thickness:.6});
+ FORT_BRIDGES.push({x:0,z:sign*24,width:16,depth:8,y:6,thickness:.6});
+ FORT_BRIDGES.push({x:sign*33,z:0,width:5,depth:40,y:11,thickness:.6});
+ FORT_BRIDGES.push({x:0,z:sign*33,width:40,depth:5,y:11,thickness:.6});
 }
 export function rampHeight(r:Ramp,x:number,z:number):number|undefined {
  const along=r.axis==='x'?x:z,cross=r.axis==='x'?z:x,t=(along-r.from)/(r.to-r.from);
@@ -22,7 +22,7 @@ export function rampHeight(r:Ramp,x:number,z:number):number|undefined {
 export function fortressSolidHeight(x:number,z:number):number {
  if(Math.abs(x)>FORT.extent||Math.abs(z)>FORT.extent)return -40;
  let h=0;
- if(Math.abs(x)>=8&&Math.abs(x)<=32&&Math.abs(z)>=8&&Math.abs(z)<=32)h=FORT.lower;
+ if(Math.abs(x)>=FORT.center-FORT.half&&Math.abs(x)<=FORT.center+FORT.half&&Math.abs(z)>=FORT.center-FORT.half&&Math.abs(z)<=FORT.center+FORT.half)h=FORT.lower;
  if(Math.abs(x)>=FORT.upperCenter-FORT.upperHalf&&Math.abs(x)<=FORT.upperCenter+FORT.upperHalf&&Math.abs(z)>=FORT.upperCenter-FORT.upperHalf&&Math.abs(z)<=FORT.upperCenter+FORT.upperHalf)h=FORT.upper;
  for(const r of FORT_RAMPS){const rh=rampHeight(r,x,z);if(rh!==undefined)h=Math.max(h,rh);}
  return h;

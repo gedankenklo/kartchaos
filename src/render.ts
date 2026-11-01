@@ -63,8 +63,8 @@ export class World {
   this.details=undefined;this.battleEffects.clearBursts();this.map=arena;this.disposeGroup(this.arenaGroup);this.boxes=[];
   const g=new T.Group();g.scale.set(ARENA_SCALE[arena],ARENA_HEIGHT[arena],ARENA_SCALE[arena]);this.arenaGroup.add(g);this.cameraTerrain=g;
   if(arena==='fortress'){
-   this.cube(g,'#b3b892',0,-2.2,0,98,4,98);
-   for(let x=-44;x<=44;x+=8)for(let z=-44;z<=44;z+=8)this.road(g,(x+z)%16===0?'#c4ce98':'#b6c38a',x,0,z,8,8);
+   this.cube(g,'#b3b892',0,-2.2,0,FORT.extent*2+2,4,FORT.extent*2+2);
+   for(let x=-FORT.extent+4;x<FORT.extent;x+=8)for(let z=-FORT.extent+4;z<FORT.extent;z+=8)this.road(g,(x+z)%16===0?'#c4ce98':'#b6c38a',x,0,z,8,8);
    const blockColors=['#df9d89','#9e91c0','#89b3ba','#d4bd7f'];let index=0;
    for(const sx of [-1,1])for(const sz of [-1,1]){
     const color=blockColors[index++],x=sx*FORT.center,z=sz*FORT.center;
@@ -72,12 +72,12 @@ export class World {
     const upper=this.cube(g,color,sx*FORT.upperCenter,(FORT.upper+FORT.lower)/2,sz*FORT.upperCenter,FORT.upperHalf*2,FORT.upper-FORT.lower,FORT.upperHalf*2);upper.receiveShadow=true;upper.material=this.textured(color,'stone');
     // Thin, raised stripes mark deck edges without coplanar roof overlays.
     for(const side of [-1,1]){this.cube(g,'#f1dfbb',x,FORT.lower-.6,z+side*(FORT.half+.012),FORT.half*2,.35,.025);this.cube(g,'#f1dfbb',x+side*(FORT.half+.012),FORT.lower-.6,z,.025,.35,FORT.half*2);}
-    this.cylinder(g,'#796868',sx*25,FORT.upper+2,sz*25,.09,4,8);
-    const flag=this.cube(g,color,sx*25+1,FORT.upper+3.3,sz*25,2,1.3,.08);flag.rotation.z=-.08;
+    this.cylinder(g,'#796868',sx*(FORT.upperCenter+1),FORT.upper+2,sz*(FORT.upperCenter+1),.09,4,8);
+    const flag=this.cube(g,color,sx*(FORT.upperCenter+1)+1,FORT.upper+3.3,sz*(FORT.upperCenter+1),2,1.3,.08);flag.rotation.z=-.08;
    }
    for(const ramp of FORT_RAMPS)this.ramp(g,ramp,'#e6cfaa');
    for(const b of FORT_BRIDGES){this.cube(g,'#debf98',b.x,b.y-b.thickness/2,b.z,b.width,b.thickness,b.depth).material=this.textured('#debf98','wood');}
-   for(const s of [-1,1]){this.cube(g,'#d8b58f',s*47.5,1,0,1.5,2,96);this.cube(g,'#d8b58f',0,1,s*47.5,96,2,1.5);}
+   for(const s of [-1,1]){this.cube(g,'#d8b58f',s*(FORT.extent-.5),1,0,1.5,2,FORT.extent*2);this.cube(g,'#d8b58f',0,1,s*(FORT.extent-.5),FORT.extent*2,2,1.5);}
    this.cylinder(g,'#e9d5aa',0,.07,0,5.5,.12,32);this.cylinder(g,'#9073b9',0,.16,0,3.8,.1,6);this.cylinder(g,'#e9d5aa',0,.23,0,2.8,.1,6);
   } else if(arena==='sky'){
    for(const tile of SKY_TILES){const body=this.cube(g,'#b1a3d3',tile.x,-1.1,tile.z,tile.width,2,tile.depth);body.castShadow=false;this.road(g,tile.color,tile.x,0,tile.z,tile.width,tile.depth);}
@@ -173,7 +173,7 @@ export class World {
   for(const o of [...g.children])if(o instanceof T.Mesh&&o.geometry.type==='PlaneGeometry'&&o.position.y===0){g.remove(o);o.geometry.dispose();}
   for(const o of [...g.children])if(o instanceof T.Mesh&&o.geometry.type==='CylinderGeometry'&&o.position.x===0&&o.position.z===0&&o.position.y<.3){g.remove(o);o.geometry.dispose();}
   const positions:number[]=[],colorsFloor:number[]=[];
-  for(let x=-47;x<48;x+=2)for(let z=-47;z<48;z+=2){const path=Math.abs(x)<=5||Math.abs(z)<=5||(Math.abs(x)>=37&&Math.abs(x)<=45)||(Math.abs(z)>=37&&Math.abs(z)<=45),color=new T.Color(path?'#ddd1ae':Math.floor((x+48)/8)%2?'#9cbd85':'#95b77f');positions.push(x-1,.02,z-1,x+1,.02,z+1,x+1,.02,z-1,x-1,.02,z-1,x-1,.02,z+1,x+1,.02,z+1);for(let i=0;i<6;i++)colorsFloor.push(color.r,color.g,color.b);}
+  for(let x=-FORT.extent+1;x<FORT.extent;x+=2)for(let z=-FORT.extent+1;z<FORT.extent;z+=2){const path=Math.abs(x)<=5||Math.abs(z)<=5||(Math.abs(x)>=FORT.center+FORT.half+5&&Math.abs(x)<=FORT.extent-3)||(Math.abs(z)>=FORT.center+FORT.half+5&&Math.abs(z)<=FORT.extent-3),color=new T.Color(path?'#ddd1ae':Math.floor((x+48)/8)%2?'#9cbd85':'#95b77f');positions.push(x-1,.02,z-1,x+1,.02,z+1,x+1,.02,z-1,x-1,.02,z-1,x-1,.02,z+1,x+1,.02,z+1);for(let i=0;i<6;i++)colorsFloor.push(color.r,color.g,color.b);}
   const floorGeo=new T.BufferGeometry().setAttribute('position',new T.Float32BufferAttribute(positions,3)).setAttribute('color',new T.Float32BufferAttribute(colorsFloor,3));floorGeo.computeVertexNormals();const floorMat=toonMaterial('#ffffff').clone();floorMat.vertexColors=true;const floor=new T.Mesh(floorGeo,floorMat);floor.receiveShadow=true;floor.userData.disposeMaterial=true;g.add(floor);
   const colors=['#de906a','#718fb5','#72aaa1','#d6b15e'];
   for(const o of [...g.children])if(o instanceof T.Mesh&&o.geometry.type==='BoxGeometry'){

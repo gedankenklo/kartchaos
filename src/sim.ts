@@ -2,7 +2,7 @@ import {newRoundStats,statsFor,type RoundStats} from './matchStats';
 import {createFootball,stepFootball,soccerTeam,assignSoccerTeams,soccerBotGoal,type Football} from './football';
 import {createChampionship,scoreChampionship,type Championship} from './championship';
 // Shared by browser and authoritative server. All distances are metres, time seconds.
-import {FORT,fortressSolidHeight,skyHeight,neonHeight,FORT_BRIDGES} from './terrain';
+import {FORT,fortressSolidHeight,skyHeight,neonHeight,FORT_BRIDGES,FORT_RAMPS} from './terrain';
 import {ARENAS,ARENA_IDS,isExpansion,expansionHeight,expansionNav,EXPANSIONS,type Arena} from './arenas';
 export type {Arena} from './arenas';
 export {ARENA_IDS} from './arenas';
@@ -61,10 +61,12 @@ export interface NavPoint {x:number;z:number;y:number;}
 export function nav(arena:Arena):NavPoint[] {
  if(arena==='fortress'){
   const points:NavPoint[]=[{x:0,z:0,y:0}];
-  for(const sign of [-1,1])for(const d of [7,20,35,41])points.push({x:0,z:sign*d,y:0},{x:sign*d,z:0,y:0});
+  for(const sign of [-1,1])for(const d of [7,FORT.center,FORT.center+FORT.half+3,FORT.extent-7])points.push({x:0,z:sign*d,y:0},{x:sign*d,z:0,y:0});
   for(const sx of [-1,1])for(const sz of [-1,1]){
-   for(const p of [{x:sx*35,z:sz*35,y:0},{x:sx*20,z:sz*42,y:0},{x:sx*20,z:sz*32,y:6},{x:sx*12,z:sz*32,y:6},{x:sx*12,z:sz*20,y:6},{x:sx*20,z:sz*12,y:6},{x:sx*9,z:sz*20,y:6},{x:sx*12,z:sz*24,y:6},{x:sx*19,z:sz*24,y:11},{x:sx*24,z:sz*24,y:11}])points.push(p);
+   points.push({x:sx*(FORT.center+FORT.half+3),z:sz*(FORT.center+FORT.half+3),y:0});
+   for(const [x,z] of [[10,10],[10,18],[10,38],[18,10],[38,10],[38,18],[18,38],[38,38],[FORT.upperCenter,FORT.upperCenter]])points.push({x:sx*x,z:sz*z,y:fortressSolidHeight(sx*x,sz*z)});
   }
+  for(const r of FORT_RAMPS)for(const t of [0,.5,1])points.push({x:r.axis==='x'?r.from+(r.to-r.from)*t:r.cross,z:r.axis==='z'?r.from+(r.to-r.from)*t:r.cross,y:r.bottom+(r.top-r.bottom)*t});
   for(const b of FORT_BRIDGES){points.push({x:b.x,z:b.z,y:b.y},{x:b.x,z:b.z,y:0});for(const sign of [-1,1])points.push({x:b.x+sign*(b.width> b.depth?b.width/2:0),z:b.z+sign*(b.depth>b.width?b.depth/2:0),y:b.y});}
   return points.map(p=>({x:p.x*ARENA_SCALE.fortress,z:p.z*ARENA_SCALE.fortress,y:p.y*ARENA_HEIGHT.fortress}));
  }
