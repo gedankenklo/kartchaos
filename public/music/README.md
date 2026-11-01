@@ -12,10 +12,13 @@ quarry = Rift Quarry
 castle = Ember Keep
 beach = Sunbreak Beach
 stadium = Floodlight Stadium
+foundry = Clockwork Foundry
+harbour = Frostbite Harbour
+ruins = Overgrown Ruins
 
 Examples: public/music/beach/Sunset.mp3 or public/music/castle/01-Dark-Keep.mp3.
-Keep files directly inside the arena folder. Multiple MP3s play in alphabetical order
-and repeat the playlist. One MP3 repeats. Empty folders use generated music.
+Keep files directly inside the arena folder. Each arena round chooses a random starting MP3. Further tracks play in alphabetical
+order and repeat the playlist. One MP3 repeats. Empty folders use generated music.
 Unreadable MP3s are skipped; if none work, generated music takes over.
 
 Settings > Music selection must be Auto (the default). Selecting a named generated

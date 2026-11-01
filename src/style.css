@@ -66,3 +66,5 @@
 .match-notices .battle-feedback{width:100%}
 .match-notices>:empty{display:none}
 @media(max-width:650px){.match-notices{top:106px;gap:6px}}
+
+.arena-art.foundry{background:linear-gradient(145deg,#555e67,#b28d55)}.arena-art.foundry .terrain{background:#e2b65e}.arena-art.harbour{background:linear-gradient(145deg,#a1c9d9,#edf4eb)}.arena-art.harbour .terrain{background:#98b2b6}.arena-art.ruins{background:linear-gradient(145deg,#4e7657,#b9c18d)}.arena-art.ruins .terrain{background:#c0b38d}

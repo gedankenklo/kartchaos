@@ -3,7 +3,7 @@ import {createNeonCityGround} from './neonScenery';
 import * as T from 'three';
 import {ARENAS,type Arena} from './arenas';
 
-export const backdropFloorHeight=(arena:Arena)=>arena==='beach'?-.35:arena==='castle'?-60:arena==='sky'||arena==='neon'?-210:-1.5*ARENAS[arena].height;
+export const backdropFloorHeight=(arena:Arena)=>arena==='harbour'?-.6:arena==='ruins'?-35:arena==='beach'?-.35:arena==='castle'?-60:arena==='sky'||arena==='neon'?-210:-1.5*ARENAS[arena].height;
 
 // Distant scenery is separate from driving surfaces and camera collision geometry.
 export class Landscape extends T.Group {
@@ -11,7 +11,7 @@ export class Landscape extends T.Group {
 
  constructor(arena:Arena,trial=false,lighting:Lighting=defaultLighting(arena)){
   super();
-  const desert=arena==='quarry',coast=arena==='depot'||arena==='beach',night=lighting==='night',sunset=lighting==='sunset',floating=arena==='sky';
+  const desert=arena==='quarry',coast=arena==='depot'||arena==='beach'||arena==='harbour',night=lighting==='night',sunset=lighting==='sunset',floating=arena==='sky';
   const deepNight=night;
   const top=sunset?'#795b83':deepNight?'#080e20':trial&&arena==='fortress'?'#8fbfcf':night?'#443667':desert?'#76bce0':'#74b7dd';
   this.horizon=sunset?'#e9ac83':night?(arena==='castle'?'#302032':'#182b48'):arena==='beach'?'#eddbc5':deepNight?(arena==='castle'?'#302032':'#182b48'):trial&&arena==='fortress'?'#eee4c5':night?'#e7a4aa':desert?'#f6d8ac':'#e1eee2';
@@ -19,7 +19,7 @@ export class Landscape extends T.Group {
   // Shader chunks must begin on their own preprocessor line.
   skyMaterial.fragmentShader=skyMaterial.fragmentShader.replace(';#include',';\n#include');
   this.sky=new T.Mesh(new T.SphereGeometry(1700,32,16),skyMaterial);this.sky.renderOrder=-1000;this.sky.frustumCulled=false;this.add(this.sky);
-  const groundColor=night?'#26394e':sunset?'#966e78':coast?'#73b8c6':desert?'#d2a77e':'#9bbd8d';
+  const groundColor=arena==='harbour'&&!night?'#b6d2dc':night?'#26394e':sunset?'#966e78':coast?'#73b8c6':desert?'#d2a77e':'#9bbd8d';
   const floor:T.Mesh<T.CircleGeometry,T.Material>=new T.Mesh(new T.CircleGeometry(1450,96),new T.MeshBasicMaterial({color:groundColor}));floor.rotation.x=-Math.PI/2;floor.position.y=backdropFloorHeight(arena);this.add(floor);
   const colors=sunset?['#8e6a78','#785b72','#5e4e69']:deepNight?(arena==='castle'?['#39304b','#2c2b45','#25263b']:['#324056','#29374b','#233246']):trial&&arena==='fortress'?['#81a48a','#9bb6a0','#bbcbb7']:night?['#b294b6','#8c80a7','#73769c']:desert?['#c99577','#c3a08b','#b7a6a0']:coast?['#8bad9d','#9ebbb0','#afc7bf']:['#87a889','#9bb49c','#acc5b7'];
   for(let ring=2;ring>=0;ring--){

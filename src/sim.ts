@@ -1,3 +1,4 @@
+import {arenaSurface} from './newArenaRules';
 import {chooseLighting,type Lighting} from './lighting';
 import {newRoundStats,statsFor,type RoundStats} from './matchStats';
 import {createFootball,stepFootball,soccerTeam,assignSoccerTeams,type Football} from './football';
@@ -199,7 +200,7 @@ export function botInput(s:State,k:Kart):Input {
  for(const hazard of s.shots){if(Math.abs(hazard.y-k.y)>3)continue;const d=distance(k,hazard);if(hazard.kind==='mine'&&(hazard.age??0)<MINE_ARM_TIME)continue;if(d< (hazard.kind==='mine'?8:10)&&Math.abs(angleDiff(Math.atan2(hazard.x-k.x,hazard.z-k.z),k.angle))<.9)desired+=angleDiff(Math.atan2(hazard.x-k.x,hazard.z-k.z),k.angle)>0?-.85:.85;}
  const error=angleDiff(desired,k.angle),aim=Math.abs(angleDiff(Math.atan2(foe.x-k.x,foe.z-k.z),k.angle)),range=distance(k,foe),sameLevel=Math.abs(k.y-foe.y)<3,visible=clearPath(s.config.arena,k,foe),diff=s.config.difficulty;
  const pace=diff==='easy'?.65:diff==='hard'?1:.85,ahead=Math.max(7,Math.abs(k.speed)*.65),edge=s.config.arena==='sky'&&ground('sky',k.x+Math.sin(k.angle)*ahead,k.z+Math.cos(k.angle)*ahead)< -10;
-  const scale=speedSettings(s.config.speedClass).scale,hazardMap=s.config.arena==='sky'||s.config.arena==='castle'||s.config.arena==='neon';
+  const scale=speedSettings(s.config.speedClass).scale,hazardMap=s.config.arena==='sky'||s.config.arena==='castle'||s.config.arena==='neon'||s.config.arena==='ruins';
  const travel=Math.hypot(k.vx,k.vz)>2?Math.atan2(k.vx,k.vz):k.angle,look=Math.max(3,Math.abs(k.speed)*.55);
  const aheadX=k.x+Math.sin(travel)*look,aheadZ=k.z+Math.cos(travel)*look;
  const unsafe=!clearPath(s.config.arena,k,{x:aheadX,z:aheadZ,y:ground(s.config.arena,aheadX,aheadZ,k.y+.35)});
@@ -236,11 +237,11 @@ export function drive(s:State,k:Kart,input:Input,dt:number) {
  const targetSlip=drifting?k.driftSide*(.38+.26*Math.max(0,k.driftSide*k.steering)):0;
  k.driftSlip+=(targetSlip-k.driftSlip)*(1-Math.exp(-dt*(drifting?8:10)));
  const travel=k.angle-k.driftSlip,grip=drifting?6:onGround?14:2.2;
- const traction=1-Math.exp(-grip*settings.grip*dt);
+ const surface=arenaSurface(s.config.arena,k.x,k.z,k.y);const traction=1-Math.exp(-grip*settings.grip*surface.grip*dt);
  k.vx+=(Math.sin(travel)*k.speed-k.vx)*traction;
  k.vz+=(Math.cos(travel)*k.speed-k.vz)*traction;
  const oldX=k.x,oldZ=k.z;
- let nx=k.x+(k.vx+k.pushX)*dt,nz=k.z+(k.vz+k.pushZ)*dt;
+ let nx=k.x+(k.vx+k.pushX+(onGround?surface.vx:0))*dt,nz=k.z+(k.vz+k.pushZ+(onGround?surface.vz:0))*dt;
  const newFloor=ground(s.config.arena,nx,nz,k.y);
  // Remove only the velocity into the wall. Never bounce the throttle into reverse.
  const crash=()=>{if(k.cooldown<=0&&Math.hypot(k.vx+k.pushX,k.vz+k.pushZ)>5){k.cooldown=.65;emit(s,'crash',k);}};

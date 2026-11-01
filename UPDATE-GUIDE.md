@@ -1,27 +1,21 @@
-# KART CHAOS 64 v1.14.0 - More assertive Sky bots
+# KART CHAOS 64 — v1.15 update
 
-Upload ALL contents to your existing GitHub repository ROOT. Merge folders,
-commit and let Render rebuild. Refresh and check Settings for v1.14.0.
-The public folder includes ONLY favicon assets. Merge it; public/music and
-all your MP3s stay untouched.
+Upload the CONTENTS of this folder into your existing repository root. Merge the public folder; keep your existing MP3 files. Commit and let Render rebuild using its existing settings.
 
-SKY PLATFORMS
-Bots detect lack of actual progress, including nose-to-nose collision standoffs
-that previously escaped the stationary-kart detector. They commit to an escape.
-Additional safe turning waypoints smooth routes between platforms.
-Bots travel faster on clear lanes and use Turbo Juice to close distance across
-long safe straights. Turbo holders no longer automatically retreat merely
-because they have one balloon left. Existing edge braking and full boost-lane
-clearance checks remain in place. Other arenas retain their current pacing.
+Three new large arenas bring the total to twelve:
+- Clockwork Foundry: moving conveyors, raised factory lanes, rotating gears, glowing furnaces and chimney smoke.
+- Frostbite Harbour: slippery central ice, grippy raised docks, an icebreaker, snowfall and a night aurora.
+- Overgrown Ruins: jungle terraces, wide causeways, ravine drops, waterfalls and night fireflies.
 
-LIGHTING CHECK
-Lighting already rerolls independently for every new round. Same-map rematches
-and cup rounds were verified; no change to the fair random selection was needed.
-Consecutive night rounds are valid. Ember Keep still chooses sunset or night.
+All three support Original and Soft toon, random day/night, all speed classes, bots, split-screen and online rooms.
 
-VALIDATION
-Production build and all 167 unit/simulation tests pass.
-All 27 two-minute navigation scenarios pass across nine arenas and three speeds.
-Nine additional two-minute, two-bot Sky scenarios cover Turbo Juice pursuit,
-engagement, standoff recovery and edge-fall limits. Longest slow spell was under
-three seconds in those scenarios. Run npm run test:sky to repeat those checks.
+New MP3 folders (visible README placeholders keep them on GitHub):
+- public/music/foundry/
+- public/music/harbour/
+- public/music/ruins/
+
+Put MP3s directly in the matching folder and commit them. Music selection must be Auto. Each arena load picks a random starting MP3, then continues through its playlist. Empty folders use the new generated music. The build recreates tracks.json automatically. Existing music folders and MP3s stay in place.
+
+Validation: production build; 171 automated tests; 36 two-minute bot navigation scenarios; 6 multiplayer integration tests. Local browser visual checks completed.
+
+Aurora correction: both ends now fade smoothly to transparent instead of showing hard rectangular edges.
