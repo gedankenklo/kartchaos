@@ -14,7 +14,7 @@ export function combatMessage(event:Event,viewer:number,karts:State['karts']):{t
   let text=cause==='goal'?'Goal conceded! Team loses a balloon.':own&&cause==='mine'?'Your own mine!':own&&cause==='bolt'?'Your own ricochet!':cause==='ram'?'Turbo ram from '+(attacker?.name??'a rival')+'!':cause==='fall'?'Fell off the arena!':cause==='lava'?'Lava!':cause==='ring'?'Outside the danger ring!':cause==='timeout'?'Round over!':weapon?weapon+' hit'+(attacker&&!own?' · '+attacker.name:'')+'!':'Balloon popped!';
   if((event.remaining??victim.balloons)===0)text+=' Eliminated.';return {text,positive:false};
  }
- if(event.source===viewer&&!own)return {text:event.blocked?victim.name+' blocked your '+(weapon?.toLowerCase()??'hit')+'!':(cause==='ram'?'Turbo ram! ':cause==='bolt'?'Ricochet hit! ':'Hit! ')+victim.name+((event.remaining??victim.balloons)===0?' eliminated!':' lost a balloon!'),positive:!event.blocked};
+ if(event.source===viewer&&!own)return {text:event.blocked?victim.name+' blocked your '+(weapon?.toLowerCase()??'hit')+'!':((event.remaining??victim.balloons)===0?'Eliminated ':'Hit ')+victim.name+(weapon?' with '+weapon:'')+'!',positive:!event.blocked};
  return null;
 }
 export function viewportStyle(index:number,count:number,vertical:boolean){const cols=count>2?2:count===2&&vertical?2:1,rows=Math.ceil(count/cols);return `left:${index%cols*100/cols}%;top:${Math.floor(index/cols)*100/rows}%;width:${100/cols}%;height:${100/rows}%`;}

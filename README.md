@@ -138,3 +138,5 @@ Version 1.16: twelve arenas, including a redesigned Foundry horseshoe and furnac
 Version 1.17: Foundry upper platform 16 m, Harbour lookout 14 m, Ruins temple 15 m. Ruins water and ramp footprints are separate. Results preselect the next-round action instead of restoring the speed selector; intentional picker focus is preserved.
 
 Version 1.18: Fortress pickups have 4.5 m supporting-surface clearance. Stadium team markers are wider flat football-style rings with daylight-stable colour and a dark border, projected to the ground beneath jumping karts.
+
+Version 1.19: Neon rim markers are solid shared-shape bumpers for karts and ricochets. Combat cards are no longer clipped by score notices, name the weapon, stay visible longer, and update without restarting animations. Client prediction cannot advance authoritative feedback event IDs. Own late projectile confirmations survive elimination.

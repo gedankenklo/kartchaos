@@ -1,3 +1,4 @@
+import {NEON_RIM_SHAPE} from './neonRim';
 import {createTeamMarker} from './teamMarker';
 import {NewArenaSet,createNewArenaFloor} from './newArenaVisuals';
 import {isNewArena} from './newArenaRules';
@@ -118,7 +119,7 @@ export class World {
     vertices.push(...v);const color=new T.Color(bandColors[band]);for(let n=0;n<v.length/3;n++)colors.push(color.r,color.g,color.b);
    }
    geometry.setAttribute('position',new T.Float32BufferAttribute(vertices,3));geometry.setAttribute('color',new T.Float32BufferAttribute(colors,3));geometry.computeVertexNormals();const surface=this.mesh(geometry,'#ffffff',g);surface.material=this.textured('#ffffff','metal',{vertexColors:true});surface.castShadow=false;
-   for(let i=0;i<16;i++)placeNeonRimMarker(this.cube(g,i%2?'#ed9269':'#bba3e1',0,0,0,2.4,.65,.8),i);
+   for(let i=0;i<NEON_RIM_SHAPE.count;i++)placeNeonRimMarker(this.cube(g,i%2?'#ed9269':'#bba3e1',0,0,0,NEON_RIM_SHAPE.width,NEON_RIM_SHAPE.height,NEON_RIM_SHAPE.depth),i);
   }
   for(const o of layoutObstacles(arena)){this.cylinder(g,arena==='neon'?'#e5ac84':'#927da8',o.x,.8,o.z,o.r,1.6,8);this.cylinder(g,'#e4cfb1',o.x,1.7,o.z,o.r+.15,.3,8);}
   // Decorative landscape below the island.

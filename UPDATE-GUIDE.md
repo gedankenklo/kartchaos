@@ -1,11 +1,15 @@
-# KART CHAOS 64 — v1.18 pickup clearance and team circles
+# KART CHAOS 64 — v1.19 Neon bumpers and combat feedback
 
-Upload the CONTENTS of this folder into your existing GitHub repository root. Merge folders and preserve your MP3 files. Commit and let Render rebuild with the existing settings.
+Upload the CONTENTS of this folder into your existing GitHub repository root. Merge folders and preserve existing MP3s. Commit and let Render rebuild with the existing settings.
 
-Fortress item boxes have moved inward onto safe areas of the lower and upper decks. Their explicit floor heights preserve bridge underpasses. Every pickup has a full 4.5 m radius of supporting surface, including those on bridges.
+Neon Bowl: all sixteen coloured rim blocks are solid. Karts rebound from them and Ricochet Pods reflect from their angled faces. The visual mesh and collision share dimensions and placement. Gaps between the blocks remain open drop-offs, and airborne karts can clear the blocks. Seekers are stopped by solid rim blocks too.
 
-Stadium team indicators remain classic football-style circles. The old small torus was largely hidden by the kart and tyres. A wider, flat blue/orange ring now extends beyond the tyres, with a dark outside border. Team colours retain their visibility in daylight and at night, in both art styles. The ring follows the ground when hopping, and remains properly occluded by terrain.
+Combat messages: fixed a layout bug that could clip the full-screen feedback panels inside the small score/warning stack. Messages now occupy a separate full-screen layer, with independent panels for each local player. Cards have brighter borders, weapon icons, entrance animation, and distinct hit/elimination/shield/self-hit styling. Reduced motion disables the entrance animation. Normal messages last 3.6 seconds; eliminations last 4.8 seconds; up to three are shown per player. Confirmations explicitly name the weapon, for example Hit Rook with Seeker! and Eliminated Rook with Seeker!
 
-All previous features, the three vertical arenas, next-round controller default, and music folder names are retained. Do not remove or replace existing MP3s when merging this update.
+Online prediction no longer creates feedback event IDs that could mask later authoritative hit events. Your own weapon confirmations still appear if a projectile hits after you were eliminated, before falling back to messages about the driver you spectate. Direction bearings update without restarting message animations.
 
-Validation: production build, 176 automated tests, 36 two-minute bot navigation scenarios, and browser visual checks of daylight/night rings, both art styles, and Fortress pickup placement.
+All previous arena, team-circle, item-placement and results-controller improvements remain included. Music folders and MP3 handling are unchanged. Keep your existing MP3s.
+
+Validation: production build; 179 automated tests, including every rim block at every speed, normal reflection, open gaps, airborne clearance, late-hit messages and prediction event isolation; 36 two-minute bot navigation scenarios; six multiplayer tests; local browser checks of hit/elimination/self-hit/shield messages, split-screen panels, overlay bounds and stable animation nodes.
+
+Developer browser fixture: run the dev server and open /tests/combat-overlay-browser.html.

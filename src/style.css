@@ -68,3 +68,22 @@
 @media(max-width:650px){.match-notices{top:106px;gap:6px}}
 
 .arena-art.foundry{background:linear-gradient(145deg,#555e67,#b28d55)}.arena-art.foundry .terrain{background:#e2b65e}.arena-art.harbour{background:linear-gradient(145deg,#a1c9d9,#edf4eb)}.arena-art.harbour .terrain{background:#98b2b6}.arena-art.ruins{background:linear-gradient(145deg,#4e7657,#b9c18d)}.arena-art.ruins .terrain{background:#c0b38d}
+
+/* Combat feedback occupies the viewport, independently of shared score notices. */
+#battleFeedback{position:fixed;inset:0;z-index:38;transform:none;display:block;width:100%;height:100%;pointer-events:none;text-align:center}
+#battleFeedback>.combat-view{position:absolute;overflow:hidden;background:none;border:0;box-shadow:none;padding:0}
+.combat-messages{top:clamp(180px,27%,280px);gap:9px;max-width:min(86%,540px)}
+.combat-message{display:flex;align-items:center;gap:12px;text-align:left;padding:12px 18px;border:2px solid #ff9f77;border-left-width:6px;border-radius:6px 16px 16px 6px;background:linear-gradient(115deg,#452b39f5,#241f35f5);color:#fff3e4;box-shadow:0 6px 24px #0005,0 0 16px #ff795f33;font-size:16px;font-weight:800;animation:combatArrive .24s cubic-bezier(.18,.8,.2,1.2) both}
+.combat-message.positive{background:linear-gradient(115deg,#183e40f5,#202a3cf5);border-color:#88edc6;color:#f1fff9;box-shadow:0 6px 24px #0005,0 0 20px #65edb63b}
+.combat-message.blocked{border-color:#8ddfff;background:linear-gradient(115deg,#24405bf5,#24253cf5);color:#ecfbff}
+.combat-message.elimination{border-color:#ffe28a;box-shadow:0 6px 24px #0006,0 0 26px #ffcc6355}
+.combat-icon{font-size:30px;line-height:1;color:#ffb17c;min-width:32px;text-align:center;text-shadow:0 0 14px currentColor}
+.positive .combat-icon{color:#98ffcf}.blocked .combat-icon{color:#a8edff}.elimination .combat-icon{color:#ffe68e}
+.combat-title{display:block;font-size:10px;line-height:1.4;letter-spacing:1.8px;color:#ffcfb1;margin-bottom:3px}.positive .combat-title{color:#9cf5cf}.blocked .combat-title{color:#a8edff}.elimination .combat-title{color:#ffe68e}
+.combat-copy{display:block;line-height:1.35}.hit-bearing[hidden]{display:none}
+.split-screen .combat-messages{top:25%;gap:5px;max-width:84%}.split-screen .combat-message{font-size:12px;padding:8px 12px;gap:8px}.split-screen .combat-title{font-size:8px;letter-spacing:1px}.split-screen .combat-icon{font-size:24px;min-width:24px}
+@keyframes combatArrive{from{opacity:0;transform:translateY(-10px) scale(.86)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(max-width:650px){.combat-messages{top:24%;max-width:82%}.combat-message{font-size:13px;padding:9px 12px;gap:8px}.combat-icon{font-size:25px;min-width:24px}.split-screen .combat-message{font-size:10px;padding:6px 8px}.split-screen .combat-title{font-size:7px}.split-screen .combat-icon{font-size:19px;min-width:18px}}
+@media(prefers-reduced-motion:reduce){.combat-message{animation:none}.combat-icon{text-shadow:none}}
+@media(max-width:650px){.combat-messages{top:clamp(190px,27%,260px)}}
+@media(max-height:500px) and (max-width:650px){.combat-messages{top:180px;gap:5px}.combat-message{padding:6px 9px;font-size:12px}.combat-title{font-size:8px}.split-screen .combat-messages{top:25%}}

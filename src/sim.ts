@@ -1,3 +1,4 @@
+import {neonRimContact} from './neonRim';
 import {arenaSurface} from './newArenaRules';
 import {chooseLighting,type Lighting} from './lighting';
 import {newRoundStats,statsFor,type RoundStats} from './matchStats';
@@ -45,8 +46,8 @@ export function ceiling(arena:Arena,x:number,z:number,feet:number):number {
  const xLocal=x/ARENA_SCALE.fortress,zLocal=z/ARENA_SCALE.fortress;
  return Math.min(Infinity,...FORT_BRIDGES.filter(b=>Math.abs(xLocal-b.x)<=b.width/2&&Math.abs(zLocal-b.z)<=b.depth/2&&feet<(b.y-b.thickness)*ARENA_HEIGHT.fortress).map(b=>(b.y-b.thickness)*ARENA_HEIGHT.fortress));
 }
-export function solidAt(arena:Arena,x:number,y:number,z:number):boolean {
- if(arena!=='fortress')return ground(arena,x,z)>y;
+export function solidAt(arena:Arena,x:number,y:number,z:number,includeRim=true):boolean {
+ if(arena!=='fortress')return ground(arena,x,z)>y||includeRim&&arena==='neon'&&!!neonRimContact(x,z,0,y);
  const lx=x/ARENA_SCALE.fortress,lz=z/ARENA_SCALE.fortress;
  if(fortressSolidHeight(lx,lz)*ARENA_HEIGHT.fortress>y)return true;
  return FORT_BRIDGES.some(b=>Math.abs(lx-b.x)<=b.width/2&&Math.abs(lz-b.z)<=b.depth/2&&y>=(b.y-b.thickness)*ARENA_HEIGHT.fortress&&y<=b.y*ARENA_HEIGHT.fortress);
@@ -143,7 +144,7 @@ export function useItem(s:State,k:Kart) {
 export function clearPath(arena:Arena,a:{x:number;z:number;y?:number},b:{x:number;z:number;y?:number}) {
  let prev=a.y??ground(arena,a.x,a.z);
  const steps=Math.ceil(distance(a,b)/1.8);
- for(let i=1;i<=steps;i++){const x=a.x+(b.x-a.x)*i/steps,z=a.z+(b.z-a.z)*i/steps,h=ground(arena,x,z,prev+.35);if(h< -10||Math.abs(h-prev)>1.6||obstacles(arena).some(o=>Math.hypot(x-o.x,z-o.z)<o.r+1.4))return false;prev=h;}return Math.abs(prev-(b.y??ground(arena,b.x,b.z)))<1.6;
+ for(let i=1;i<=steps;i++){const x=a.x+(b.x-a.x)*i/steps,z=a.z+(b.z-a.z)*i/steps,h=ground(arena,x,z,prev+.35);if(h< -10||Math.abs(h-prev)>1.6||arena==='neon'&&neonRimContact(x,z,1.4,h+.5,.5)||obstacles(arena).some(o=>Math.hypot(x-o.x,z-o.z)<o.r+1.4))return false;prev=h;}return Math.abs(prev-(b.y??ground(arena,b.x,b.z)))<1.6;
 }
 const routes=new WeakMap<Kart,{tick:number;goalX:number;goalZ:number;goalY:number;point:{x:number;z:number}}>();
 function waypoint(s:State,k:Kart,goal:{x:number;z:number;y?:number}) {
@@ -252,6 +253,7 @@ export function drive(s:State,k:Kart,input:Input,dt:number) {
   {const limit=(ARENAS[s.config.arena].extent-1.25)*scale-1.1;if(Math.abs(nx)>limit){slide(Math.sign(nx),0);nx=clamp(nx,-limit,limit);}if(Math.abs(nz)>limit){slide(0,Math.sign(nz));nz=clamp(nz,-limit,limit);}}
  }
  for(const o of obstacles(s.config.arena)){const d=Math.hypot(nx-o.x,nz-o.z);if(d<o.r+1.1&&k.y<2){const normalX=(nx-o.x)/(d||1),normalZ=(nz-o.z)/(d||1);slide(-normalX,-normalZ);nx=o.x+normalX*(o.r+1.15);nz=o.z+normalZ*(o.r+1.15);}}
+ if(s.config.arena==='neon'){const contact=neonRimContact(nx,nz,1.1,k.y+.7,.7);if(contact){const {normalX,normalZ}=contact;const into=k.vx*normalX+k.vz*normalZ;if(into<0){crash();k.vx-=1.45*into*normalX;k.vz-=1.45*into*normalZ;k.speed*=.6;}const push=k.pushX*normalX+k.pushZ*normalZ;if(push<0){k.pushX-=1.4*push*normalX;k.pushZ-=1.4*push*normalZ;}nx=contact.x;nz=contact.z;}}
  k.x=nx;k.z=nz;
  if(input.hop&&!k.hopHeld&&onGround)k.vy=7;
  k.hopHeld=input.hop;
@@ -302,12 +304,13 @@ export function advanceRicochet(s:State,p:Shot,dt:number){
   if(arena!=='sky'&&arena!=='neon'){
    {const limit=(ARENAS[arena].extent-1.25)*ARENA_SCALE[arena]-radius;if(Math.abs(nx)>limit){vx=-vx;nx=clamp(nx,-limit+.02,limit-.02);bounced=true;}if(Math.abs(nz)>limit){vz=-vz;nz=clamp(nz,-limit+.02,limit-.02);bounced=true;}}
   }
-  const blocked=(x:number,z:number)=>solidAt(arena,x,p.y,z);
+  const blocked=(x:number,z:number)=>solidAt(arena,x,p.y,z,false);
   const bx=blocked(nx+Math.sign(vx)*radius,oz)||blocked(nx+Math.sign(vx)*radius,oz+radius*.65)||blocked(nx+Math.sign(vx)*radius,oz-radius*.65);
   const bz=blocked(ox,nz+Math.sign(vz)*radius)||blocked(ox+radius*.65,nz+Math.sign(vz)*radius)||blocked(ox-radius*.65,nz+Math.sign(vz)*radius);
   if(bx){vx=-vx;nx=ox;bounced=true;}if(bz){vz=-vz;nz=oz;bounced=true;}
   if(!bx&&!bz&&blocked(nx,nz)){vx=-vx;vz=-vz;nx=ox;nz=oz;bounced=true;}
   for(const o of obstacles(arena)){const d=Math.hypot(nx-o.x,nz-o.z);if(p.y<2.6&&d<o.r+radius){const ax=d>.001?(nx-o.x)/d:-vx,az=d>.001?(nz-o.z)/d:-vz,dot=vx*ax+vz*az;if(dot<0){vx-=2*dot*ax;vz-=2*dot*az;bounced=true;}nx=o.x+ax*(o.r+radius+.02);nz=o.z+az*(o.r+radius+.02);}}
+  if(arena==='neon'){const contact=neonRimContact(nx,nz,radius,p.y,radius);if(contact){const dot=vx*contact.normalX+vz*contact.normalZ;if(dot<0){vx-=2*dot*contact.normalX;vz-=2*dot*contact.normalZ;bounced=true;}nx=contact.x;nz=contact.z;}}
   p.x=nx;p.z=nz;p.angle=Math.atan2(vx,vz);if(bounced)rebound();
   const floor=ground(arena,p.x,p.z,p.y-.35);if(floor< -10){p.life=0;break;}if(floor<=p.y+.4)p.y=floor+.65;
   for(const k of s.karts){if(s.ball&&s.config.soccer&&k.id!==p.owner&&soccerTeam(k)===soccerTeam(s.karts[p.owner]))continue;if(!k.balloons||Math.abs(k.y+.8-p.y)>1.7||(k.id===p.owner&&(p.bounces===0||p.age<.4)))continue;const dx=p.x-ox,dz=p.z-oz,t=clamp(((k.x-ox)*dx+(k.z-oz)*dz)/(dx*dx+dz*dz||1),0,1);if(Math.hypot(k.x-ox-dx*t,k.z-oz-dz*t)<1.65){damage(s,k,p.owner,{cause:'bolt',fromX:k.x-Math.sin(p.angle)*5,fromZ:k.z-Math.cos(p.angle)*5});p.life=0;break;}}
