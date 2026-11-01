@@ -1,0 +1,23 @@
+import * as T from 'three';
+import type {Item,Kart} from './sim';
+import {toonMaterial} from './toon';
+const COLORS:Record<Item,string>={bolt:'#65c788',seeker:'#b494f4',mine:'#f29a58',boost:'#f5c65d',shield:'#76d8f4',pulse:'#c5a4ff'};
+export function createHeldItem(item:Item,toon=false){
+ const root=new T.Group();root.name='held-'+item;
+ const material=(color:string,basic=false)=>basic?new T.MeshBasicMaterial({color,side:T.DoubleSide,toneMapped:false}):toon?toonMaterial(color).clone():new T.MeshStandardMaterial({color,roughness:.34,metalness:.12,emissive:color,emissiveIntensity:.07});
+ const mesh=(geo:T.BufferGeometry,color:string,x=0,y=0,z=0,basic=false)=>{const m=new T.Mesh(geo,material(color,basic));m.position.set(x,y,z);m.userData.disposeMaterial=true;m.castShadow=m.receiveShadow=false;m.raycast=()=>{};root.add(m);return m;};
+ if(item==='bolt'){const shell=mesh(new T.SphereGeometry(.58,12,8),COLORS.bolt);shell.scale.y=.62;const rim=mesh(new T.TorusGeometry(.53,.1,6,24),'#fff0c2');rim.rotation.x=Math.PI/2;mesh(new T.CylinderGeometry(.4,.4,.15,12),'#315e52',0,-.22);for(let i=0;i<6;i++){const a=i*Math.PI/3,plate=mesh(new T.BoxGeometry(.055,.07,.5),'#326749',Math.sin(a)*.23,.3,Math.cos(a)*.23);plate.rotation.y=a;}}
+ if(item==='seeker'){const body=mesh(new T.CylinderGeometry(.23,.27,.85,12),COLORS.seeker);body.rotation.x=Math.PI/2;const nose=mesh(new T.ConeGeometry(.23,.35,12),'#f8cfef',0,0,.59);nose.rotation.x=Math.PI/2;for(const side of [-1,1])mesh(new T.BoxGeometry(.18,.08,.4),'#6e4c99',side*.3,-.09,-.25);const eye=mesh(new T.TorusGeometry(.16,.04,6,16),'#a5f6ff',0,0,.49,true);eye.rotation.y=0;}
+ if(item==='mine'){mesh(new T.CylinderGeometry(.48,.55,.22,12),'#725044',0,-.18);mesh(new T.SphereGeometry(.4,10,8),COLORS.mine,0,.02);for(let i=0;i<6;i++){const a=i*Math.PI/3,spike=mesh(new T.ConeGeometry(.105,.25,6),'#ffe4ab',Math.sin(a)*.39,.02,Math.cos(a)*.39);spike.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),new T.Vector3(Math.sin(a),0,Math.cos(a)));}mesh(new T.SphereGeometry(.1,8,6),'#ff6458',0,.42,0,true);}
+ if(item==='boost'){mesh(new T.CylinderGeometry(.3,.3,.85,12),'#52bbaa');for(const side of [-1,1])mesh(new T.CylinderGeometry(.32,.32,.1,12),'#fff0c2',0,side*.43);mesh(new T.CylinderGeometry(.15,.15,.16,8),'#4e6474',0,.56);const bolt=new T.Shape();bolt.moveTo(.09,.3);bolt.lineTo(-.15,-.02);bolt.lineTo(-.02,-.02);bolt.lineTo(-.09,-.3);bolt.lineTo(.17,.07);bolt.lineTo(.03,.07);bolt.closePath();mesh(new T.ShapeGeometry(bolt),'#ffe081',0,0,.315,true);}
+ if(item==='shield'){const shape=new T.Shape();shape.moveTo(0,.65);shape.lineTo(.5,.34);shape.lineTo(.4,-.28);shape.lineTo(0,-.65);shape.lineTo(-.4,-.28);shape.lineTo(-.5,.34);shape.closePath();mesh(new T.ExtrudeGeometry(shape,{depth:.12,bevelEnabled:false}),'#e7f9ff',0,0,-.06);const inner=mesh(new T.ShapeGeometry(shape),'#55b9dc',0,0,.075,true);inner.scale.setScalar(.78);const back=mesh(new T.ShapeGeometry(shape),'#55b9dc',0,0,-.075,true);back.scale.setScalar(.78);const badge=mesh(new T.OctahedronGeometry(.17),'#f2ffff',0,0,.12,true);badge.scale.z=.3;}
+ if(item==='pulse'){mesh(new T.OctahedronGeometry(.25),'#c8fbff',0,0,0,true);for(let i=0;i<3;i++){const ring=mesh(new T.TorusGeometry(.32+i*.13,.045,6,32),i%2?'#a5edff':COLORS.pulse);ring.rotation.set(i*.5,i*.7,0);}}
+ const halo=mesh(new T.TorusGeometry(.48,.025,5,32),COLORS[item],0,-.65,0,true);halo.name='heldHoverHalo';halo.rotation.x=Math.PI/2;halo.material.transparent=true;halo.material.opacity=.4;halo.material.depthWrite=false;
+ root.scale.setScalar(.78);return root;
+}
+export class HeldItemDisplay extends T.Group {
+ item:Item|null=null;model?:T.Group;
+ constructor(public toon=false){super();this.name='heldItemDisplay';this.visible=false;this.position.set(1.8,1.7,-1.45);}
+ clearModel(){if(this.model){const geometries=new Set<T.BufferGeometry>(),materials=new Set<T.Material>();this.model.traverse(o=>{if(o instanceof T.Mesh){geometries.add(o.geometry);for(const m of Array.isArray(o.material)?o.material:[o.material])materials.add(m);}});geometries.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());this.remove(this.model);this.model=undefined;}this.item=null;}
+ update(k:Pick<Kart,'item'|'roulette'|'balloons'|'id'>,now:number,reduced=false,playing=true){const item=playing&&k.balloons>0&&k.roulette<=0?k.item:null;if(item!==this.item){this.clearModel();if(item){this.model=createHeldItem(item,this.toon);this.add(this.model);this.item=item;}}this.visible=!!item;if(!this.model)return;const t=reduced?0:now;this.position.y=1.7+(reduced?0:Math.sin(t*2.1+k.id)*.055);this.model.rotation.set(0,Math.PI+(reduced?0:item==='shield'?Math.sin(t*.8)*.25:t*.35),reduced?0:Math.sin(t*1.4+k.id)*.035);}
+}

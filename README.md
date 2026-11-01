@@ -140,3 +140,7 @@ Version 1.17: Foundry upper platform 16 m, Harbour lookout 14 m, Ruins temple 15
 Version 1.18: Fortress pickups have 4.5 m supporting-surface clearance. Stadium team markers are wider flat football-style rings with daylight-stable colour and a dark border, projected to the ground beneath jumping karts.
 
 Version 1.19: Neon rim markers are solid shared-shape bumpers for karts and ricochets. Combat cards are no longer clipped by score notices, name the weapon, stay visible longer, and update without restarting animations. Client prediction cannot advance authoritative feedback event IDs. Own late projectile confirmations survive elimination.
+
+Version 1.20: all six held items have small 3D models behind and beside each kart, visible to rivals after roulette settles. Existing item HUD is unchanged. Displays clear on use/elimination/results and respect reduced motion. Fortress upper bridge outer edges align with upper platform edges; underpasses and ramp bypass lanes remain clear.
+
+Version 1.21: Foundry conveyors push at 10 m/s instead of 3.5 m/s. Stripe motion matches their physical velocity. Both directions, all speed classes and airborne isolation are checked.

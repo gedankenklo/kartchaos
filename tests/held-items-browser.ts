@@ -1,0 +1,11 @@
+import {World} from '../src/render';
+import {createState,ground,ITEMS,useItem,type Item,type State} from '../src/sim';
+import {HeldItemDisplay} from '../src/heldItems';
+import {FORT_BRIDGES} from '../src/terrain';
+const world=new World(document.querySelector('canvas')!);world.distance=11;let state:State,fortress=false,overview=false;
+const select=document.querySelector<HTMLSelectElement>('#item')!;
+function load(){state=createState({arena:fortress?'fortress':'stadium',humans:1,bots:5,duration:180,difficulty:'normal'});state.phase='playing';state.lighting='day';state.boxes=[];if(state.ball){state.ball.x=70;state.ball.z=70;}
+ state.karts.forEach((k,i)=>{k.bot=false;k.x=i===0?0:(i-3)*8;k.z=i===0?0:17;k.angle=0;if(fortress){k.x=-28+i*12;k.z=FORT_BRIDGES.find(b=>b.y===11&&b.width>b.depth)!.z*2.4;k.angle=Math.PI/2;}k.y=ground(state.config.arena,k.x,k.z);k.item=i===0?select.value as Item:ITEMS[(i-1)%ITEMS.length];k.inv=0;});}
+load();select.onchange=()=>{state.karts[0].roulette=0;state.karts[0].item=select.value as Item;};
+document.querySelector('#roulette')!.addEventListener('click',()=>state.karts[0].roulette=state.karts[0].roulette?0:1.5);document.querySelector('#use')!.addEventListener('click',()=>useItem(state,state.karts[0]));document.querySelector('#shield')!.addEventListener('click',()=>state.karts[0].shield=state.karts[0].shield?0:7);document.querySelector('#art')!.addEventListener('click',()=>world.setArtTrial(!world.artTrial));document.querySelector('#arena')!.addEventListener('click',()=>{fortress=!fortress;load();});document.querySelector('#overview')!.addEventListener('click',()=>overview=!overview);
+function frame(ms:number){const now=ms/1000;world.sync(state,1/60,now);world.render(state,[0],!overview,new DOMRect(0,0,innerWidth,innerHeight),now,1/60,false);const display=world.models.get(0)?.getObjectByName('heldItemDisplay') as HeldItemDisplay|undefined;const expected=state.karts[0].roulette<=0&&!!state.karts[0].item;document.querySelector('#report')!.textContent=(display?.visible===expected?'PASS':'FAIL')+' · inventory '+(state.karts[0].item??'empty')+' · held display '+(display?.visible?'visible':'hidden')+' · '+(world.artTrial?'Soft toon':'Original');requestAnimationFrame(frame);}requestAnimationFrame(frame);

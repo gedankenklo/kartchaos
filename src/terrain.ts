@@ -1,5 +1,5 @@
 // Shared surfaces for the renderer, driving, weapons and bot navigation.
-export const FORT={extent:56,center:24,half:16,lower:6,upperCenter:28,upperHalf:8,upper:11,bridgeWidth:8,bridgeThickness:.6} as const;
+export const FORT={extent:56,center:24,half:16,lower:6,upperCenter:28,upperHalf:8,upper:11,upperBridgeWidth:5,bridgeWidth:8,bridgeThickness:.6} as const;
 export interface Ramp {axis:'x'|'z'; from:number; to:number; cross:number; width:number; bottom:number; top:number;}
 export interface Bridge {x:number;z:number;width:number;depth:number;y:number;thickness:number;}
 export const FORT_RAMPS:Ramp[]=[];
@@ -8,11 +8,12 @@ for(const sx of [-1,1])for(const sz of [-1,1]){
  FORT_RAMPS.push({axis:'z',from:sz*50,to:sz*40,cross:sx*24,width:8,bottom:0,top:6});
  FORT_RAMPS.push({axis:'x',from:sx*12,to:sx*20,cross:sz*26,width:6,bottom:6,top:11});
 }
+const upperBridgeOffset=FORT.upperCenter+FORT.upperHalf-FORT.upperBridgeWidth/2;
 for(const sign of [-1,1]){
  FORT_BRIDGES.push({x:sign*24,z:0,width:8,depth:16,y:6,thickness:.6});
  FORT_BRIDGES.push({x:0,z:sign*24,width:16,depth:8,y:6,thickness:.6});
- FORT_BRIDGES.push({x:sign*33,z:0,width:5,depth:40,y:11,thickness:.6});
- FORT_BRIDGES.push({x:0,z:sign*33,width:40,depth:5,y:11,thickness:.6});
+ FORT_BRIDGES.push({x:sign*upperBridgeOffset,z:0,width:FORT.upperBridgeWidth,depth:40,y:11,thickness:.6});
+ FORT_BRIDGES.push({x:0,z:sign*upperBridgeOffset,width:40,depth:FORT.upperBridgeWidth,y:11,thickness:.6});
 }
 // Pickups sit inside their intended floor; explicit heights preserve underpasses.
 export const FORT_ITEMS=[{x:0,z:0,y:0},...[-1,1].flatMap(s=>[{x:0,z:s*28,y:0},{x:s*28,z:0,y:0}]),...[-1,1].flatMap(sx=>[-1,1].flatMap(sz=>[{x:sx*14,z:sz*36,y:FORT.lower},{x:sx*14,z:sz*16,y:FORT.lower},{x:sx*28,z:sz*28,y:FORT.upper}])),...FORT_BRIDGES.map(b=>({x:b.x,z:b.z,y:b.y}))];
