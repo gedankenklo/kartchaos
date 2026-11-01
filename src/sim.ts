@@ -1,3 +1,4 @@
+import {chooseLighting,type Lighting} from './lighting';
 import {newRoundStats,statsFor,type RoundStats} from './matchStats';
 import {createFootball,stepFootball,soccerTeam,assignSoccerTeams,type Football} from './football';
 import {createChampionship,scoreChampionship,type Championship} from './championship';
@@ -25,7 +26,7 @@ export interface Box {x:number; z:number; y:number; respawn:number;}
 export type HitCause='bolt'|'seeker'|'mine'|'ram'|'pulse'|'fall'|'lava'|'ring'|'timeout'|'goal';
 export interface Event {impact?:number;contact?:'kick'|'bounce';ownGoal?:boolean;id:number; type:'ballcontact'|'goal'|'eliminated'|'hit'|'fire'|'pickup'|'boost'|'win'|'fall'|'bump'|'itemready'|'shockwave'|'crash'|'ricochet'; x:number; y:number; z:number; player:number;source?:number;blocked?:boolean;remaining?:number;cause?:HitCause;fromX?:number;fromZ?:number;team?:'blue'|'orange';}
 export interface Config {soccer?:boolean;arena:Arena; humans:number; bots:number; difficulty:'easy'|'normal'|'hard'; duration:number;speedClass?:50|100|150;drivers?:number[];shuffleMaps?:boolean;mapQueue?:Arena[];championship?:boolean;}
-export interface State {winningTeam?:'blue'|'orange';config:Config; championship?:Championship; ball?:Football; karts:Kart[]; shots:Shot[]; boxes:Box[]; time:number; countdown:number; phase:'countdown'|'playing'|'finished'; winner:number|null; tick:number; seed:number; serial:number; events:Event[];}
+export interface State {lighting?:Lighting;winningTeam?:'blue'|'orange';config:Config; championship?:Championship; ball?:Football; karts:Kart[]; shots:Shot[]; boxes:Box[]; time:number; countdown:number; phase:'countdown'|'playing'|'finished'; winner:number|null; tick:number; seed:number; serial:number; events:Event[];}
 export const clamp=(v:number,a:number,b:number)=>Math.max(a,Math.min(b,v));
 export const angleDiff=(a:number,b:number)=>Math.atan2(Math.sin(a-b),Math.cos(a-b));
 export const distance=(a:{x:number;z:number},b:{x:number;z:number})=>Math.hypot(a.x-b.x,a.z-b.z);
@@ -101,7 +102,7 @@ export function createState(config:Config):State {
  if(config.arena==='stadium')assignSoccerTeams(karts);
  const points=(isExpansion(config.arena)?EXPANSIONS[config.arena].items:config.arena==='fortress'?[{x:0,z:0},...[-1,1].flatMap(s=>[{x:0,z:s*28,y:0},{x:s*28,z:0,y:0}]),...[-1,1].flatMap(sx=>[-1,1].flatMap(sz=>[{x:sx*20,z:sz*35},{x:sx*12,z:sz*20},{x:sx*23,z:sz*23}])),...FORT_BRIDGES.map(b=>({x:b.x,z:b.z,y:b.y}))]:config.arena==='sky'?[{x:0,z:0},{x:0,z:24},{x:24,z:0},{x:0,z:-24},{x:-24,z:0},{x:0,z:10},{x:10,z:0},{x:0,z:-10},{x:-10,z:0}]:[0,1,2,3,4,5,6,7].map(i=>({x:Math.sin(i*Math.PI/4)*20,z:Math.cos(i*Math.PI/4)*20}))).map((p:{x:number;z:number;y?:number})=>({x:p.x*ARENA_SCALE[config.arena],z:p.z*ARENA_SCALE[config.arena],y:p.y===undefined?undefined:p.y*ARENA_HEIGHT[config.arena]}));
  const championship=config.championship?createChampionship(config,karts):undefined;
- return {config,championship,ball:config.arena==='stadium'?createFootball():undefined,karts,shots:[],boxes:points.map(p=>({...p,y:p.y??ground(config.arena,p.x,p.z),respawn:0})),time:config.duration,countdown:3,phase:'countdown',winner:null,tick:0,seed:728463,serial:0,events:[]};
+ return {lighting:chooseLighting(config.arena),config,championship,ball:config.arena==='stadium'?createFootball():undefined,karts,shots:[],boxes:points.map(p=>({...p,y:p.y??ground(config.arena,p.x,p.z),respawn:0})),time:config.duration,countdown:3,phase:'countdown',winner:null,tick:0,seed:728463,serial:0,events:[]};
 }
 export function nextRoundState(previous:State,settings:Config=previous.config):State {
  const cup=previous.championship;if(cup&&!cup.completed){const config={...settings,championship:true,arena:cup.schedule[cup.round],drivers:previous.config.drivers,humans:previous.config.humans,bots:previous.config.bots};const next=createState(config);next.championship={...cup,round:cup.round+1,scored:false,standings:cup.standings.map(row=>({...row})),schedule:[...cup.schedule]};return next;}

@@ -1,3 +1,5 @@
+import {lightingFor,lightSettings,type Lighting} from './lighting';
+import {placeNeonRimMarker} from './neonScenery';
 import {createDangerWall} from './dangerWall';
 import {teamColor,soccerTeam} from './football';
 import {eventShake} from './celebrations';
@@ -25,6 +27,7 @@ const mat=(color:string,extra={})=>new T.MeshStandardMaterial({color,roughness:.
 const materials=new Map<string,T.MeshStandardMaterial>();
 function material(c:string){if(!materials.has(c))materials.set(c,mat(c));return materials.get(c)!;}
 export class World {
+ lighting:Lighting='day';
  impactShakes=new Map<number,{until:number;duration:number;strength:number}>();spectatorTargets=new Map<number,number>();
  eliminations=new Map<number,{age:number;x:number;y:number;z:number;angle:number}>();
  previewBounds=new T.Box3();details?:ArenaDetails;ballModel?:T.Group;
@@ -59,7 +62,7 @@ export class World {
  build(arena:Arena){
   this.life?.dispose();this.life=new ArenaLife(arena);this.scene.add(this.life);
   this.atmosphere?.dispose();this.atmosphere=new ArenaAtmosphere(arena);this.scene.add(this.atmosphere);
-  this.landscape?.dispose();this.landscape=new Landscape(arena,this.artTrial);this.scene.add(this.landscape);
+  this.landscape?.dispose();this.landscape=new Landscape(arena,this.artTrial,this.lighting);this.scene.add(this.landscape);
   this.details=undefined;this.battleEffects.clearBursts();this.map=arena;this.disposeGroup(this.arenaGroup);this.boxes=[];
   const g=new T.Group();g.scale.set(ARENA_SCALE[arena],ARENA_HEIGHT[arena],ARENA_SCALE[arena]);this.arenaGroup.add(g);this.cameraTerrain=g;
   if(arena==='fortress'){
@@ -109,11 +112,11 @@ export class World {
     vertices.push(...v);const color=new T.Color(bandColors[band]);for(let n=0;n<v.length/3;n++)colors.push(color.r,color.g,color.b);
    }
    geometry.setAttribute('position',new T.Float32BufferAttribute(vertices,3));geometry.setAttribute('color',new T.Float32BufferAttribute(colors,3));geometry.computeVertexNormals();const surface=this.mesh(geometry,'#ffffff',g);surface.material=this.textured('#ffffff','metal',{vertexColors:true});surface.castShadow=false;
-   for(let i=0;i<16;i++){const a=i*Math.PI/8;this.cube(g,i%2?'#ed9269':'#bba3e1',Math.sin(a)*36.5,2.8,Math.cos(a)*36.5,2,1,2);}
+   for(let i=0;i<16;i++)placeNeonRimMarker(this.cube(g,i%2?'#ed9269':'#bba3e1',0,0,0,2.4,.65,.8),i);
   }
   for(const o of layoutObstacles(arena)){this.cylinder(g,arena==='neon'?'#e5ac84':'#927da8',o.x,.8,o.z,o.r,1.6,8);this.cylinder(g,'#e4cfb1',o.x,1.7,o.z,o.r+.15,.3,8);}
   // Decorative landscape below the island.
-  for(let i=0;i<18;i++){const a=i*2.399,r=(isExpansion(arena)?ARENAS[arena].extent+10:arena==='fortress'?59:47)+i%4*3;const x=Math.sin(a)*r,z=Math.cos(a)*r;if(arena==='yard'){this.cube(g,'#9a8875',x,.5,z,1,4,1);this.cube(g,'#e8be6f',x,2.8,z,1.2,.6,1.2);}else if(arena==='depot'){this.cylinder(g,'#879b9d',x,-.5,z,.7,2,8);}else if(arena==='quarry'){this.cylinder(g,'#8fa17e',x,.5,z,.5,4,7);this.cube(g,'#8fa17e',x+.8,.5,z,1.5,.65,.65);this.cylinder(g,'#8fa17e',x+1.3,1.3,z,.32,1.8,7);}else if(arena!=='sky'&&arena!=='castle'&&arena!=='beach'&&arena!=='stadium'){this.cylinder(g,'#a39079',x,0,z,.35,3,6);this.mesh(new T.ConeGeometry(2.6,6,6),i%2?'#91a97c':'#718e72',g,x,4,z);}}
+  for(let i=0;i<18;i++){const a=i*2.399,r=(isExpansion(arena)?ARENAS[arena].extent+10:arena==='fortress'?59:47)+i%4*3;const x=Math.sin(a)*r,z=Math.cos(a)*r;if(arena==='yard'){this.cube(g,'#9a8875',x,.5,z,1,4,1);this.cube(g,'#e8be6f',x,2.8,z,1.2,.6,1.2);}else if(arena==='depot'){this.cylinder(g,'#879b9d',x,-.5,z,.7,2,8);}else if(arena==='quarry'){this.cylinder(g,'#8fa17e',x,.5,z,.5,4,7);this.cube(g,'#8fa17e',x+.8,.5,z,1.5,.65,.65);this.cylinder(g,'#8fa17e',x+1.3,1.3,z,.32,1.8,7);}else if(arena!=='neon'&&arena!=='sky'&&arena!=='castle'&&arena!=='beach'&&arena!=='stadium'){this.cylinder(g,'#a39079',x,0,z,.35,3,6);this.mesh(new T.ConeGeometry(2.6,6,6),i%2?'#91a97c':'#718e72',g,x,4,z);}}
   if(arena==='castle'||arena==='beach'||arena==='stadium'){this.details=new ArenaDetails(arena);g.add(this.details);}
   if(this.artTrial){if(arena==='fortress')this.styleFortress(g);else this.styleArena(g,arena);applyToon(this.landscape!);}
   if(!this.artTrial){
@@ -192,7 +195,7 @@ export class World {
  disposeGroup(group:T.Group){group.traverse(o=>{if(o instanceof T.Sprite)o.material.dispose();if(o.userData.ownedMaterials){for(const material of o.userData.ownedMaterials){material.map?.dispose();material.dispose();}delete o.userData.ownedMaterials;}if(o.userData.edgeMaterials){for(const m of o.userData.edgeMaterials)m.dispose();o.userData.edgeMaterials=undefined;}if(o instanceof T.Mesh||o instanceof T.Line){if(!o.userData.sharedGeometry)o.geometry.dispose();if(o.userData.disposeMaterial)for(const m of Array.isArray(o.material)?o.material:[o.material]){if(o.userData.disposeTexture)(m as T.MeshBasicMaterial).map?.dispose();m.dispose();}}});group.clear();}
  kart(id:number,driver=id){const g=createKart(driver,this.artTrial);this.kartGroup.add(g);this.models.set(id,g);return g;}
  sync(s:State,dt:number,now:number,localIds?:number[]){this.battleEffects.reduced=this.reduced||this.flair==='reduced';
-  if(s.config.arena!==this.map){this.build(s.config.arena);this.boxes=[];}
+  const lighting=lightingFor(s.config.arena,s.lighting);if(s.config.arena!==this.map||lighting!==this.lighting){this.lighting=lighting;this.build(s.config.arena);this.boxes=[];}
   for(const [id,m] of this.models)if(!s.karts.some(k=>k.id===id&&(k.driver??k.id)===m.userData.driverId)){this.disposeGroup(m);this.kartGroup.remove(m);this.models.delete(id);}
   for(const e of s.events)if(e.id>this.lastEvent){if(e.type==='shockwave'||e.type==='hit'&&e.cause==='mine')for(const kart of s.karts){const shake=eventShake(e,kart);if(shake)this.impactShakes.set(kart.id,{...shake,until:now+shake.duration});}if(e.type==='eliminated')this.eliminations.set(e.player,{age:0,x:e.x,y:e.y,z:e.z,angle:s.karts[e.player]?.angle??0});const model=this.models.get(e.player);if(model&&(e.type==='hit'||e.type==='pickup'||e.type==='itemready')){model.userData.emoteUntil=now+.55;model.userData.emoteKind=e.type==='hit'?'hit':'pickup';}if(e.type==='hit'&&!e.blocked&&e.source!==e.player){const source=this.models.get(e.source!);if(source){source.userData.emoteUntil=now+.5;source.userData.emoteKind='confirmed';}}}
   for(const k of s.karts){const m=this.models.get(k.id)??this.kart(k.id,k.driver??k.id);m.userData.celebrating=s.phase==='finished'&&(s.winningTeam?soccerTeam(k)===s.winningTeam:s.winner===k.id);m.userData.reduced=this.reduced;if(k.balloons>0)this.eliminations.delete(k.id);let teamMarker=m.getObjectByName('soccerTeamMarker') as T.Mesh|undefined;if(s.ball&&s.config.soccer&&!teamMarker){teamMarker=new T.Mesh(new T.TorusGeometry(1.6,.12,5,32),new T.MeshBasicMaterial({color:teamColor(k),depthWrite:false}));teamMarker.userData.disposeMaterial=true;teamMarker.name='soccerTeamMarker';teamMarker.rotation.x=Math.PI/2;teamMarker.position.y=.18;m.add(teamMarker);}if(teamMarker)(teamMarker.material as T.MeshBasicMaterial).color.set(teamColor(k));if(teamMarker)teamMarker.visible=!!(s.ball&&s.config.soccer);const elimination=this.eliminations.get(k.id);if(elimination&&k.balloons===0){elimination.age+=dt;const pose=eliminationPose(elimination.age,this.reduced);m.visible=pose.visible;m.position.set(elimination.x,elimination.y+pose.rise,elimination.z);m.rotation.set(pose.tilt,elimination.angle+pose.spin,pose.tilt);m.scale.setScalar(pose.scale);animateKart(m,{...k,speed:0,steering:0,drift:0},dt,now);m.getObjectByName('shield')!.visible=false;continue;}m.scale.setScalar(1);m.visible=k.balloons>0&&(k.inv<=0||Math.floor(now*14)%2===0);if(localIds&&!localIds.includes(k.id)&&m.position.distanceTo(new T.Vector3(k.x,k.y,k.z))<12){m.position.lerp(new T.Vector3(k.x,k.y,k.z),1-Math.exp(-dt*14));m.rotation.y+=angleDiff(k.angle,m.rotation.y)*(1-Math.exp(-dt*14));}else{m.position.set(k.x,k.y,k.z);m.rotation.y=k.angle;}
@@ -227,7 +230,7 @@ export class World {
  viewKart(s:State,id:number){const out=this.eliminations.get(id),own=s.karts[id];return out&&out.age<ELIMINATION_TIME&&own?.balloons===0?{...own,x:out.x,y:out.y,z:out.z,angle:out.angle,speed:0,boost:0,driftSlip:0}:this.watched(s,id);}
  render(s:State,localIds:number[],playing:boolean,rect:DOMRect|undefined,now:number,dt:number,vertical:boolean){
   this.renderer.shadowMap.needsUpdate=true;
-  const trial=this.artTrial,dark=s.config.arena==='castle'||s.config.arena==='stadium';this.sun.intensity=dark?1.25:trial?2.25:1.9;this.hemi.intensity=dark?.62:trial?1.1:.85;this.fill.intensity=dark?.22:.4;this.scene.environmentIntensity=dark?.4:.65;this.hemi.color.set(trial?'#dceaf3':'#fff8e4');this.hemi.groundColor.set(trial?'#9391ad':'#8383a0');this.sun.color.set(dark?'#c9d6f2':trial?'#ffe2b6':'#fff0d1');this.sun.shadow.normalBias=trial?.28:.18;this.sun.shadow.bias=trial?-.0008:-.0002;this.renderer.toneMapping=T.ACESFilmicToneMapping;this.renderer.toneMappingExposure=trial?1.03:.95;
+  const trial=this.artTrial,mode=lightingFor(s.config.arena,s.lighting),lights=lightSettings(mode,trial);if(mode==='night'&&s.config.arena==='castle')Object.assign(lights,{sun:1.25,hemi:.62,fill:.22,environment:.4,sunColor:'#c9d6f2'});this.sun.intensity=lights.sun;this.hemi.intensity=lights.hemi;this.fill.intensity=lights.fill;this.scene.environmentIntensity=lights.environment;this.hemi.color.set(lights.skyColor);this.hemi.groundColor.set(lights.groundColor);this.sun.color.set(lights.sunColor);this.sun.position.set(mode==='sunset'?-120:-70,mode==='sunset'?70:130,75);this.sun.shadow.normalBias=trial?.28:.18;this.sun.shadow.bias=trial?-.0008:-.0002;this.renderer.toneMapping=T.ACESFilmicToneMapping;this.renderer.toneMappingExposure=lights.exposure;
   if(this.life)this.life.visible=playing;if(this.atmosphere)this.atmosphere.visible=playing;this.landscape!.visible=playing;this.scene.background=new T.Color(playing?this.landscape!.horizon:'#f5f1e8');this.scene.fog=new T.Fog(playing?this.landscape!.horizon:'#f5f1e8',playing?270:s.config.arena==='stadium'?900:500,playing?1450:s.config.arena==='stadium'?1600:950);this.renderer.setClearColor('#f5f1e8');
   this.resize();const r=this.renderer,w=innerWidth,h=innerHeight;r.setScissorTest(false);r.setViewport(0,0,w,h);r.clear();
   if(!playing){if(!rect)return;r.setViewport(rect.x,h-rect.bottom,rect.width,rect.height);r.setScissor(rect.x,h-rect.bottom,rect.width,rect.height);r.setScissorTest(true);this.demoCamera.aspect=rect.width/rect.height;const a=.64+(this.reduced?0:Math.sin(now*.07)*.15),scale=arenaExtent(s.config.arena)/37*(s.config.arena==='stadium'?1.2:1);this.demoCamera.position.set(Math.sin(a)*104*scale,79*scale,Math.cos(a)*104*scale);this.demoCamera.lookAt(0,0,0);const depth=previewDepthRange(this.demoCamera,this.previewBounds);this.demoCamera.near=depth.near;this.demoCamera.far=depth.far;this.demoCamera.updateProjectionMatrix();r.render(this.scene,this.demoCamera);return;}
@@ -257,6 +260,7 @@ export class World {
  }
  reset(){this.impactShakes.clear();this.director.reset();delete this.broadcastCamera.userData.shot;this.spectatorTargets.clear();this.eliminations.clear();for(const model of this.models.values()){model.scale.setScalar(1);model.rotation.set(0,0,0);}this.battleEffects.clearBursts();this.lastEvent=0;for(const c of this.cameras)delete c.userData.targetId;for(const model of this.models.values()){delete model.userData.skid;delete model.userData.balloonMotion;delete model.userData.previousSpeed;}for(const mark of this.skidMarks){this.fx.remove(mark.mesh);mark.mesh.geometry.dispose();(mark.mesh.material as T.Material).dispose();}this.skidMarks=[];for(const p of this.particles){this.fx.remove(p.mesh);p.mesh.geometry.dispose();}this.particles=[];}
 }
+
 
 
 
