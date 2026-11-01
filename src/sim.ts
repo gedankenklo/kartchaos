@@ -300,7 +300,8 @@ export function drive(s:State,k:Kart,input:Input,dt:number) {
  k.x=nx;k.z=nz;
  if(input.hop&&!k.hopHeld&&onGround)k.vy=7;
  k.hopHeld=input.hop;
- k.vy-=21*dt;k.y+=k.vy*dt;
+ const roof=s.config.arena==='glacier'?ceiling(s.config.arena,k.x,k.z,k.y):Infinity;
+ k.vy-=21*dt;k.y+=k.vy*dt;if(k.vy>0&&k.y+1.1>roof){k.y=roof-1.1;k.vy=0;}
  const h=ground(s.config.arena,k.x,k.z,k.y+.4);if(k.y<h&&(k.y>h-1.5)){k.y=h;k.vy=0;}
  if(k.y<(s.config.arena==='castle'||s.config.arena==='crypt'?-4:-14)){damage(s,k,k.id,{cause:s.config.arena==='castle'||s.config.arena==='crypt'?'lava':s.config.arena==='starcore'?'reactor':'fall'});k.x=0;k.z=s.config.arena==='starcore'?80:0;k.y=ground(s.config.arena,k.x,k.z)+1;k.vy=0;k.speed=0;k.boost=0;k.ram=0;k.vx=0;k.vz=0;k.pushX=0;k.pushZ=0;k.inv=3;emit(s,'fall',k);}
  if(k.roulette>0){

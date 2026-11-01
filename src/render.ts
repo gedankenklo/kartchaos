@@ -1,3 +1,4 @@
+import {createGlacierStructures} from './glacierStructures';
 import {createHarbourDocks} from './harbourDocks';
 import {createRampSlab} from './rampSlab';
 import {suddenDeathPulse} from './suddenDeath';
@@ -109,15 +110,15 @@ export class World {
    else if(arena==='castle'){const xs=[-e,e,...LAVA_PITS.flatMap(p=>[p.x-p.width/2,p.x+p.width/2])].sort((a,b)=>a-b),zs=[-e,e,...LAVA_PITS.flatMap(p=>[p.z-p.depth/2,p.z+p.depth/2])].sort((a,b)=>a-b);for(let i=0;i<xs.length-1;i++)for(let j=0;j<zs.length-1;j++){const w=xs[i+1]-xs[i],d=zs[j+1]-zs[j],x=(xs[i]+xs[i+1])/2,z=(zs[j]+zs[j+1])/2;if(w>0&&d>0&&!lavaAt(x,z)){this.cube(g,layout.wall,x,-1.2,z,w,2,d).castShadow=false;this.road(g,layout.floor,x,0,z,w,d);}}}
    else if(arena==='depot'){for(const sign of [-1,1]){this.cube(g,layout.wall,sign*(e+7)/2,-1.2,0,e-7,2,e*2).castShadow=false;this.road(g,layout.floor,sign*(e+7)/2,0,0,e-7,e*2);}const water=this.road(g,'#589ea8',0,-3,0,14,e*2);water.material=new T.MeshStandardMaterial({color:'#589ea8',roughness:.24,metalness:.25});}
    else{if(arena!=='ruins'){const foundation=this.cube(g,layout.wall,0,-2.2,0,e*2+2,4,e*2+2);foundation.castShadow=false;}if(isNewArena(arena))g.add(createNewArenaFloor(arena));else if(arena==='stadium')g.add(createStadiumFloor(this.artTrial));else for(let ix=0;ix<10;ix++)for(let iz=0;iz<10;iz++)this.road(g,(ix+iz)%2?layout.floor:layout.alternate,-e+(ix+.5)*cell,0,-e+(iz+.5)*cell,cell,cell);}
-   if(arena==='harbour')g.add(createHarbourDocks(this.artTrial));
-   for(const b of arena==='harbour'?[]:layout.blocks){const blockMesh=this.cube(g,b.color,b.x,b.height-(b.thickness??b.height)/2,b.z,b.width,b.thickness??b.height,b.depth);blockMesh.material=this.textured(b.color,arena==='yard'||arena==='harbour'?'wood':arena==='depot'||arena==='foundry'?'metal':'stone');if(arena==='beach'&&b.driveable&&!this.artTrial){const base=blockMesh.material as T.Material,top=createBoardwalkMaterial(false);blockMesh.material=[base,base,top,base,base,base];blockMesh.userData.ownedMaterials=[top];}
+   if(arena==='harbour')g.add(createHarbourDocks(this.artTrial));if(arena==='glacier')g.add(createGlacierStructures(this.artTrial));
+   for(const b of arena==='harbour'||arena==='glacier'?[]:layout.blocks){const blockMesh=this.cube(g,b.color,b.x,b.height-(b.thickness??b.height)/2,b.z,b.width,b.thickness??b.height,b.depth);blockMesh.material=this.textured(b.color,arena==='yard'||arena==='harbour'?'wood':arena==='depot'||arena==='foundry'?'metal':'stone');if(arena==='beach'&&b.driveable&&!this.artTrial){const base=blockMesh.material as T.Material,top=createBoardwalkMaterial(false);blockMesh.material=[base,base,top,base,base,base];blockMesh.userData.ownedMaterials=[top];}
     for(const side of [-1,1]){
      this.cube(g,arena==='yard'?'#e5d5ad':'#e9d4ae',b.x,b.height*.7,b.z+side*(b.depth/2+.025),b.width,.25,.04);
      if(arena==='quarry')this.cube(g,'#9e725f',b.x,b.height*.35,b.z+side*(b.depth/2+.025),b.width,.28,.04);
      if(arena==='yard')for(const offset of [-.3,.3])this.cube(g,'#6d777a',b.x+offset*b.width,b.height/2,b.z+side*(b.depth/2+.05),.18,b.height,.08);
     }
    }
-   for(const ramp of layout.ramps)this.ramp(g,ramp,arena==='castle'?'#8b8193':arena==='depot'?'#e7c6a0':'#e8c79c');
+   for(const ramp of arena==='glacier'?[]:layout.ramps)this.ramp(g,ramp,arena==='castle'?'#8b8193':arena==='depot'?'#e7c6a0':'#e8c79c');
    if(arena!=='starfall'&&arena!=='starcore')for(const sign of [-1,1]){this.cube(g,layout.wall,sign*(e-.5),arena==='beach'?.1:.85,0,1.5,arena==='beach'?.2:1.7,e*2).receiveShadow=arena!=='harbour';this.cube(g,layout.wall,0,arena==='beach'?.1:.85,sign*(e-.5),e*2,arena==='beach'?.2:1.7,1.5).receiveShadow=arena!=='harbour';}
 
   } else {
@@ -140,13 +141,13 @@ export class World {
   if(arena==='castle'||arena==='beach'||arena==='stadium'||arena==='depot'){this.details=new ArenaDetails(arena);g.add(this.details);}
   if(this.artTrial){if(arena==='fortress')this.styleFortress(g);else this.styleArena(g,arena);applyToon(this.landscape!);}
   if(!this.artTrial){
-   if(isExpansion(arena))this.markLedges(g,EXPANSIONS[arena].blocks.filter(b=>b.driveable).map(b=>({...b,y:b.height})),EXPANSIONS[arena].ramps);
+   if(isExpansion(arena)&&arena!=='glacier')this.markLedges(g,EXPANSIONS[arena].blocks.filter(b=>b.driveable).map(b=>({...b,y:b.height})),EXPANSIONS[arena].ramps);
    else if(arena==='sky')this.markLedges(g,SKY_TILES.map(tile=>({...tile,y:0})));
    else if(arena==='fortress'){const decks:Deck[]=[];for(const sx of [-1,1])for(const sz of [-1,1]){decks.push({x:sx*FORT.center,z:sz*FORT.center,width:FORT.half*2,depth:FORT.half*2,y:FORT.lower});decks.push({x:sx*FORT.upperCenter,z:sz*FORT.upperCenter,width:FORT.upperHalf*2,depth:FORT.upperHalf*2,y:FORT.upper});}this.markLedges(g,[...decks,...FORT_BRIDGES],FORT_RAMPS);}
    else if(arena==='neon'){const edge=this.mesh(new T.TorusGeometry(36.8,.07,5,96),'#e8d8ac',g,0,neonHeight(36.8)+.08,0);edge.rotation.x=-Math.PI/2;edge.castShadow=false;}
   }
   const shadowExtent=Math.max(90,arenaExtent(arena)+16);Object.assign(this.sun.shadow.camera,{left:-shadowExtent,right:shadowExtent,top:shadowExtent,bottom:-shadowExtent});this.sun.shadow.camera.updateProjectionMatrix();
-  if(arena==='glacier')for(const b of EXPANSIONS.glacier.blocks.filter(b=>b.thickness)){const mesh=g.children.find(o=>o instanceof T.Mesh&&o.position.x===b.x&&o.position.z===b.z&&Math.abs(o.position.y-(b.height-b.thickness!/2))<.01) as T.Mesh|undefined;if(mesh){const mats=Array.isArray(mesh.material)?[...mesh.material]:Array(6).fill(mesh.material),underside=new T.MeshBasicMaterial({color:new T.Color(b.color).multiplyScalar(.55)});mats[3]=underside;mesh.material=mats;g.userData.ownedMaterials=[...(g.userData.ownedMaterials??[]),underside];}}
+
   g.updateMatrixWorld(true);this.previewBounds.setFromObject(this.arenaGroup).expandByScalar(8);if(this.newSet){this.newSet.updateMatrixWorld(true);this.newSet.traverse(o=>{if(o instanceof T.Mesh&&!(o instanceof T.InstancedMesh)&&o.name!=='harbourAurora'){o.geometry.computeBoundingBox();if(o.geometry.boundingBox)this.previewBounds.union(o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld));}});}
  }
  deckMaterials(color:string,topLight=.2){const c=new T.Color(color),top=c.clone().lerp(new T.Color('#fff1cf'),topLight),side=c.clone().multiplyScalar(.88),bottom=c.clone().multiplyScalar(.65);return [toonMaterial(side),toonMaterial(side),toonMaterial(top),toonMaterial(bottom),toonMaterial(c),toonMaterial(c)];}
@@ -173,7 +174,7 @@ export class World {
    const geo=new T.BufferGeometry().setAttribute('position',new T.Float32BufferAttribute(v,3)).setAttribute('color',new T.Float32BufferAttribute(colors,3));geo.computeVertexNormals();const m=toonMaterial('#ffffff',new T.Color(0),0,T.FrontSide,true),floor=new T.Mesh(geo,m);floor.receiveShadow=true;g.add(floor);
    }
    for(const b of EXPANSIONS[arena].blocks){const mesh=g.children.find(o=>o instanceof T.Mesh&&o.position.x===b.x&&o.position.z===b.z&&Math.abs(o.position.y-(b.height-(b.thickness??b.height)/2))<.01) as T.Mesh|undefined;if(mesh){mesh.geometry.dispose();mesh.geometry=new RoundedBoxGeometry(b.width,b.thickness??b.height,b.depth,2,.2);mesh.material=this.deckMaterials(b.color,.24);if(arena==='beach'&&b.driveable){const top=createBoardwalkMaterial(true);mesh.material[2]=top;mesh.userData.ownedMaterials=[top];}}}
-   this.markLedges(g,EXPANSIONS[arena].blocks.filter(b=>b.driveable).map(b=>({...b,y:b.height})),ramps);
+   if(arena!=='glacier')this.markLedges(g,EXPANSIONS[arena].blocks.filter(b=>b.driveable).map(b=>({...b,y:b.height})),ramps);
   }else if(arena==='sky'){
    const palette=['#c9dbe1','#93acbd','#93acbd','#93acbd','#93acbd','#c8bedf','#b7ccbe','#d8c3ad','#aebed6'];
    let index=0;for(const o of g.children)if(o instanceof T.Mesh&&o.geometry.type==='PlaneGeometry'&&o.position.y===0)o.material=toonMaterial(palette[index++%palette.length]);
@@ -184,7 +185,7 @@ export class World {
     const geo=new T.BufferGeometry().setAttribute('position',new T.Float32BufferAttribute(verts,3));const mat=new T.MeshBasicMaterial({color:lane?'#f3dfbc':'#554f75',side:T.DoubleSide,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1}),ring=new T.Mesh(geo,mat);ring.userData.disposeMaterial=true;g.add(ring);
    }
   }
-  if(ramps.length)this.markRampMouths(g,ramps);
+  if(ramps.length&&arena!=='glacier')this.markRampMouths(g,ramps);
   applyToon(g);
  }
  markRampMouths(g:T.Group,ramps:Ramp[]){const mouthPaint=new T.MeshBasicMaterial({color:'#4f7379',polygonOffset:true,polygonOffsetFactor:-3,polygonOffsetUnits:-3,depthWrite:false}),edgePaint=new T.MeshBasicMaterial({color:'#f4e4bd',polygonOffset:true,polygonOffsetFactor:-3,polygonOffsetUnits:-3,depthWrite:false});g.userData.ownedMaterials=[...(g.userData.ownedMaterials??[]),mouthPaint,edgePaint];for(const r of ramps){

@@ -461,3 +461,28 @@ test('Harbour shared dock and lookout walls have one visible exterior skin',()=>
 test('all held items have a strong coloured halo that follows reveal and clears with the item',()=>{
  for(const toon of [false,true])for(const item of ['bolt','seeker','mine','boost','shield','pulse'] as const){const display=new HeldItemDisplay(toon),k={id:0,item,roulette:0,balloons:3};display.update(k,1,true);const glow=display.getObjectByName('heldItemGlow') as T.Sprite,core=display.getObjectByName('heldItemGlowCore') as T.Sprite;assert.ok(glow&&core);assert.ok(glow.material.opacity>=.7&&glow.scale.x>4);assert.equal(glow.material.depthWrite,false);assert.equal(glow.material.depthTest,true);assert.equal(glow.material.blending,T.AdditiveBlending);assert.notEqual(glow.material.color.getHex(),0xffffff);const opacity=glow.material.opacity;display.update(k,2,true);assert.equal(glow.material.opacity,opacity);let disposed=false;glow.material.addEventListener('dispose',()=>disposed=true);display.clearModel();assert.ok(disposed);assert.equal(display.getObjectByName('heldItemGlow'),undefined);}
 });
+
+import {createGlacierStructures} from '../src/glacierStructures';
+test('Glacier rendered bridge tops and ramps match the driving surfaces',()=>{
+ for(const toon of [false,true]){const root=createGlacierStructures(toon);root.scale.set(2,1.4,2);root.updateMatrixWorld(true);
+  for(const [x,z] of [[76,0],[-76,0],[0,24],[76,48],[76,70],[76,92],[-68,-76],[-48,-76],[-28,-76],[0,-76],[58,24],[40,24],[24,24]]){
+   const ray=new T.Raycaster(new T.Vector3(x,100,z),new T.Vector3(0,-1,0)),hit=ray.intersectObject(root,true)[0];assert.ok(hit);assert.ok(Math.abs(hit.point.y-ground('glacier',x,z))<.001,`render/physics join mismatch at ${x},${z}`);
+  }
+  assert.ok(!root.children.some(o=>o instanceof T.Mesh&&o.geometry.type==='RoundedBoxGeometry'));
+  root.traverse(o=>{if(o instanceof T.Mesh){o.geometry.dispose();if(o.userData.disposeMaterial)(o.material as T.Material).dispose();}});
+ }
+});
+test('Glacier climb, summit, connector and underpass can be driven at every speed',()=>{
+ for(const speedClass of [50,100,150] as const)for(const fps of [30,60])for(const route of ['climb','summit','connector','underpass']){
+  const s=createState({...config,arena:'glacier',humans:1,bots:1,speedClass});s.phase='playing';const k=s.karts[0];
+  const start=route==='climb'?{x:76,z:108,y:0,angle:Math.PI}:route==='summit'?{x:-76,z:-76,y:7,angle:Math.PI/2}:route==='connector'?{x:76,z:24,y:7,angle:-Math.PI/2}:{x:-54,z:24,y:0,angle:Math.PI/2};Object.assign(k,start,{vx:0,vz:0,speed:0});
+  const done=()=>route==='climb'?k.z<10:route==='summit'?k.x>-2:route==='connector'?k.x<2:k.x>50;
+  for(let i=0;i<fps*18&&!done();i++)drive(s,k,{...idle(),gas:1},1/fps);
+  assert.ok(done(),`${route} stuck at ${speedClass}cc/${fps}fps`);const expected=route==='climb'?7:route==='summit'?15.4:route==='connector'?4.2:0;assert.ok(Math.abs(k.y-expected)<.2,`${route} lost its intended deck: ${k.y}`);assert.equal(k.balloons,3);
+ }
+});
+test('Glacier hopping underneath a low bridge cannot pass through its underside',()=>{
+ const s=createState({...config,arena:'glacier'});s.phase='playing';const k=s.karts[0];Object.assign(k,{x:0,z:24,y:0,vy:15,vx:0,vz:0,speed:0});let highest=0;
+ for(let i=0;i<120;i++){drive(s,k,idle(),1/60);highest=Math.max(highest,k.y);}
+ assert.ok(highest<=3.36-1.1+.001);assert.equal(k.y,0);
+});
