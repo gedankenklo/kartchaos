@@ -200,8 +200,25 @@ const fortressRegroup=new WeakMap<Kart,{since:number;goal:NavPoint|null}>();
 const glacierClimbs=new WeakMap<Kart,{next:number;stage:number;side:number;active:boolean}>();
 const retreatWindows=new WeakMap<Kart,{until:number;next:number}>();
 const retreatGoals=new WeakMap<Kart,{tick:number;goal:NavPoint}>();
+const harbourLanes=new WeakMap<Kart,{until:number;next:number;goal:NavPoint}>();
+function harbourSpacing(s:State,k:Kart,foe:Kart){
+ if(s.config.arena!=='harbour'||s.time<=48||k.y>1||k.ram>0)return;
+ const plan=harbourLanes.get(k);if(plan&&s.tick<plan.until&&distance(k,plan.goal)>3&&clearPath(s.config.arena,k,plan.goal))return plan.goal;
+ if(plan&&s.tick<plan.next)return;
+ const neighbours=s.karts.filter(o=>o.id!==k.id&&o.balloons>0&&Math.abs(o.y-k.y)<2&&distance(k,o)<9);
+ if(neighbours.length<2&&!(k.item==='boost'&&distance(k,foe)<7&&Math.abs(k.y-foe.y)<2))return;
+ const center=neighbours.reduce((p,o)=>({x:p.x+o.x/neighbours.length,z:p.z+o.z/neighbours.length}),{x:0,z:0}),out=Math.atan2(k.x-center.x,k.z-center.z),length=18+k.id%3*3;
+ const candidates=Array.from({length:16},(_,i)=>{const angle=out+i*Math.PI/8,goal={x:k.x+Math.sin(angle)*length,z:k.z+Math.cos(angle)*length,y:0};
+  const separation=Math.min(...neighbours.map(o=>distance(goal,o))),turn=Math.abs(angleDiff(angle,k.angle));
+  const crossing=neighbours.reduce((sum,o)=>{const dx=goal.x-k.x,dz=goal.z-k.z,t=clamp(((o.x-k.x)*dx+(o.z-k.z)*dz)/(length*length),0,1);return sum+(t>0&&Math.hypot(o.x-k.x-dx*t,o.z-k.z-dz*t)<3?12:0);},0);
+  const occupied=s.karts.some(o=>{const lane=harbourLanes.get(o);return o!==k&&lane&&lane.until>s.tick&&distance(goal,lane.goal)<8;})?15:0;
+  return {goal,score:separation-turn*2-crossing-occupied};
+ }).filter(o=>Math.abs(ground('harbour',o.goal.x,o.goal.z))<.2&&clearPath('harbour',k,o.goal)).sort((a,b)=>b.score-a.score);
+ if(candidates[0]){const goal=candidates[0].goal;harbourLanes.set(k,{goal,until:s.tick+240,next:s.tick+330});routes.delete(k);return goal;}
+}
 export function botGoal(s:State,k:Kart){
  const enemies=s.karts.filter(o=>o.id!==k.id&&o.balloons>0&&(!(s.ball&&s.config.soccer||s.ctf)||soccerTeam(o)!==soccerTeam(k))).sort((a,b)=>(distance(k,a)+Math.abs(k.y-a.y)*3-(3-a.balloons)*6)-(distance(k,b)+Math.abs(k.y-b.y)*3-(3-b.balloons)*6));const stolen=s.ctf?.flags.find(f=>f.team===soccerTeam(k)&&f.carrier!==null),foe=stolen?enemies.find(o=>o.id===stolen.carrier)??enemies[0]:enemies[0];if(!foe)return {goal:k,foe:k,tactic:'idle'};
+ const lane=harbourSpacing(s,k,foe);if(lane)return {goal:lane,foe,tactic:'reposition'};
  // Break perimeter pursuit loops after a short chase, then commit back to the blocks.
  if(s.config.arena==='fortress'){
   let regroup=fortressRegroup.get(k);
@@ -237,7 +254,7 @@ export function botGoal(s:State,k:Kart){
   const score=(p:NavPoint)=>Math.min(...enemies.map(e=>distance(p,e)))*.8+(!clearPath(s.config.arena,close,p)?18:0)+Math.min(10,p.y)*.7-distance(k,p)*.3-s.shots.filter(m=>m.kind==='mine'&&distance(m,p)<7).length*60;
   const ranked=candidates.map(goal=>({goal,score:score(goal)})).sort((a,b)=>b.score-a.score);if(ranked[0]){retreatGoals.set(k,{tick:s.tick,goal:ranked[0].goal});return {goal:ranked[0].goal,foe,tactic:'retreat'};}
  }
- const boxes=s.boxes.filter(b=>b.respawn<=0).sort((a,b)=>(distance(k,a)+Math.abs(k.y-a.y)*2)-(distance(k,b)+Math.abs(k.y-b.y)*2));
+ const boxes=s.boxes.filter(b=>b.respawn<=0).sort((a,b)=>(distance(k,a)+Math.abs(k.y-a.y)*2+(s.config.arena==='harbour'?s.karts.filter(o=>o!==k&&!o.item&&!o.roulette&&o.balloons>0&&distance(o,a)<distance(k,a)).length*12:0))-(distance(k,b)+Math.abs(k.y-b.y)*2+(s.config.arena==='harbour'?s.karts.filter(o=>o!==k&&!o.item&&!o.roulette&&o.balloons>0&&distance(o,b)<distance(k,b)).length*12:0)));
  if(!k.item&&!k.roulette&&boxes[0]&&(distance(k,boxes[0])<55||distance(k,foe)>35))return {goal:boxes[0],foe,tactic:'rearm'};
  const intercept=s.ball&&s.config.soccer||s.config.arena==='sky'||s.config.arena==='neon'||s.config.arena==='starcore' ? .28 : clamp(distance(k,foe)/22,.28,1.15);
  const lead={x:foe.x+foe.vx*intercept,z:foe.z+foe.vz*intercept,y:foe.y};return {goal:clearPath(s.config.arena,foe,lead)?lead:foe,foe,tactic:'attack'};
@@ -262,7 +279,7 @@ export function botInput(s:State,k:Kart):Input {
  const slip=icy&&Math.hypot(k.vx,k.vz)>3?clamp(angleDiff(Math.atan2(k.vx,k.vz),k.angle),-.7,.7):0;desired-=slip*.8;
  const error=angleDiff(desired,k.angle),aim=Math.abs(angleDiff(Math.atan2(foe.x-k.x,foe.z-k.z),k.angle)),range=distance(k,foe),sameLevel=Math.abs(k.y-foe.y)<3,visible=clearPath(s.config.arena,k,foe),diff=s.config.difficulty;
  const pace=diff==='easy'?.65:diff==='hard'?1:.85,ahead=Math.max(7,Math.abs(k.speed)*.65),edge=s.config.arena==='sky'&&ground('sky',k.x+Math.sin(k.angle)*ahead,k.z+Math.cos(k.angle)*ahead)< -10;
-  const scale=speedSettings(s.config.speedClass).scale,hazardMap=s.config.arena==='starcore'||s.config.arena==='starfall'||s.config.arena==='glacier'||s.config.arena==='crypt'||s.config.arena==='depot'||s.config.arena==='sky'||s.config.arena==='castle'||s.config.arena==='neon'||s.config.arena==='ruins';
+  const scale=speedSettings(s.config.speedClass).scale,hazardMap=s.config.arena==='starcore'||s.config.arena==='starfall'||s.config.arena==='glacier'||s.config.arena==='harbour'||s.config.arena==='crypt'||s.config.arena==='depot'||s.config.arena==='sky'||s.config.arena==='castle'||s.config.arena==='neon'||s.config.arena==='ruins';
  const travel=Math.hypot(k.vx,k.vz)>2?Math.atan2(k.vx,k.vz):k.angle,look=Math.max(3,Math.abs(k.speed)*.55);
  const aheadX=k.x+Math.sin(travel)*look,aheadZ=k.z+Math.cos(travel)*look;
  const unsafe=!clearPath(s.config.arena,k,{x:aheadX,z:aheadZ,y:ground(s.config.arena,aheadX,aheadZ,k.y+.35)});
@@ -274,7 +291,7 @@ export function botInput(s:State,k:Kart):Input {
  const boostLook=31*scale*(s.config.arena==='yard'?.8:s.config.arena==='starfall'?1.1:2.1);
  const boostSafe=clearPath(s.config.arena,k,{x:k.x+Math.sin(k.angle)*boostLook,z:k.z+Math.cos(k.angle)*boostLook,y:k.y});
  const fire=!!k.item&&(k.item==='shield'&&(range<24||k.balloons===1)||k.item==='boost'&&!s.ctf?.flags.some(f=>f.carrier===k.id)&&boostSafe&&!unsafe&&Math.abs(error)<.25&&(tactic==='retreat'||aim<.45&&(range<38||s.config.arena==='sky')&&visible)||k.item==='mine'&&range<14&&(aim>1.6||tactic==='retreat')||k.item==='pulse'&&range<8&&sameLevel||(k.item==='bolt'||k.item==='seeker')&&visible&&sameLevel&&aim<(k.item==='seeker'?.85:.25)&&range<50);
- return {gas:braking?-1:throttle,steer:clamp(error*1.8,-1,1),drift:!hazardMap&&!unsafe&&Math.abs(error)>.5&&Math.abs(error)<1.2&&Math.abs(k.speed)>10,hop:false,fire};
+ return {gas:braking?-1:throttle,steer:clamp(error*1.8,-1,1),drift:!icy&&!hazardMap&&!unsafe&&Math.abs(error)>.5&&Math.abs(error)<1.2&&Math.abs(k.speed)>10,hop:false,fire};
 }
 export function drive(s:State,k:Kart,input:Input,dt:number) {
  if(k.balloons<=0)return;

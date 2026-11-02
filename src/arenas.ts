@@ -88,16 +88,16 @@ export const EXPANSIONS:Record<'yard'|'depot'|'quarry'|'castle'|'beach'|'stadium
 {axis:'x',from:-5,to:27,cross:43,width:10,bottom:4,top:7}],items:[
 {x:0,z:0},{x:-30,z:10},{x:20,z:-2},{x:-35,z:-32},{x:-49,z:-10},{x:34,z:43},{x:-10,z:43},{x:47,z:-38},{x:0,z:-53},{x:48,z:48},{x:-43,z:40},{x:4,z:30},{x:32,z:-31}]},
  ruins:{floor:'#a3b88b',alternate:'#93a878',wall:'#6c7d62',blocks:[
-{x:0,z:-25,width:44,depth:30,height:3,driveable:true,color:'#a3a080'},
+{x:0,z:-21,width:44,depth:38,height:3,driveable:true,color:'#a3a080'},
 {x:0,z:-26,width:26,depth:18,height:6,driveable:true,color:'#b5ad88'},
 {x:-43,z:-2,width:14,depth:22,height:3,driveable:true,color:'#939b78'},
 {x:30,z:44,width:22,depth:16,height:4,driveable:true,color:'#a4a688'},
 {x:44,z:-26,width:6,depth:8,height:8,color:'#8e9478'},
 {x:-48,z:45,width:6,depth:6,height:7,color:'#8e9478'}],ramps:[
-{axis:'z',from:8,to:-10,cross:-15,width:10,bottom:0,top:3},
-{axis:'z',from:8,to:-10,cross:15,width:10,bottom:0,top:3},
-{axis:'z',from:-10,to:-17,cross:0,width:10,bottom:3,top:6},
-{axis:'z',from:-47,to:-35,cross:0,width:10,bottom:0,top:6},
+{axis:'z',from:8,to:-2,cross:-15,width:10,bottom:0,top:3},
+{axis:'z',from:8,to:-2,cross:15,width:10,bottom:0,top:3},
+{axis:'z',from:-6,to:-17,cross:0,width:10,bottom:3,top:6},
+{axis:'z',from:-55,to:-35,cross:0,width:10,bottom:0,top:6},
 {axis:'z',from:25,to:9,cross:-46,width:8,bottom:0,top:3},
 {axis:'x',from:1,to:19,cross:44,width:12,bottom:0,top:4}],items:[
 {x:0,z:0},{x:0,z:-26},{x:-16,z:-28},{x:16,z:-28},{x:-43,z:-2},{x:30,z:44},{x:-26,z:24},{x:8,z:24},{x:48,z:14},{x:-46,z:-44},{x:42,z:-48},{x:-28,z:47},{x:0,z:55}]},
@@ -120,7 +120,7 @@ export function expansionNav(arena:keyof typeof EXPANSIONS):{x:number;z:number}[
  if(arena==='starfall')for(const x of [-84,-60,-35,0,35,60,84])for(const z of [-28,-14,0,14,28])if(expansionHeight(arena,x,z)===0)points.push({x,z});
  if(arena==='depot')for(const x of [-52,-34,-20,20,34,52])for(const z of [-52,-36,-12,0,12,36,52])if(expansionHeight(arena,x,z)===0)points.push({x,z});
  for(const b of layout.blocks)if(b.driveable){points.push({x:b.x,z:b.z});for(const sx of [-1,1])for(const sz of [-1,1])points.push({x:b.x+sx*(b.width/2-2),z:b.z+sz*(b.depth/2-2)});}
- for(const r of layout.ramps){if(arena==='beach'){const d=Math.sign(r.from-r.to)*5;points.push(r.axis==='x'?{x:r.from+d,z:r.cross}:{x:r.cross,z:r.from+d});}points.push(r.axis==='x'?{x:r.from,z:r.cross}:{x:r.cross,z:r.from},r.axis==='x'?{x:r.to,z:r.cross}:{x:r.cross,z:r.to});}
+ for(const r of layout.ramps){if(arena==='beach'||arena==='ruins'&&r.bottom===0){const d=Math.sign(r.from-r.to)*5;points.push(r.axis==='x'?{x:r.from+d,z:r.cross}:{x:r.cross,z:r.from+d});}points.push(r.axis==='x'?{x:r.from,z:r.cross}:{x:r.cross,z:r.from},r.axis==='x'?{x:r.to,z:r.cross}:{x:r.cross,z:r.to});}
  return points;
 }
 

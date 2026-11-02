@@ -1,10 +1,10 @@
-# Update 1.45 — Frostbite Harbour ice
+# Update 1.47 — Overgrown Ruins ramp access
 
-The frozen basin now uses the full ice sliding physics: lateral momentum persists, turns slide and braking takes longer. Snow, dock decks and ramps retain normal grip, including ramp entrances. Bots use the existing ice steering compensation and conservative ice throttle.
+The lower temple terrace extends forward, providing a broad, flat landing before the central summit ramp. Both front ground ramps now exit onto that terrace, and the summit ramp starts farther back so drivers have room to turn and line up. The original ground approaches keep their clearance from the ravines.
 
-The basin mirrors karts with the same softened reflection used by Glacier Slide. A single kart-only reflection pass is clipped to the icy basin, excluding snow, dock foundations and ramp footprints. It is hidden in the menu preview and when no living kart is on the ice. Both art styles are supported.
+The rear summit ramp is longer and gentler, with a continuous incline from the ground to the upper platform. Bot navigation includes approach points before ground-level ramps, and the full route graph remains connected.
 
-Validation: production build and all 263 tests passed. Three two-minute bot navigation checks at 50cc, 100cc and 150cc passed, with no falls or persistent stalls. Browser checked actual play, the ON ICE indicator and visible kart reflections with no reported errors.
+Validation: production build and all 268 tests passed. Driving tests cover both front approaches and the rear, uphill and downhill, at 50cc, 100cc and 150cc: all 18 routes reached their destinations without losing balloons. Three additional two-minute bot navigation runs passed. Browser inspected the revised terrace and ramp placement.
 
 ## Upload
-Extract this ZIP and upload its CONTENTS at your GitHub repository root, preserving folders. Merge/overwrite the included files and commit. Let Render rebuild, then refresh the game tabs. Your MP3s and tracks.json are not included or replaced. All v1.44 networking improvements are included.
+Extract this ZIP and upload its CONTENTS at the GitHub repository root, preserving folders. Merge/overwrite the included files and commit. Let Render rebuild, then refresh the game tabs. Your MP3s and tracks.json are not included or replaced. Previous networking and Harbour improvements are included.
