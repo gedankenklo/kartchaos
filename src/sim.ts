@@ -28,7 +28,7 @@ export const COLORS = ['#ef6844','#5c78e6','#edc34c','#a57be0','#59bba4','#e779a
 export const NAMES = ['YOU','BOLT','MANGO','PLUM','MINT','PEACH','SKIP','PIP'];
 export const DRIVER_NAMES=['ROOK','BOLT','MANGO','PLUM','MINT','PEACH','SKIP','PIP'];
 export function normalizeDrivers(raw:unknown,count:number):number[]{const values=Array.isArray(raw)?raw:[];return Array.from({length:count},(_,i)=>Number.isInteger(values[i])&&values[i]>=0&&values[i]<8?values[i]:i%8);}
-export interface Input { gas:number; steer:number; drift:boolean; fire:boolean; hop:boolean; }
+export interface Input { confirm?:boolean; gas:number; steer:number; drift:boolean; fire:boolean; hop:boolean; }
 export const idle = ():Input => ({gas:0,steer:0,drift:false,fire:false,hop:false});
 export interface Kart {orb?:boolean;reactorCycle?:number;team?:'blue'|'orange';stats?:RoundStats;id:number; driver:number; name:string; bot:boolean; x:number; z:number; y:number; angle:number; vx:number; vz:number; vy:number; speed:number; steering:number; yawRate:number; reverseTime:number; driftSide:number; driftSlip:number; pushX:number; pushZ:number; bumpCooldown:number; balloons:number; inv:number; item:Item|null; roulette:number; rouletteSeed:number; rouletteStop:boolean; itemFlash:number; boost:number; ram:number; shield:number; drift:number; cooldown:number; hopHeld:boolean; fireHeld:boolean; target:number; stuck:number; kills:number; damage:number; hits:number; eliminatedAt?:number; }
 export interface Shot {orb?:boolean;id:number; owner:number; kind:'bolt'|'seeker'|'mine'; x:number; z:number; y:number; angle:number; life:number; age?:number; bounces?:number; }
@@ -36,7 +36,7 @@ export interface Box {orb?:boolean;x:number; z:number; y:number; respawn:number;
 export type HitCause='bolt'|'seeker'|'mine'|'ram'|'pulse'|'fall'|'lava'|'ring'|'timeout'|'goal'|'reactor'|'volcano';
 export interface Event {capture?:boolean;flagAction?:'taken'|'dropped'|'returned';impact?:number;contact?:'kick'|'bounce';ownGoal?:boolean;id:number; type:'volcanocharge'|'volcano'|'volcanoimpact'|'reactorcharge'|'reactorbeam'|'flag'|'ballcontact'|'goal'|'eliminated'|'hit'|'fire'|'pickup'|'boost'|'win'|'fall'|'bump'|'itemready'|'shockwave'|'crash'|'ricochet'; x:number; y:number; z:number; player:number;source?:number;blocked?:boolean;remaining?:number;cause?:HitCause;fromX?:number;fromZ?:number;team?:'blue'|'orange';}
 export interface Config {soccer?:boolean;arena:Arena; humans:number; bots:number; difficulty:'easy'|'normal'|'hard'; duration:number;speedClass?:50|100|150;drivers?:number[];shuffleMaps?:boolean;mapQueue?:Arena[];championship?:boolean;}
-export interface State {ctf?:CaptureFlags;lighting?:Lighting;winningTeam?:'blue'|'orange';config:Config; championship?:Championship; ball?:Football; karts:Kart[]; shots:Shot[]; boxes:Box[]; time:number; countdown:number; phase:'countdown'|'playing'|'finished'; winner:number|null; tick:number; seed:number; serial:number; events:Event[];}
+export interface State {introReady?:number[];ctf?:CaptureFlags;lighting?:Lighting;winningTeam?:'blue'|'orange';config:Config; championship?:Championship; ball?:Football; karts:Kart[]; shots:Shot[]; boxes:Box[]; time:number; countdown:number; phase:'countdown'|'playing'|'finished'; winner:number|null; tick:number; seed:number; serial:number; events:Event[];}
 export const clamp=(v:number,a:number,b:number)=>Math.max(a,Math.min(b,v));
 export const angleDiff=(a:number,b:number)=>Math.atan2(Math.sin(a-b),Math.cos(a-b));
 export const distance=(a:{x:number;z:number},b:{x:number;z:number})=>Math.hypot(a.x-b.x,a.z-b.z);
@@ -132,7 +132,7 @@ export function createState(config:Config):State {
  if(config.arena==='stadium')assignSoccerTeams(karts);if(config.arena==='depot'||config.arena==='starfall')assignFlagTeams(karts,config.arena);
  const points=(isExpansion(config.arena)?EXPANSIONS[config.arena].items:config.arena==='fortress'?FORT_ITEMS:config.arena==='sky'?[{x:0,z:0},{x:0,z:24},{x:24,z:0},{x:0,z:-24},{x:-24,z:0},{x:0,z:10},{x:10,z:0},{x:0,z:-10},{x:-10,z:0}]:[0,1,2,3,4,5,6,7].map(i=>({x:Math.sin(i*Math.PI/4)*20,z:Math.cos(i*Math.PI/4)*20}))).map((p:{x:number;z:number;y?:number})=>({x:p.x*ARENA_SCALE[config.arena],z:p.z*ARENA_SCALE[config.arena],y:p.y===undefined?undefined:p.y*ARENA_HEIGHT[config.arena]}));
  const championship=config.championship?createChampionship(config,karts):undefined;
- return {ctf:config.arena==='depot'||config.arena==='starfall'?createFlags(config.arena):undefined,lighting:chooseLighting(config.arena),config,championship,ball:config.arena==='stadium'?createFootball():undefined,karts,shots:[],boxes:points.map(p=>({...p,orb:false,y:p.y??ground(config.arena,p.x,p.z),respawn:0})),time:config.duration,countdown:ROUND_COUNTDOWN,phase:'countdown',winner:null,tick:0,seed:728463,serial:0,events:[]};
+ return {introReady:[],ctf:config.arena==='depot'||config.arena==='starfall'?createFlags(config.arena):undefined,lighting:chooseLighting(config.arena),config,championship,ball:config.arena==='stadium'?createFootball():undefined,karts,shots:[],boxes:points.map(p=>({...p,orb:false,y:p.y??ground(config.arena,p.x,p.z),respawn:0})),time:config.duration,countdown:ROUND_COUNTDOWN,phase:'countdown',winner:null,tick:0,seed:728463,serial:0,events:[]};
 }
 export function nextRoundState(previous:State,settings:Config=previous.config):State {
  const cup=previous.championship;if(cup&&!cup.completed){const config={...settings,championship:true,arena:cup.schedule[cup.round],drivers:previous.config.drivers,humans:previous.config.humans,bots:previous.config.bots};const next=createState(config);next.championship={...cup,round:cup.round+1,scored:false,standings:cup.standings.map(row=>({...row})),schedule:[...cup.schedule]};return next;}
@@ -391,7 +391,10 @@ export function finish(s:State) {
 export function step(s:State,inputs:Record<number,Input>,dt=1/60) {
  if(s.phase==='finished')return;
  s.tick++;
- if(s.phase==='countdown'){s.countdown-=dt;if(s.countdown<=0)s.phase='playing';return;}
+ if(s.phase==='countdown'){
+  if(s.countdown>3){s.introReady??=[];for(const k of s.karts)if(!k.bot&&inputs[k.id]?.confirm&&!s.introReady.includes(k.id))s.introReady.push(k.id);s.countdown=Math.max(3.01,s.countdown-dt);s.tick=Math.min(s.tick,240);if(s.countdown<=3.01&&s.karts.every(k=>k.bot||s.introReady!.includes(k.id))){s.countdown=3;s.tick=240;}return;}
+  s.countdown-=dt;if(s.countdown<=0)s.phase='playing';return;
+ }
  const beforeReactor=reactorAt(s.config.duration-s.time);
  s.time=Math.max(0,s.time-dt);
  const reactor=reactorAt(s.config.duration-s.time);

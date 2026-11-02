@@ -16,7 +16,7 @@ const send=(p:Peer,m:unknown)=>{if(p.socket?.readyState===WebSocket.OPEN&&p.sock
 function broadcast(room:Room){room.config.drivers=room.peers.flatMap(p=>p.drivers);for(const p of room.peers)send(p,{type:'room',room:{code:room.code,host:room.host===p.token,config:room.config,peers:room.peers.map((q,i)=>({name:i===0?'Host':'Driver '+(i+1),count:q.count,drivers:q.drivers,ready:q.ready,connected:!!q.socket}))}});}
 function ids(room:Room){room.config.drivers=room.peers.flatMap(p=>p.drivers);let id=0;for(const p of room.peers){p.ids=Array.from({length:p.count},()=>id++);send(p,{type:'joined',token:p.token,code:room.code,ids:p.ids});}}
 function config(raw:any,count:number):Config{return {arena:ARENA_IDS.includes(raw?.arena)?raw.arena:'fortress',humans:count,bots:Math.max(count===1?1:0,Math.min(8-count,Number.isInteger(raw?.bots)?raw.bots:3)),duration:[120,180,300].includes(raw?.duration)?raw.duration:180,championship:raw?.championship===true,shuffleMaps:raw?.shuffleMaps===true,speedClass:normalizeSpeedClass(raw?.speedClass),difficulty:['easy','normal','hard'].includes(raw?.difficulty)?raw.difficulty:'normal'};}
-function input(raw:any):Input{return {gas:Math.max(-1,Math.min(1,Number(raw?.gas)||0)),steer:Math.max(-1,Math.min(1,Number(raw?.steer)||0)),drift:!!raw?.drift,hop:!!raw?.hop,fire:!!raw?.fire};}
+function input(raw:any):Input{return {confirm:raw?.confirm===true,gas:Math.max(-1,Math.min(1,Number(raw?.gas)||0)),steer:Math.max(-1,Math.min(1,Number(raw?.steer)||0)),drift:!!raw?.drift,hop:!!raw?.hop,fire:!!raw?.fire};}
 wss.on('connection',socket=>{
  let peer:Peer|undefined,room:Room|undefined;let messages=0;const rate=setInterval(()=>{messages=0;},1000);
  socket.on('pong',()=>{if(peer)peer.alive=true;});

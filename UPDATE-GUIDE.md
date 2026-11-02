@@ -1,10 +1,10 @@
-# Update 1.42 — Fortress cover, volcanic showers and shield hum
+# Update 1.43 — Read the introduction, then ready up
 
-The Fortress has 16 solid stone cover clusters, pillars and barricades around the outer lanes. Ramp entrances remain open and pine trees stay outside. Ricochets rebound off the new obstacles.
+Solo introductions remain until acknowledged with Enter, Space, controller A, or the on-screen button. In couch and online multiplayer every human driver confirms separately. Ready status is shown for everyone; bots are automatically ready. After everyone confirms, the normal three-second countdown begins. The match timer and karts remain frozen while reading. Every new round resets readiness. Disconnected drivers become bots after the existing reconnect grace period and cannot hold up the introduction permanently.
 
-Cinder Crypt now drops 28 rocks per eruption instead of seven and erupts every 22 seconds instead of 28. Warning shadows and shield protection remain.
+Held menu buttons do not dismiss the briefing, and quick keyboard taps are retained between frames. Couch keyboard players use their own hop/fire keys; Enter belongs to Player 2 in couch mode, while Player 1 uses Space.
 
-Active Bubble Shields emit a continuous low electrical hum. It follows the watched driver while spectating, fades with distance for nearby shields, and stops on expiry, pause or results. It respects mute and effects volume.
+Validation: production build, 250 automated tests and all nine multiplayer checks passed. Browser verified the waiting screen and Enter starting the countdown.
 
 ## Upload
-Extract this ZIP and upload its CONTENTS at the GitHub repository root, preserving folders. Merge/overwrite the included files. Do not delete the repository first. Commit and let Render rebuild. MP3s and tracks.json are not included or replaced.
+Extract this ZIP and upload its CONTENTS at your GitHub repository root, keeping folders. Merge/overwrite included files; do not delete the repository. Commit and let Render rebuild. Your MP3s and tracks.json are not included or replaced.
