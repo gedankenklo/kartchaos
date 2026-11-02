@@ -258,7 +258,7 @@ export function botInput(s:State,k:Kart):Input {
  const {goal,foe,tactic}=botGoal(s,k);if(foe===k)return idle();const wp=waypoint(s,k,goal),delta={x:wp.x-k.x,z:wp.z-k.z};let desired=Math.atan2(delta.x,delta.z);
  for(const o of obstacles(s.config.arena))if(distance(k,o)<o.r+5&&Math.abs(angleDiff(Math.atan2(o.x-k.x,o.z-k.z),k.angle))<1.2)desired+=angleDiff(Math.atan2(o.x-k.x,o.z-k.z),k.angle)>0?-.7:.7;
  for(const hazard of s.shots){if(Math.abs(hazard.y-k.y)>3)continue;const d=distance(k,hazard);if(hazard.kind==='mine'&&(hazard.age??0)<MINE_ARM_TIME)continue;if(d< (hazard.kind==='mine'?8:10)&&Math.abs(angleDiff(Math.atan2(hazard.x-k.x,hazard.z-k.z),k.angle))<.9)desired+=angleDiff(Math.atan2(hazard.x-k.x,hazard.z-k.z),k.angle)>0?-.85:.85;}
- const icy=s.config.arena==='glacier'&&arenaSurface('glacier',k.x,k.z,k.y).grip<1;
+ const icy=arenaSurface(s.config.arena,k.x,k.z,k.y).grip<1;
  const slip=icy&&Math.hypot(k.vx,k.vz)>3?clamp(angleDiff(Math.atan2(k.vx,k.vz),k.angle),-.7,.7):0;desired-=slip*.8;
  const error=angleDiff(desired,k.angle),aim=Math.abs(angleDiff(Math.atan2(foe.x-k.x,foe.z-k.z),k.angle)),range=distance(k,foe),sameLevel=Math.abs(k.y-foe.y)<3,visible=clearPath(s.config.arena,k,foe),diff=s.config.difficulty;
  const pace=diff==='easy'?.65:diff==='hard'?1:.85,ahead=Math.max(7,Math.abs(k.speed)*.65),edge=s.config.arena==='sky'&&ground('sky',k.x+Math.sin(k.angle)*ahead,k.z+Math.cos(k.angle)*ahead)< -10;
@@ -279,7 +279,7 @@ export function botInput(s:State,k:Kart):Input {
 export function drive(s:State,k:Kart,input:Input,dt:number) {
  if(k.balloons<=0)return;
  const floor=ground(s.config.arena,k.x,k.z,k.y),onGround=k.y<=floor+.15;
- const surface=arenaSurface(s.config.arena,k.x,k.z,k.y),ice=s.config.arena==='glacier'&&surface.grip<1&&onGround;
+ const surface=arenaSurface(s.config.arena,k.x,k.z,k.y),ice=surface.grip<1&&onGround;
  k.inv=Math.max(0,k.inv-dt);k.boost=Math.max(0,k.boost-dt);k.ram=Math.max(0,(k.ram??0)-dt);k.shield=Math.max(0,k.shield-dt);k.cooldown=Math.max(0,k.cooldown-dt);k.itemFlash=Math.max(0,(k.itemFlash??0)-dt);
  k.pushX=(k.pushX??0)*Math.exp(-2.8*dt);k.pushZ=(k.pushZ??0)*Math.exp(-2.8*dt);k.bumpCooldown=Math.max(0,(k.bumpCooldown??0)-dt);
  k.steering??=0;k.yawRate??=0;k.reverseTime??=0;k.driftSide??=0;k.driftSlip??=0;

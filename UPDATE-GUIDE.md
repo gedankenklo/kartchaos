@@ -1,14 +1,10 @@
-# Update 1.44 — Smoother online battles
+# Update 1.45 — Frostbite Harbour ice
 
-Remote drivers, projectiles and the soccer ball now render smoothly between network updates. Local movement remains immediately responsive, with small server corrections blended out instead of snapping. Teleports and eliminations are handled immediately. The server still controls hits, items, pickups and scores; client prediction no longer fires weapons or changes balloon counts.
+The frozen basin now uses the full ice sliding physics: lateral momentum persists, turns slide and braking takes longer. Snow, dock decks and ramps retain normal grip, including ramp entrances. Bots use the existing ice steering compensation and conservative ice throttle.
 
-The new connection protocol sends changed fields instead of the entire match on every update, with periodic complete snapshots and recovery when a baseline is missing. Snapshot data was 79% smaller in a local benchmark; actual savings vary with the match. The server serializes the common update once per room. Slow connections skip stale snapshots and recover with a complete current update.
+The basin mirrors karts with the same softened reflection used by Glacier Slide. A single kart-only reflection pass is clipped to the icy basin, excluding snow, dock foundations and ramp footprints. It is hidden in the menu preview and when no living kart is on the ice. Both art styles are supported.
 
-Inputs are batched at roughly 30 messages per second while preserving 60 Hz input frames and immediate action presses. The server acknowledges only input frames it has processed. Input queues are bounded so old steering cannot build up indefinitely. Server timing uses a real-time accumulator with bounded catch-up, and bot navigation is warmed before play. Reconnecting one player no longer resets the other players' input sequences. Older clients remain compatible, but refresh to receive the improvements.
-
-An ONLINE indicator displays round-trip delay and warns about connection delay or a busy server. Hover over it for update spacing, jitter, server step time and incoming data rate.
-
-Validation: production build and 261 automated tests passed, including lossless snapshot reconstruction on all 16 arenas, simulated 133 ms round-trip delay with jitter, queue limits, collision-state isolation and interpolation. Browser play checked through an artificial roughly 140 ms delayed connection with jitter. Multiplayer regression checks cover room authority, readiness, rematches, cups, special arena events, compact updates, reconnection and ping. This is local validation, not a measurement of the Render instance.
+Validation: production build and all 263 tests passed. Three two-minute bot navigation checks at 50cc, 100cc and 150cc passed, with no falls or persistent stalls. Browser checked actual play, the ON ICE indicator and visible kart reflections with no reported errors.
 
 ## Upload
-Extract this ZIP and upload its CONTENTS at the GitHub repository root, preserving folders. Merge/overwrite the included files and commit. Let Render finish rebuilding. Everyone should refresh their game tab after the deploy so they receive the new client. Your MP3s and tracks.json are not included or replaced. Try the free tier again before deciding whether you need a larger instance.
+Extract this ZIP and upload its CONTENTS at your GitHub repository root, preserving folders. Merge/overwrite the included files and commit. Let Render rebuild, then refresh the game tabs. Your MP3s and tracks.json are not included or replaced. All v1.44 networking improvements are included.
