@@ -1,0 +1,2 @@
+// Local layout coordinates: outer cover never occupies a ramp entrance.
+export const FORTRESS_PROPS=[...[-1,1].flatMap(x=>[-1,1].map(z=>({x:x*52,z:z*52,r:3.2,height:2.8,kind:'ruin'}))),...[-1,1].flatMap(x=>[-1,1].map(z=>({x:x*52,z:z*18,r:2.2,height:5,kind:'pillar'}))),...[-1,1].flatMap(x=>[-1,1].map(z=>({x:x*6,z:z*55,r:2.7,height:1.7,kind:'barricade'}))),...[-1,1].flatMap(x=>[-1,1].map(z=>({x:x*52,z:z*35,r:2.5,height:1.8,kind:'barricade'})))];

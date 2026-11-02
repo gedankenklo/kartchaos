@@ -1,3 +1,5 @@
+import {createFortressCover} from './fortressCover';
+import {introActive,introPose} from './arenaIntro';
 import {CryptAtmosphere} from './cryptAtmosphere';
 import {animateActiveShield} from './activeShield';
 import {WinterScenery} from './winterScenery';
@@ -93,6 +95,7 @@ export class World {
   this.details=undefined;this.battleEffects.clearBursts();this.map=arena;this.disposeGroup(this.arenaGroup);this.boxes=[];
   const g=new T.Group();g.scale.set(ARENA_SCALE[arena],ARENA_HEIGHT[arena],ARENA_SCALE[arena]);this.arenaGroup.add(g);this.cameraTerrain=g;
   if(arena==='fortress'){
+   g.add(createFortressCover(this.artTrial));
    this.cube(g,'#b3b892',0,-2.2,0,FORT.extent*2+2,4,FORT.extent*2+2);
    for(let x=-FORT.extent+4;x<FORT.extent;x+=8)for(let z=-FORT.extent+4;z<FORT.extent;z+=8)this.road(g,(x+z)%16===0?'#c4ce98':'#b6c38a',x,0,z,8,8);
    const blockColors=['#df9d89','#9e91c0','#89b3ba','#d4bd7f'];let index=0;
@@ -144,7 +147,7 @@ export class World {
    geometry.setAttribute('position',new T.Float32BufferAttribute(vertices,3));geometry.setAttribute('color',new T.Float32BufferAttribute(colors,3));geometry.computeVertexNormals();const surface=this.mesh(geometry,'#ffffff',g);surface.material=this.textured('#ffffff','metal',{vertexColors:true});surface.castShadow=false;
    for(let i=0;i<NEON_RIM_SHAPE.count;i++)placeNeonRimMarker(this.cube(g,i%2?'#ed9269':'#bba3e1',0,0,0,NEON_RIM_SHAPE.width,NEON_RIM_SHAPE.height,NEON_RIM_SHAPE.depth),i);
   }
-  for(const o of arena==='castle'||arena==='beach'||arena==='glacier'?[]:layoutObstacles(arena)){this.cylinder(g,arena==='neon'?'#e5ac84':'#927da8',o.x,.8,o.z,o.r,1.6,8);this.cylinder(g,'#e4cfb1',o.x,1.7,o.z,o.r+.15,.3,8);}
+  for(const o of arena==='castle'||arena==='beach'||arena==='glacier'||arena==='fortress'?[]:layoutObstacles(arena)){this.cylinder(g,arena==='neon'?'#e5ac84':'#927da8',o.x,.8,o.z,o.r,1.6,8);this.cylinder(g,'#e4cfb1',o.x,1.7,o.z,o.r+.15,.3,8);}
   // Decorative landscape below the island.
   for(let i=0;i<18;i++){const a=i*2.399,r=(isExpansion(arena)?ARENAS[arena].extent+10:47)+i%4*3;const {x,z}=arena==='fortress'?fortressTreePosition(i):{x:Math.sin(a)*r,z:Math.cos(a)*r};if(arena==='yard'){this.cube(g,'#9a8875',x,.5,z,1,4,1);this.cube(g,'#e8be6f',x,2.8,z,1.2,.6,1.2);}else if(arena==='depot'){this.cylinder(g,'#879b9d',x,-.5,z,.7,2,8);}else if(arena==='quarry'){this.cylinder(g,'#8fa17e',x,.5,z,.5,4,7);this.cube(g,'#8fa17e',x+.8,.5,z,1.5,.65,.65);this.cylinder(g,'#8fa17e',x+1.3,1.3,z,.32,1.8,7);}else if(!['starfall','glacier','crypt','starcore'].includes(arena)&&!isNewArena(arena)&&arena!=='neon'&&arena!=='sky'&&arena!=='castle'&&arena!=='beach'&&arena!=='stadium'){this.cylinder(g,'#a39079',x,0,z,.35,3,6);this.mesh(new T.ConeGeometry(2.6,6,6),i%2?'#91a97c':'#718e72',g,x,4,z);}}
   if(arena==='castle'||arena==='beach'||arena==='stadium'||arena==='depot'){this.details=new ArenaDetails(arena);g.add(this.details);}
@@ -276,6 +279,7 @@ export class World {
   if(this.extraScenery){this.extraScenery.visible=true;for(const child of this.extraScenery.children)child.visible=playing||!!child.userData.terrain;}if(this.newSet){this.newSet.visible=true;const aurora=this.newSet.getObjectByName('harbourAurora');if(aurora)aurora.visible=playing;if(this.newSet.snow)this.newSet.snow.visible=playing;if(this.newSet.flies)this.newSet.flies.visible=playing&&this.lighting==='night';}if(this.life)this.life.visible=playing;if(this.atmosphere)this.atmosphere.visible=playing;this.landscape!.visible=playing;this.scene.background=new T.Color(playing?this.landscape!.horizon:'#f5f1e8');this.scene.fog=new T.Fog(playing?this.landscape!.horizon:'#f5f1e8',playing?270:s.config.arena==='starfall'||s.config.arena==='starcore'?2000:s.config.arena==='stadium'?900:500,playing?1450:s.config.arena==='starfall'||s.config.arena==='starcore'?4000:s.config.arena==='stadium'?1600:950);this.renderer.setClearColor('#f5f1e8');
   this.resize();const r=this.renderer,w=innerWidth,h=innerHeight;r.setScissorTest(false);r.setViewport(0,0,w,h);r.clear();
   if(!playing){if(!rect)return;r.setViewport(rect.x,h-rect.bottom,rect.width,rect.height);r.setScissor(rect.x,h-rect.bottom,rect.width,rect.height);r.setScissorTest(true);this.demoCamera.aspect=rect.width/rect.height;const a=.64+(this.reduced?0:Math.sin(now*.07)*.15),scale=arenaExtent(s.config.arena)/37*(s.config.arena==='stadium'?1.2:1);this.demoCamera.position.set(Math.sin(a)*104*scale,79*scale,Math.cos(a)*104*scale);this.demoCamera.lookAt(0,0,0);const depth=previewDepthRange(this.demoCamera,this.previewBounds);this.demoCamera.near=depth.near;this.demoCamera.far=depth.far;this.demoCamera.updateProjectionMatrix();r.render(this.scene,this.demoCamera);return;}
+  if(introActive(s)){const cam=this.demoCamera,p=introPose(s.config.arena,s.countdown,this.reduced,w/h);cam.position.set(p.x,p.y,p.z);cam.lookAt(0,0,0);cam.aspect=w/h;cam.near=.5;cam.far=2400;cam.updateProjectionMatrix();this.landscape!.follow(cam);r.setViewport(0,0,w,h);r.setScissorTest(false);r.render(this.scene,cam);return;}
   const count=localIds.length;
   localIds.forEach((id,i)=>{
    const cols=count>2?2:count===2&&vertical?2:1,rows=Math.ceil(count/cols),vw=w/cols,vh=h/rows,x=(i%cols)*vw,y=h-(Math.floor(i/cols)+1)*vh;

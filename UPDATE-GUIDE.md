@@ -1,10 +1,10 @@
-# Update 1.40 — Battle bot behavior
+# Update 1.42 — Fortress cover, volcanic showers and shield hum
 
-Multiple one-balloon bots could repeatedly retreat from one another instead of committing to a fight. Retreats now last at most 2–2.5 seconds and have a cooldown before another retreat. Controlled three-bot tests on Cinder Crypt, Copper Yard and Rift Quarry reduced retreat time from 54–65% to about 17–18%.
+The Fortress has 16 solid stone cover clusters, pillars and barricades around the outer lanes. Ramp entrances remain open and pine trees stay outside. Ricochets rebound off the new obstacles.
 
-Bots anticipate moving rivals more effectively on suitable battle maps instead of always following directly behind. Open-edge maps retain their shorter chase look-ahead. Stalled movement recovery now works across arenas. Cinder Crypt also uses the finer ramp-side clearance checks introduced for Beach. CTF objectives and soccer rules are unchanged.
+Cinder Crypt now drops 28 rocks per eruption instead of seven and erupts every 22 seconds instead of 28. Warning shadows and shield protection remain.
 
-Validation: production build, 240 tests and all 48 two-minute navigation scenarios passed. Tests include fragile bot groups, Cinder stalled recovery, Beach ramp escape and Glacier summit access.
+Active Bubble Shields emit a continuous low electrical hum. It follows the watched driver while spectating, fades with distance for nearby shields, and stops on expiry, pause or results. It respects mute and effects volume.
 
 ## Upload
-Extract this ZIP and upload its CONTENTS at the GitHub repository root, keeping folders intact. Merge/overwrite included files; do not delete your repository first. Commit and let Render rebuild. Your MP3s and tracks.json are not included or replaced.
+Extract this ZIP and upload its CONTENTS at the GitHub repository root, preserving folders. Merge/overwrite the included files. Do not delete the repository first. Commit and let Render rebuild. MP3s and tracks.json are not included or replaced.

@@ -1,3 +1,5 @@
+import {FORTRESS_PROPS} from './fortressProps';
+import {ROUND_COUNTDOWN} from './arenaIntro';
 import {VOLCANO,volcanoAt} from './volcano';
 import {GLACIER_PROPS} from './winterProps';
 import {REACTOR,reactorAt} from './reactor';
@@ -67,6 +69,7 @@ export function solidAt(arena:Arena,x:number,y:number,z:number,includeRim=true):
  }
  if(arena!=='fortress')return ground(arena,x,z)>y||includeRim&&(arena==='castle'||arena==='beach')&&obstacles(arena).some(o=>y>=0&&y<(o.height??0)&&Math.hypot(x-o.x,z-o.z)<o.r)||includeRim&&arena==='neon'&&!!neonRimContact(x,z,0,y);
  const lx=x/ARENA_SCALE.fortress,lz=z/ARENA_SCALE.fortress;
+ if(includeRim&&obstacles(arena).some(o=>y>=0&&y<(o.height??0)&&Math.hypot(x-o.x,z-o.z)<o.r))return true;
  if(fortressSolidHeight(lx,lz)*ARENA_HEIGHT.fortress>y)return true;
  return FORT_BRIDGES.some(b=>Math.abs(lx-b.x)<=b.width/2&&Math.abs(lz-b.z)<=b.depth/2&&y>=(b.y-b.thickness)*ARENA_HEIGHT.fortress&&y<=b.y*ARENA_HEIGHT.fortress);
 }
@@ -74,7 +77,7 @@ export function obstacles(arena:Arena):{x:number;z:number;r:number;height?:numbe
  return layoutObstacles(arena).map(o=>({x:o.x*ARENA_SCALE[arena],z:o.z*ARENA_SCALE[arena],r:o.r*ARENA_SCALE[arena],height:o.height===undefined?undefined:o.height*ARENA_HEIGHT[arena],bottom:(o.bottom??0)*ARENA_HEIGHT[arena]}));
 }
 export function layoutObstacles(arena:Arena):{x:number;z:number;r:number;height?:number;bottom?:number}[] {
- if(arena==='fortress')return [];
+ if(arena==='fortress')return FORTRESS_PROPS;
  if(arena==='glacier')return GLACIER_PROPS;
  if(arena==='beach')return BEACH_PALMS;
  if(arena==='castle')return CASTLE_LAMPS.map(p=>({x:p.x,z:p.z,r:Math.SQRT2*p.width/2,height:p.height}));
@@ -129,7 +132,7 @@ export function createState(config:Config):State {
  if(config.arena==='stadium')assignSoccerTeams(karts);if(config.arena==='depot'||config.arena==='starfall')assignFlagTeams(karts,config.arena);
  const points=(isExpansion(config.arena)?EXPANSIONS[config.arena].items:config.arena==='fortress'?FORT_ITEMS:config.arena==='sky'?[{x:0,z:0},{x:0,z:24},{x:24,z:0},{x:0,z:-24},{x:-24,z:0},{x:0,z:10},{x:10,z:0},{x:0,z:-10},{x:-10,z:0}]:[0,1,2,3,4,5,6,7].map(i=>({x:Math.sin(i*Math.PI/4)*20,z:Math.cos(i*Math.PI/4)*20}))).map((p:{x:number;z:number;y?:number})=>({x:p.x*ARENA_SCALE[config.arena],z:p.z*ARENA_SCALE[config.arena],y:p.y===undefined?undefined:p.y*ARENA_HEIGHT[config.arena]}));
  const championship=config.championship?createChampionship(config,karts):undefined;
- return {ctf:config.arena==='depot'||config.arena==='starfall'?createFlags(config.arena):undefined,lighting:chooseLighting(config.arena),config,championship,ball:config.arena==='stadium'?createFootball():undefined,karts,shots:[],boxes:points.map(p=>({...p,orb:false,y:p.y??ground(config.arena,p.x,p.z),respawn:0})),time:config.duration,countdown:3,phase:'countdown',winner:null,tick:0,seed:728463,serial:0,events:[]};
+ return {ctf:config.arena==='depot'||config.arena==='starfall'?createFlags(config.arena):undefined,lighting:chooseLighting(config.arena),config,championship,ball:config.arena==='stadium'?createFootball():undefined,karts,shots:[],boxes:points.map(p=>({...p,orb:false,y:p.y??ground(config.arena,p.x,p.z),respawn:0})),time:config.duration,countdown:ROUND_COUNTDOWN,phase:'countdown',winner:null,tick:0,seed:728463,serial:0,events:[]};
 }
 export function nextRoundState(previous:State,settings:Config=previous.config):State {
  const cup=previous.championship;if(cup&&!cup.completed){const config={...settings,championship:true,arena:cup.schedule[cup.round],drivers:previous.config.drivers,humans:previous.config.humans,bots:previous.config.bots};const next=createState(config);next.championship={...cup,round:cup.round+1,scored:false,standings:cup.standings.map(row=>({...row})),schedule:[...cup.schedule]};return next;}

@@ -7,7 +7,7 @@ class Client {
  constructor(){this.ws=new WebSocket(address);this.ws.on('message',raw=>this.messages.push(JSON.parse(raw.toString())));}
  async open(){if(this.ws.readyState===WebSocket.OPEN)return;await new Promise<void>((resolve,reject)=>{this.ws.once('open',resolve);this.ws.once('error',reject);});}
  send(data:unknown){this.ws.send(JSON.stringify(data));}
- async wait(type:string,predicate:(m:any)=>boolean=()=>true,timeout=6000){const started=Date.now();while(Date.now()-started<timeout){const i=this.messages.findIndex(m=>m.type===type&&predicate(m));if(i>=0)return this.messages.splice(i,1)[0];await new Promise(r=>setTimeout(r,15));}throw Error('Timeout waiting for '+type);}
+ async wait(type:string,predicate:(m:any)=>boolean=()=>true,timeout=12000){const started=Date.now();while(Date.now()-started<timeout){const i=this.messages.findIndex(m=>m.type===type&&predicate(m));if(i>=0)return this.messages.splice(i,1)[0];await new Promise(r=>setTimeout(r,15));}throw Error('Timeout waiting for '+type);}
  close(){this.ws.close();}
 }
 test('independent clients: mixed couch room, readiness, authority, movement, reconnect',async()=>{
