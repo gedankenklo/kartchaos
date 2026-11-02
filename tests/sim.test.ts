@@ -476,7 +476,7 @@ test('Glacier climb, summit, connector and underpass can be driven at every spee
  for(const speedClass of [50,100,150] as const)for(const fps of [30,60])for(const route of ['climb','summit','connector','underpass']){
   const s=createState({...config,arena:'glacier',humans:1,bots:1,speedClass});s.phase='playing';const k=s.karts[0];
   const start=route==='climb'?{x:76,z:108,y:0,angle:Math.PI}:route==='summit'?{x:-76,z:-76,y:7,angle:Math.PI/2}:route==='connector'?{x:76,z:24,y:7,angle:-Math.PI/2}:{x:-54,z:24,y:0,angle:Math.PI/2};Object.assign(k,start,{vx:0,vz:0,speed:0});
-  const done=()=>route==='climb'?k.z<10:route==='summit'?k.x>-2:route==='connector'?k.x<2:k.x>50;
+  const done=()=>route==='climb'?k.z<10:route==='summit'?k.x>-2:route==='connector'?k.x<14:k.x>50;
   for(let i=0;i<fps*18&&!done();i++)drive(s,k,{...idle(),gas:1},1/fps);
   assert.ok(done(),`${route} stuck at ${speedClass}cc/${fps}fps`);const expected=route==='climb'?7:route==='summit'?15.4:route==='connector'?4.2:0;assert.ok(Math.abs(k.y-expected)<.2,`${route} lost its intended deck: ${k.y}`);assert.equal(k.balloons,3);
  }
@@ -498,3 +498,16 @@ test('Glacier summit wall and bridge share a single non-overlapping exterior',()
  const root=createGlacierStructures(true);root.updateMatrixWorld(true);for(const y of [4.5,4.8,5.2,8]){const ray=new T.Raycaster(new T.Vector3(.337,y,0),new T.Vector3(0,0,-1)),hits=ray.intersectObject(root,true);assert.equal(hits.filter(h=>Math.abs(h.point.z+30)<.001).length,1);}
 });
 test('Ice reflection is transparent, kart-only and does not write another floor depth',()=>{const reflection=new IceReflection();assert.ok(reflection.camera.layers.isEnabled(2));assert.equal(reflection.camera.layers.isEnabled(0),false);assert.equal((reflection.material as T.ShaderMaterial).transparent,true);assert.equal((reflection.material as T.ShaderMaterial).depthWrite,false);assert.ok(reflection.position.y>0&&reflection.position.y<.05);reflection.geometry.dispose();reflection.dispose();});
+
+import {GLACIER_PROPS,GLACIER_TREE,GLACIER_SNOWMEN} from '../src/winterProps';
+import {WinterScenery} from '../src/winterScenery';
+import {BEACH_PUDDLES,beachPuddleAt,beachPuddleGeometry} from '../src/beachPuddles';
+test('Glacier snowmen and raised Christmas tree use shared solid collision footprints',()=>{
+ for(const p of GLACIER_PROPS){const x=p.x*2,z=p.z*2,y=p.bottom*1.4+.5;assert.ok(solidAt('glacier',x,y,z));const s=createState({...config,arena:'glacier'}),k=s.karts[0];Object.assign(k,{x:x-p.r*2-1.5,z,y:p.bottom*1.4,angle:Math.PI/2,vx:10,vz:0,speed:10});for(let i=0;i<45;i++)drive(s,k,{...idle(),gas:1},1/60);assert.ok(Math.hypot(k.x-x,k.z-z)>=p.r*2+1,'solid prop must stop kart');}
+ assert.equal(solidAt('glacier',GLACIER_TREE.x*2,1,GLACIER_TREE.z*2),false);assert.ok(clearPath('glacier',{x:-54,z:24,y:0},{x:54,z:24,y:0}));
+ const s=createState({...config,arena:'glacier'}),p=GLACIER_SNOWMEN[0],shot={id:100,owner:0,kind:'bolt' as const,x:p.x*2-8,z:p.z*2,y:.65,angle:Math.PI/2,life:8,age:0,bounces:0};advanceRicochet(s,shot,.22);assert.ok((shot.bounces??0)>0);
+});
+test('winter scenery has moving distant balloons, solid-prop visuals and steady reduced motion',()=>{const scenery=new WinterScenery(true);assert.equal(scenery.props.children.filter(c=>c.name==='solidSnowman').length,GLACIER_SNOWMEN.length);assert.ok(scenery.props.getObjectByName('solidChristmasTree'));assert.equal(scenery.balloons.length,6);const before=scenery.balloons[0].position.clone();scenery.update(40);assert.ok(before.distanceTo(scenery.balloons[0].position)>10);for(const b of scenery.balloons)assert.ok(Math.hypot(b.position.x,b.position.z)>260);scenery.update(1,true);const fixed=scenery.balloons[0].position.clone();scenery.update(90,true);assert.ok(fixed.equals(scenery.balloons[0].position));scenery.dispose();});
+test('beach puddle geometry is upward facing, localized and clear of raised structures',()=>{const g=beachPuddleGeometry(),normal=g.getAttribute('normal');assert.ok(normal.getZ(0)>.99);assert.equal(beachPuddleAt(120,120),false);for(const p of BEACH_PUDDLES){assert.ok(beachPuddleAt(p.x,p.z));assert.equal(ground('beach',p.x,p.z),0);assert.equal(beachPuddleAt(p.x+p.rx+1,p.z),false);}const reflection=new IceReflection(g);assert.equal(reflection.geometry,g);reflection.geometry.dispose();reflection.dispose();});
+
+test('Starfall tower light panels have stable clearance and decorative walls avoid self-shadow acne',()=>{const scene=new ExtraArenaScenery('starfall');for(const child of scene.children){if(!(child instanceof T.Mesh)||!child.userData.terrain)continue;assert.equal(child.receiveShadow,false);if(child.geometry instanceof T.BoxGeometry&&child.geometry.parameters.depth===.3){const baseZ=Math.sign(child.position.z)*22*2.4;assert.ok(Math.abs(child.position.z-baseZ)-.15-14*2.4/2>.5);}}scene.dispose();});

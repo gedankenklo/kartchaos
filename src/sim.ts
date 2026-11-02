@@ -1,3 +1,4 @@
+import {GLACIER_PROPS} from './winterProps';
 import {REACTOR,reactorAt} from './reactor';
 import {createFlags,assignFlagTeams,stepFlags,dropFlag,flagBotGoal,type CaptureFlags} from './captureFlag';
 import {BEACH_PALMS} from './beachProps';
@@ -59,6 +60,7 @@ export function ceiling(arena:Arena,x:number,z:number,feet:number):number {
 export function solidAt(arena:Arena,x:number,y:number,z:number,includeRim=true):boolean {
  if(arena==='glacier'){
   const lx=x/ARENA_SCALE[arena],lz=z/ARENA_SCALE[arena],ly=y/ARENA_HEIGHT[arena];
+  if(includeRim&&obstacles(arena).some(o=>y>=(o.bottom??0)&&y<(o.height??0)&&Math.hypot(x-o.x,z-o.z)<o.r))return true;
   if(expansionHeight(arena,lx,lz,-Infinity)>ly)return true;
   return EXPANSIONS.glacier.blocks.some(b=>b.thickness&&Math.abs(lx-b.x)<=b.width/2&&Math.abs(lz-b.z)<=b.depth/2&&ly>=b.height-b.thickness&&ly<=b.height)||EXPANSIONS.glacier.ramps.some(r=>{const h=rampHeight(r,lx,lz);return r.thickness&&h!==undefined&&ly>=h-r.thickness&&ly<=h;});
  }
@@ -67,11 +69,12 @@ export function solidAt(arena:Arena,x:number,y:number,z:number,includeRim=true):
  if(fortressSolidHeight(lx,lz)*ARENA_HEIGHT.fortress>y)return true;
  return FORT_BRIDGES.some(b=>Math.abs(lx-b.x)<=b.width/2&&Math.abs(lz-b.z)<=b.depth/2&&y>=(b.y-b.thickness)*ARENA_HEIGHT.fortress&&y<=b.y*ARENA_HEIGHT.fortress);
 }
-export function obstacles(arena:Arena):{x:number;z:number;r:number;height?:number}[] {
- return layoutObstacles(arena).map(o=>({x:o.x*ARENA_SCALE[arena],z:o.z*ARENA_SCALE[arena],r:o.r*ARENA_SCALE[arena],height:o.height===undefined?undefined:o.height*ARENA_HEIGHT[arena]}));
+export function obstacles(arena:Arena):{x:number;z:number;r:number;height?:number;bottom?:number}[] {
+ return layoutObstacles(arena).map(o=>({x:o.x*ARENA_SCALE[arena],z:o.z*ARENA_SCALE[arena],r:o.r*ARENA_SCALE[arena],height:o.height===undefined?undefined:o.height*ARENA_HEIGHT[arena],bottom:(o.bottom??0)*ARENA_HEIGHT[arena]}));
 }
-export function layoutObstacles(arena:Arena):{x:number;z:number;r:number;height?:number}[] {
+export function layoutObstacles(arena:Arena):{x:number;z:number;r:number;height?:number;bottom?:number}[] {
  if(arena==='fortress')return [];
+ if(arena==='glacier')return GLACIER_PROPS;
  if(arena==='beach')return BEACH_PALMS;
  if(arena==='castle')return CASTLE_LAMPS.map(p=>({x:p.x,z:p.z,r:Math.SQRT2*p.width/2,height:p.height}));
  if(arena==='neon')return [0,1,2,3,4,5].map(i=>({x:Math.sin(i*Math.PI/3)*24,z:Math.cos(i*Math.PI/3)*24,r:2}));
@@ -166,7 +169,7 @@ export function useItem(s:State,k:Kart) {
 export function clearPath(arena:Arena,a:{x:number;z:number;y?:number},b:{x:number;z:number;y?:number}) {
  let prev=a.y??ground(arena,a.x,a.z);
  const steps=Math.ceil(distance(a,b)/1.8);
- for(let i=1;i<=steps;i++){const x=a.x+(b.x-a.x)*i/steps,z=a.z+(b.z-a.z)*i/steps,h=ground(arena,x,z,prev+.35);if(arena==='fortress'&&Math.max(Math.abs(x),Math.abs(z))>(ARENAS[arena].extent-1.25)*ARENA_SCALE[arena]-1.1||h< -10||Math.abs(h-prev)>1.6||arena==='neon'&&neonRimContact(x,z,1.4,h+.5,.5)||obstacles(arena).some(o=>h<(o.height??2)&&Math.hypot(x-o.x,z-o.z)<o.r+1.4))return false;prev=h;}return Math.abs(prev-(b.y??ground(arena,b.x,b.z)))<1.6;
+ for(let i=1;i<=steps;i++){const x=a.x+(b.x-a.x)*i/steps,z=a.z+(b.z-a.z)*i/steps,h=ground(arena,x,z,prev+.35);if(arena==='fortress'&&Math.max(Math.abs(x),Math.abs(z))>(ARENAS[arena].extent-1.25)*ARENA_SCALE[arena]-1.1||h< -10||Math.abs(h-prev)>1.6||arena==='neon'&&neonRimContact(x,z,1.4,h+.5,.5)||obstacles(arena).some(o=>h+1.1>(o.bottom??0)&&h<(o.height??2)&&Math.hypot(x-o.x,z-o.z)<o.r+1.4))return false;prev=h;}return Math.abs(prev-(b.y??ground(arena,b.x,b.z)))<1.6;
 }
 const routes=new WeakMap<Kart,{tick:number;goalX:number;goalZ:number;goalY:number;point:{x:number;z:number}}>();
 function waypoint(s:State,k:Kart,goal:{x:number;z:number;y?:number}) {
@@ -295,7 +298,7 @@ export function drive(s:State,k:Kart,input:Input,dt:number) {
   const scale=ARENA_SCALE[s.config.arena];
   {const limit=(ARENAS[s.config.arena].extent-1.25)*scale-1.1;if(Math.abs(nx)>limit){slide(Math.sign(nx),0);nx=clamp(nx,-limit,limit);}if(Math.abs(nz)>limit){slide(0,Math.sign(nz));nz=clamp(nz,-limit,limit);}}
  }
- for(const o of obstacles(s.config.arena)){const d=Math.hypot(nx-o.x,nz-o.z);if(d<o.r+1.1&&k.y<(o.height??2)){const normalX=(nx-o.x)/(d||1),normalZ=(nz-o.z)/(d||1);slide(-normalX,-normalZ);nx=o.x+normalX*(o.r+1.15);nz=o.z+normalZ*(o.r+1.15);}}
+ for(const o of obstacles(s.config.arena)){const d=Math.hypot(nx-o.x,nz-o.z);if(d<o.r+1.1&&k.y+1.1>(o.bottom??0)&&k.y<(o.height??2)){const normalX=(nx-o.x)/(d||1),normalZ=(nz-o.z)/(d||1);slide(-normalX,-normalZ);nx=o.x+normalX*(o.r+1.15);nz=o.z+normalZ*(o.r+1.15);}}
  if(s.config.arena==='neon'){const contact=neonRimContact(nx,nz,1.1,k.y+.7,.7);if(contact){const {normalX,normalZ}=contact;const into=k.vx*normalX+k.vz*normalZ;if(into<0){crash();k.vx-=1.45*into*normalX;k.vz-=1.45*into*normalZ;k.speed*=.6;}const push=k.pushX*normalX+k.pushZ*normalZ;if(push<0){k.pushX-=1.4*push*normalX;k.pushZ-=1.4*push*normalZ;}nx=contact.x;nz=contact.z;}}
 
  k.x=nx;k.z=nz;
@@ -354,7 +357,7 @@ export function advanceRicochet(s:State,p:Shot,dt:number){
   const bz=blocked(ox,nz+Math.sign(vz)*radius)||blocked(ox+radius*.65,nz+Math.sign(vz)*radius)||blocked(ox-radius*.65,nz+Math.sign(vz)*radius);
   if(bx){vx=-vx;nx=ox;bounced=true;}if(bz){vz=-vz;nz=oz;bounced=true;}
   if(!bx&&!bz&&blocked(nx,nz)){vx=-vx;vz=-vz;nx=ox;nz=oz;bounced=true;}
-  for(const o of obstacles(arena)){const d=Math.hypot(nx-o.x,nz-o.z);if(p.y<(o.height??2.6)&&d<o.r+radius){const ax=d>.001?(nx-o.x)/d:-vx,az=d>.001?(nz-o.z)/d:-vz,dot=vx*ax+vz*az;if(dot<0){vx-=2*dot*ax;vz-=2*dot*az;bounced=true;}nx=o.x+ax*(o.r+radius+.02);nz=o.z+az*(o.r+radius+.02);}}
+  for(const o of obstacles(arena)){const d=Math.hypot(nx-o.x,nz-o.z);if(p.y+radius>(o.bottom??0)&&p.y<(o.height??2.6)&&d<o.r+radius){const ax=d>.001?(nx-o.x)/d:-vx,az=d>.001?(nz-o.z)/d:-vz,dot=vx*ax+vz*az;if(dot<0){vx-=2*dot*ax;vz-=2*dot*az;bounced=true;}nx=o.x+ax*(o.r+radius+.02);nz=o.z+az*(o.r+radius+.02);}}
   if(arena==='neon'){const contact=neonRimContact(nx,nz,radius,p.y,radius);if(contact){const dot=vx*contact.normalX+vz*contact.normalZ;if(dot<0){vx-=2*dot*contact.normalX;vz-=2*dot*contact.normalZ;bounced=true;}nx=contact.x;nz=contact.z;}}
   p.x=nx;p.z=nz;p.angle=Math.atan2(vx,vz);if(bounced)rebound();
   const floor=ground(arena,p.x,p.z,p.y-.35);if(floor< -10){p.life=0;break;}if(floor<=p.y+.4)p.y=floor+.65;
