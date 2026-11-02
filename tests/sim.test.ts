@@ -20,7 +20,7 @@ import {personalityPose,PERSONALITIES} from '../src/characters';
 import {MUSIC_THEMES,normalizedVolume} from '../src/audio';
 import {cycleSpectator} from '../src/sim';
 import {eliminationPose,ELIMINATION_TIME} from '../src/effects';
-import {driftSoundLevel,shieldHumLevel,Sound} from '../src/audio';
+import {driftSoundLevel,shieldHumLevel} from '../src/audio';
 import {GamepadSignals} from '../src/menuPad';
 import {normalizeSpeedClass,speedSettings} from '../src/sim';
 import {exposedLedges} from '../src/ledges';
