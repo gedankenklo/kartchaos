@@ -169,8 +169,8 @@ export function useItem(s:State,k:Kart) {
 }
 export function clearPath(arena:Arena,a:{x:number;z:number;y?:number},b:{x:number;z:number;y?:number}) {
  let prev=a.y??ground(arena,a.x,a.z);
- const steps=Math.ceil(distance(a,b)/(arena==='beach'?.6:1.8));
- for(let i=1;i<=steps;i++){const x=a.x+(b.x-a.x)*i/steps,z=a.z+(b.z-a.z)*i/steps,h=ground(arena,x,z,prev+.35);if(arena==='fortress'&&Math.max(Math.abs(x),Math.abs(z))>(ARENAS[arena].extent-1.25)*ARENA_SCALE[arena]-1.1||h< -10||Math.abs(h-prev)>(arena==='beach'?.8:1.6)||arena==='neon'&&neonRimContact(x,z,1.4,h+.5,.5)||obstacles(arena).some(o=>h+1.1>(o.bottom??0)&&h<(o.height??2)&&Math.hypot(x-o.x,z-o.z)<o.r+1.4))return false;prev=h;}return Math.abs(prev-(b.y??ground(arena,b.x,b.z)))<1.6;
+ const careful=arena==='beach'||arena==='crypt',steps=Math.ceil(distance(a,b)/(careful?.6:1.8));
+ for(let i=1;i<=steps;i++){const x=a.x+(b.x-a.x)*i/steps,z=a.z+(b.z-a.z)*i/steps,h=ground(arena,x,z,prev+.35);if(arena==='fortress'&&Math.max(Math.abs(x),Math.abs(z))>(ARENAS[arena].extent-1.25)*ARENA_SCALE[arena]-1.1||h< -10||Math.abs(h-prev)>(careful?.8:1.6)||arena==='neon'&&neonRimContact(x,z,1.4,h+.5,.5)||obstacles(arena).some(o=>h+1.1>(o.bottom??0)&&h<(o.height??2)&&Math.hypot(x-o.x,z-o.z)<o.r+1.4))return false;prev=h;}return Math.abs(prev-(b.y??ground(arena,b.x,b.z)))<1.6;
 }
 const routes=new WeakMap<Kart,{tick:number;goalX:number;goalZ:number;goalY:number;point:{x:number;z:number}}>();
 function waypoint(s:State,k:Kart,goal:{x:number;z:number;y?:number}) {
@@ -195,6 +195,7 @@ export function findWaypoint(s:State,k:Kart,goal:{x:number;z:number;y?:number}) 
 }
 const fortressRegroup=new WeakMap<Kart,{since:number;goal:NavPoint|null}>();
 const glacierClimbs=new WeakMap<Kart,{next:number;stage:number;side:number;active:boolean}>();
+const retreatWindows=new WeakMap<Kart,{until:number;next:number}>();
 const retreatGoals=new WeakMap<Kart,{tick:number;goal:NavPoint}>();
 export function botGoal(s:State,k:Kart){
  const enemies=s.karts.filter(o=>o.id!==k.id&&o.balloons>0&&(!(s.ball&&s.config.soccer||s.ctf)||soccerTeam(o)!==soccerTeam(k))).sort((a,b)=>(distance(k,a)+Math.abs(k.y-a.y)*3-(3-a.balloons)*6)-(distance(k,b)+Math.abs(k.y-b.y)*3-(3-b.balloons)*6));const stolen=s.ctf?.flags.find(f=>f.team===soccerTeam(k)&&f.carrier!==null),foe=stolen?enemies.find(o=>o.id===stolen.carrier)??enemies[0]:enemies[0];if(!foe)return {goal:k,foe:k,tactic:'idle'};
@@ -225,7 +226,9 @@ export function botGoal(s:State,k:Kart){
  }else if(s.time<=45&&Math.hypot(k.x,k.z)>dangerRadius(s)*.8)return {goal:{x:0,z:0,y:0},foe,tactic:'ring'};
 
  if(s.ctf){const box=!k.item&&!k.roulette&&!s.ctf.flags.some(f=>f.carrier===k.id)?s.boxes.filter(b=>b.respawn<=0&&distance(k,b)<42).sort((a,b)=>distance(k,a)-distance(k,b))[0]:undefined;return {goal:box??flagBotGoal(s,k),foe,tactic:box?'rearm':'flag'};}
- if(pressure&&!(k.item==='pulse'&&distance(k,foe)<8)){
+ let retreat=retreatWindows.get(k);if(retreat&&s.tick<retreat.until-180){retreatWindows.delete(k);retreat=undefined;}
+ if(pressure&&(!retreat||s.tick>=retreat.next)){retreat={until:s.tick+120+k.id%3*15,next:s.tick+720+k.id%3*15};retreatWindows.set(k,retreat);}
+ if(pressure&&retreat&&s.tick<retreat.until&&!(k.item==='pulse'&&distance(k,foe)<8)){
   const cached=retreatGoals.get(k);if(cached&&s.tick-cached.tick<30)return {goal:cached.goal,foe,tactic:'retreat'};
   const candidates=navGraph(s.config.arena).points.filter(p=>distance(k,p)>7&&Math.hypot(p.x,p.z)<(s.time<=45?dangerRadius(s)*.75:arenaExtent(s.config.arena)));
   const score=(p:NavPoint)=>Math.min(...enemies.map(e=>distance(p,e)))*.8+(!clearPath(s.config.arena,close,p)?18:0)+Math.min(10,p.y)*.7-distance(k,p)*.3-s.shots.filter(m=>m.kind==='mine'&&distance(m,p)<7).length*60;
@@ -233,12 +236,13 @@ export function botGoal(s:State,k:Kart){
  }
  const boxes=s.boxes.filter(b=>b.respawn<=0).sort((a,b)=>(distance(k,a)+Math.abs(k.y-a.y)*2)-(distance(k,b)+Math.abs(k.y-b.y)*2));
  if(!k.item&&!k.roulette&&boxes[0]&&(distance(k,boxes[0])<55||distance(k,foe)>35))return {goal:boxes[0],foe,tactic:'rearm'};
- const lead={x:foe.x+foe.vx*.28,z:foe.z+foe.vz*.28,y:foe.y};return {goal:clearPath(s.config.arena,foe,lead)?lead:foe,foe,tactic:'attack'};
+ const intercept=s.ball&&s.config.soccer||s.config.arena==='sky'||s.config.arena==='neon'||s.config.arena==='starcore' ? .28 : clamp(distance(k,foe)/22,.28,1.15);
+ const lead={x:foe.x+foe.vx*intercept,z:foe.z+foe.vz*intercept,y:foe.y};return {goal:clearPath(s.config.arena,foe,lead)?lead:foe,foe,tactic:'attack'};
 }
 const skyProgress=new WeakMap<Kart,{tick:number;x:number;z:number}>();
 const botRecovery=new WeakMap<Kart,{remaining:number;heading:number;reverse:boolean}>();
 export function botInput(s:State,k:Kart):Input {
- if(s.config.arena==='sky'||s.config.arena==='fortress'||s.config.arena==='glacier'||s.config.arena==='beach'){const progress=skyProgress.get(k);if(!progress||s.tick<progress.tick||distance(k,progress)>4)skyProgress.set(k,{tick:s.tick,x:k.x,z:k.z});else if(s.tick-progress.tick>120){k.stuck=Math.max(k.stuck,.9);skyProgress.set(k,{tick:s.tick,x:k.x,z:k.z});}}
+ {const progress=skyProgress.get(k);if(!progress||s.tick<progress.tick||distance(k,progress)>4)skyProgress.set(k,{tick:s.tick,x:k.x,z:k.z});else if(s.tick-progress.tick>120){k.stuck=Math.max(k.stuck,.9);skyProgress.set(k,{tick:s.tick,x:k.x,z:k.z});}}
  let recovery=botRecovery.get(k);
  if(!recovery&&k.stuck>.8){
   // Commit to an escape instead of cancelling reverse as soon as the kart moves.
