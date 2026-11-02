@@ -32,7 +32,7 @@ export interface Kart {orb?:boolean;reactorCycle?:number;team?:'blue'|'orange';s
 export interface Shot {orb?:boolean;id:number; owner:number; kind:'bolt'|'seeker'|'mine'; x:number; z:number; y:number; angle:number; life:number; age?:number; bounces?:number; }
 export interface Box {orb?:boolean;x:number; z:number; y:number; respawn:number;}
 export type HitCause='bolt'|'seeker'|'mine'|'ram'|'pulse'|'fall'|'lava'|'ring'|'timeout'|'goal'|'reactor'|'volcano';
-export interface Event {capture?:boolean;flagAction?:'taken'|'dropped'|'returned';impact?:number;contact?:'kick'|'bounce';ownGoal?:boolean;id:number; type:'volcano'|'volcanoimpact'|'reactorcharge'|'reactorbeam'|'flag'|'ballcontact'|'goal'|'eliminated'|'hit'|'fire'|'pickup'|'boost'|'win'|'fall'|'bump'|'itemready'|'shockwave'|'crash'|'ricochet'; x:number; y:number; z:number; player:number;source?:number;blocked?:boolean;remaining?:number;cause?:HitCause;fromX?:number;fromZ?:number;team?:'blue'|'orange';}
+export interface Event {capture?:boolean;flagAction?:'taken'|'dropped'|'returned';impact?:number;contact?:'kick'|'bounce';ownGoal?:boolean;id:number; type:'volcanocharge'|'volcano'|'volcanoimpact'|'reactorcharge'|'reactorbeam'|'flag'|'ballcontact'|'goal'|'eliminated'|'hit'|'fire'|'pickup'|'boost'|'win'|'fall'|'bump'|'itemready'|'shockwave'|'crash'|'ricochet'; x:number; y:number; z:number; player:number;source?:number;blocked?:boolean;remaining?:number;cause?:HitCause;fromX?:number;fromZ?:number;team?:'blue'|'orange';}
 export interface Config {soccer?:boolean;arena:Arena; humans:number; bots:number; difficulty:'easy'|'normal'|'hard'; duration:number;speedClass?:50|100|150;drivers?:number[];shuffleMaps?:boolean;mapQueue?:Arena[];championship?:boolean;}
 export interface State {ctf?:CaptureFlags;lighting?:Lighting;winningTeam?:'blue'|'orange';config:Config; championship?:Championship; ball?:Football; karts:Kart[]; shots:Shot[]; boxes:Box[]; time:number; countdown:number; phase:'countdown'|'playing'|'finished'; winner:number|null; tick:number; seed:number; serial:number; events:Event[];}
 export const clamp=(v:number,a:number,b:number)=>Math.max(a,Math.min(b,v));
@@ -169,8 +169,8 @@ export function useItem(s:State,k:Kart) {
 }
 export function clearPath(arena:Arena,a:{x:number;z:number;y?:number},b:{x:number;z:number;y?:number}) {
  let prev=a.y??ground(arena,a.x,a.z);
- const steps=Math.ceil(distance(a,b)/1.8);
- for(let i=1;i<=steps;i++){const x=a.x+(b.x-a.x)*i/steps,z=a.z+(b.z-a.z)*i/steps,h=ground(arena,x,z,prev+.35);if(arena==='fortress'&&Math.max(Math.abs(x),Math.abs(z))>(ARENAS[arena].extent-1.25)*ARENA_SCALE[arena]-1.1||h< -10||Math.abs(h-prev)>1.6||arena==='neon'&&neonRimContact(x,z,1.4,h+.5,.5)||obstacles(arena).some(o=>h+1.1>(o.bottom??0)&&h<(o.height??2)&&Math.hypot(x-o.x,z-o.z)<o.r+1.4))return false;prev=h;}return Math.abs(prev-(b.y??ground(arena,b.x,b.z)))<1.6;
+ const steps=Math.ceil(distance(a,b)/(arena==='beach'?.6:1.8));
+ for(let i=1;i<=steps;i++){const x=a.x+(b.x-a.x)*i/steps,z=a.z+(b.z-a.z)*i/steps,h=ground(arena,x,z,prev+.35);if(arena==='fortress'&&Math.max(Math.abs(x),Math.abs(z))>(ARENAS[arena].extent-1.25)*ARENA_SCALE[arena]-1.1||h< -10||Math.abs(h-prev)>(arena==='beach'?.8:1.6)||arena==='neon'&&neonRimContact(x,z,1.4,h+.5,.5)||obstacles(arena).some(o=>h+1.1>(o.bottom??0)&&h<(o.height??2)&&Math.hypot(x-o.x,z-o.z)<o.r+1.4))return false;prev=h;}return Math.abs(prev-(b.y??ground(arena,b.x,b.z)))<1.6;
 }
 const routes=new WeakMap<Kart,{tick:number;goalX:number;goalZ:number;goalY:number;point:{x:number;z:number}}>();
 function waypoint(s:State,k:Kart,goal:{x:number;z:number;y?:number}) {
@@ -238,7 +238,7 @@ export function botGoal(s:State,k:Kart){
 const skyProgress=new WeakMap<Kart,{tick:number;x:number;z:number}>();
 const botRecovery=new WeakMap<Kart,{remaining:number;heading:number;reverse:boolean}>();
 export function botInput(s:State,k:Kart):Input {
- if(s.config.arena==='sky'||s.config.arena==='fortress'||s.config.arena==='glacier'){const progress=skyProgress.get(k);if(!progress||s.tick<progress.tick||distance(k,progress)>4)skyProgress.set(k,{tick:s.tick,x:k.x,z:k.z});else if(s.tick-progress.tick>120){k.stuck=Math.max(k.stuck,.9);skyProgress.set(k,{tick:s.tick,x:k.x,z:k.z});}}
+ if(s.config.arena==='sky'||s.config.arena==='fortress'||s.config.arena==='glacier'||s.config.arena==='beach'){const progress=skyProgress.get(k);if(!progress||s.tick<progress.tick||distance(k,progress)>4)skyProgress.set(k,{tick:s.tick,x:k.x,z:k.z});else if(s.tick-progress.tick>120){k.stuck=Math.max(k.stuck,.9);skyProgress.set(k,{tick:s.tick,x:k.x,z:k.z});}}
  let recovery=botRecovery.get(k);
  if(!recovery&&k.stuck>.8){
   // Commit to an escape instead of cancelling reverse as soon as the kart moves.
@@ -389,6 +389,7 @@ export function step(s:State,inputs:Record<number,Input>,dt=1/60) {
  s.time=Math.max(0,s.time-dt);
  const reactor=reactorAt(s.config.duration-s.time);
  const elapsed=s.config.duration-s.time,volcano=volcanoAt(elapsed),previousVolcano=volcanoAt(elapsed-dt),impacts=s.config.arena==='crypt'?volcano.rocks.filter(r=>r.remaining<=0&&r.remaining> -dt):[];
+ if(s.config.arena==='crypt'&&volcano.charging&&!previousVolcano.charging&&s.karts[0])emit(s,'volcanocharge',{...s.karts[0],x:-260,y:0,z:-240});
  if(s.config.arena==='crypt'&&volcano.active&&(!previousVolcano.active||volcano.cycle!==previousVolcano.cycle)&&s.karts[0])emit(s,'volcano',{...s.karts[0],x:-260,y:0,z:-240});
  for(const rock of impacts)if(s.karts[0])emit(s,'volcanoimpact',{...s.karts[0],x:rock.x,y:ground('crypt',rock.x,rock.z),z:rock.z});
  if(s.config.arena==='starcore'&&reactor.phase!==beforeReactor.phase&&reactor.phase!=='idle'&&s.karts[0])emit(s,reactor.phase==='charging'?'reactorcharge':'reactorbeam',{...s.karts[0],x:0,y:0,z:0});

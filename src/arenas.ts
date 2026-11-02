@@ -120,7 +120,7 @@ export function expansionNav(arena:keyof typeof EXPANSIONS):{x:number;z:number}[
  if(arena==='starfall')for(const x of [-84,-60,-35,0,35,60,84])for(const z of [-28,-14,0,14,28])if(expansionHeight(arena,x,z)===0)points.push({x,z});
  if(arena==='depot')for(const x of [-52,-34,-20,20,34,52])for(const z of [-52,-36,-12,0,12,36,52])if(expansionHeight(arena,x,z)===0)points.push({x,z});
  for(const b of layout.blocks)if(b.driveable){points.push({x:b.x,z:b.z});for(const sx of [-1,1])for(const sz of [-1,1])points.push({x:b.x+sx*(b.width/2-2),z:b.z+sz*(b.depth/2-2)});}
- for(const r of layout.ramps){points.push(r.axis==='x'?{x:r.from,z:r.cross}:{x:r.cross,z:r.from},r.axis==='x'?{x:r.to,z:r.cross}:{x:r.cross,z:r.to});}
+ for(const r of layout.ramps){if(arena==='beach'){const d=Math.sign(r.from-r.to)*5;points.push(r.axis==='x'?{x:r.from+d,z:r.cross}:{x:r.cross,z:r.from+d});}points.push(r.axis==='x'?{x:r.from,z:r.cross}:{x:r.cross,z:r.from},r.axis==='x'?{x:r.to,z:r.cross}:{x:r.cross,z:r.to});}
  return points;
 }
 
