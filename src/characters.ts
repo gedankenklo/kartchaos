@@ -1,3 +1,4 @@
+import {createActiveShield} from './activeShield';
 import {stepSuspension,createGlow} from './visualPolish';
 import {applyToon,contactShadow} from './toon';
 import {surfaceMaterial} from './surfaces';
@@ -112,7 +113,7 @@ export function createKart(id:number,trial=false):T.Group {
   mesh(anchor,new T.CylinderGeometry(.065,.065,.09,8),'#5d6065',0,-.045,0);
   const line=new T.Line(new T.BufferGeometry().setAttribute('position',new T.BufferAttribute(new Float32Array(12),3)),new T.LineBasicMaterial({color:'#655c65'}));line.name='tether'+i;line.frustumCulled=false;root.add(line);
  }
- const shield=mesh(root,new T.SphereGeometry(2,16,12),'#a0e6ed',0,1,0);shield.name='shield';shield.material=new T.MeshStandardMaterial({color:'#a0e6ed',transparent:true,opacity:.22,wireframe:true});shield.visible=false;
+ root.add(createActiveShield());
  batchDetails(root);if(trial){chassis.scale.set(1.035,1,1.025);root.getObjectByName('head')!.scale.setScalar(1.07);for(const pivot of root.children)if(pivot.name==='frontWheel'||pivot.name==='rearWheel'){pivot.position.y=.49;pivot.scale.setScalar(1.065);}applyToon(root,true);}root.add(contactShadow());for(const side of [-1,1]){const glow=createGlow('#83dfff',1.3,.25);glow.name=side<0?'driftGlowLeft':'driftGlowRight';glow.position.set(side*.95,.2,-.85);glow.visible=false;root.add(glow);}updateBalloonRig(root,{},0);return root;
 }
 type Pose=Pick<Kart,'speed'|'steering'|'drift'|'boost'|'vy'> & Partial<Pick<Kart,'balloons'|'yawRate'|'pushX'|'pushZ'|'angle'>>;

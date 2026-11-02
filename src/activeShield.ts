@@ -1,0 +1,4 @@
+import * as T from 'three';
+import {createGlow} from './visualPolish';
+export function createActiveShield(){const root=new T.Group();root.name='shield';root.position.y=1;const shell=new T.Mesh(new T.SphereGeometry(2.2,24,16),new T.MeshBasicMaterial({color:'#8ceaff',transparent:true,opacity:.12,depthWrite:false,side:T.FrontSide}));root.add(shell);const halo=createGlow('#72e7ff',7,.3);root.add(halo);for(let i=0;i<3;i++){const orbit=new T.Group();orbit.rotation.y=i*Math.PI*2/3;const gem=new T.Mesh(new T.OctahedronGeometry(.5),new T.MeshBasicMaterial({color:'#bafaff'}));gem.position.set(2.4,0,0);const glow=createGlow('#69e9ff',2.6,.7);gem.add(glow);orbit.add(gem);root.add(orbit);}root.visible=false;return root;}
+export function animateActiveShield(root:T.Object3D,now:number,reduced=false){root.rotation.y=reduced?0:now*1.8;root.children.slice(2).forEach((o,i)=>{o.position.y=reduced?0:Math.sin(now*3+i*Math.PI*2/3)*.55;});}

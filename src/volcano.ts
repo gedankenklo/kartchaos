@@ -1,0 +1,4 @@
+// Pure match-clock schedule shared by authoritative simulation and rendering.
+export const VOLCANO={first:18,interval:28,warning:4,fall:1.8,radius:5.5};
+const sites=[[-94,-36],[92,40],[-70,92],[76,-92],[0,0],[26,-22],[-26,24],[0,72],[72,0],[-72,0],[0,-72],[104,104],[-104,-104],[104,-104],[-104,104]];
+export function volcanoAt(elapsed:number,seed=0){const t=elapsed-VOLCANO.first,cycle=Math.floor(Math.max(0,t)/VOLCANO.interval),age=t-cycle*VOLCANO.interval;return {cycle,age,active:t>=0&&age<9,rocks:Array.from({length:7},(_,i)=>{const site=sites[((cycle*7+i*2+seed)%sites.length+sites.length)%sites.length],impact=VOLCANO.warning+VOLCANO.fall+i*.38,remaining=impact-age;return {id:cycle*7+i,x:site[0],z:site[1],impact,remaining,visible:t>=0&&remaining<6&&remaining>-.65,warning:Math.max(0,Math.min(1,1-remaining/6)),fall:Math.max(0,Math.min(1,1-remaining/VOLCANO.fall))};})};}

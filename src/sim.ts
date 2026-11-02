@@ -1,3 +1,4 @@
+import {VOLCANO,volcanoAt} from './volcano';
 import {GLACIER_PROPS} from './winterProps';
 import {REACTOR,reactorAt} from './reactor';
 import {createFlags,assignFlagTeams,stepFlags,dropFlag,flagBotGoal,type CaptureFlags} from './captureFlag';
@@ -30,8 +31,8 @@ export const idle = ():Input => ({gas:0,steer:0,drift:false,fire:false,hop:false
 export interface Kart {orb?:boolean;reactorCycle?:number;team?:'blue'|'orange';stats?:RoundStats;id:number; driver:number; name:string; bot:boolean; x:number; z:number; y:number; angle:number; vx:number; vz:number; vy:number; speed:number; steering:number; yawRate:number; reverseTime:number; driftSide:number; driftSlip:number; pushX:number; pushZ:number; bumpCooldown:number; balloons:number; inv:number; item:Item|null; roulette:number; rouletteSeed:number; rouletteStop:boolean; itemFlash:number; boost:number; ram:number; shield:number; drift:number; cooldown:number; hopHeld:boolean; fireHeld:boolean; target:number; stuck:number; kills:number; damage:number; hits:number; eliminatedAt?:number; }
 export interface Shot {orb?:boolean;id:number; owner:number; kind:'bolt'|'seeker'|'mine'; x:number; z:number; y:number; angle:number; life:number; age?:number; bounces?:number; }
 export interface Box {orb?:boolean;x:number; z:number; y:number; respawn:number;}
-export type HitCause='bolt'|'seeker'|'mine'|'ram'|'pulse'|'fall'|'lava'|'ring'|'timeout'|'goal'|'reactor';
-export interface Event {capture?:boolean;flagAction?:'taken'|'dropped'|'returned';impact?:number;contact?:'kick'|'bounce';ownGoal?:boolean;id:number; type:'reactorcharge'|'reactorbeam'|'flag'|'ballcontact'|'goal'|'eliminated'|'hit'|'fire'|'pickup'|'boost'|'win'|'fall'|'bump'|'itemready'|'shockwave'|'crash'|'ricochet'; x:number; y:number; z:number; player:number;source?:number;blocked?:boolean;remaining?:number;cause?:HitCause;fromX?:number;fromZ?:number;team?:'blue'|'orange';}
+export type HitCause='bolt'|'seeker'|'mine'|'ram'|'pulse'|'fall'|'lava'|'ring'|'timeout'|'goal'|'reactor'|'volcano';
+export interface Event {capture?:boolean;flagAction?:'taken'|'dropped'|'returned';impact?:number;contact?:'kick'|'bounce';ownGoal?:boolean;id:number; type:'volcano'|'volcanoimpact'|'reactorcharge'|'reactorbeam'|'flag'|'ballcontact'|'goal'|'eliminated'|'hit'|'fire'|'pickup'|'boost'|'win'|'fall'|'bump'|'itemready'|'shockwave'|'crash'|'ricochet'; x:number; y:number; z:number; player:number;source?:number;blocked?:boolean;remaining?:number;cause?:HitCause;fromX?:number;fromZ?:number;team?:'blue'|'orange';}
 export interface Config {soccer?:boolean;arena:Arena; humans:number; bots:number; difficulty:'easy'|'normal'|'hard'; duration:number;speedClass?:50|100|150;drivers?:number[];shuffleMaps?:boolean;mapQueue?:Arena[];championship?:boolean;}
 export interface State {ctf?:CaptureFlags;lighting?:Lighting;winningTeam?:'blue'|'orange';config:Config; championship?:Championship; ball?:Football; karts:Kart[]; shots:Shot[]; boxes:Box[]; time:number; countdown:number; phase:'countdown'|'playing'|'finished'; winner:number|null; tick:number; seed:number; serial:number; events:Event[];}
 export const clamp=(v:number,a:number,b:number)=>Math.max(a,Math.min(b,v));
@@ -193,6 +194,7 @@ export function findWaypoint(s:State,k:Kart,goal:{x:number;z:number;y?:number}) 
  let i=end;while(previous[i]>0)i=previous[i];if(previous[i]===0)return nodes[i];const reachable=links[0].map(edge=>nodes[edge.to]).sort((a,b)=>(distance(a,goal)+distance(k,a)*.3)-(distance(b,goal)+distance(k,b)*.3));return reachable[0]??k;
 }
 const fortressRegroup=new WeakMap<Kart,{since:number;goal:NavPoint|null}>();
+const glacierClimbs=new WeakMap<Kart,{next:number;stage:number;side:number;active:boolean}>();
 const retreatGoals=new WeakMap<Kart,{tick:number;goal:NavPoint}>();
 export function botGoal(s:State,k:Kart){
  const enemies=s.karts.filter(o=>o.id!==k.id&&o.balloons>0&&(!(s.ball&&s.config.soccer||s.ctf)||soccerTeam(o)!==soccerTeam(k))).sort((a,b)=>(distance(k,a)+Math.abs(k.y-a.y)*3-(3-a.balloons)*6)-(distance(k,b)+Math.abs(k.y-b.y)*3-(3-b.balloons)*6));const stolen=s.ctf?.flags.find(f=>f.team===soccerTeam(k)&&f.carrier!==null),foe=stolen?enemies.find(o=>o.id===stolen.carrier)??enemies[0]:enemies[0];if(!foe)return {goal:k,foe:k,tactic:'idle'};
@@ -208,6 +210,13 @@ export function botGoal(s:State,k:Kart){
    regroup.goal=Math.abs(k.x)>Math.abs(k.z)?{x:Math.sign(k.x)*reach,z:clamp(k.z,-reach,reach),y:0}:{x:clamp(k.x,-reach,reach),z:Math.sign(k.z)*reach,y:0};
   }
   if(regroup.goal)return {goal:regroup.goal,foe,tactic:'regroup'};
+ }
+ if(s.config.arena==='crypt'){const threat=volcanoAt(s.config.duration-s.time).rocks.find(r=>r.remaining>0&&r.remaining<3&&distance(k,r)<VOLCANO.radius+5&&Math.abs(k.y-ground('crypt',r.x,r.z))<4);if(threat){const safe=navGraph('crypt').points.filter(p=>distance(p,threat)>VOLCANO.radius+8&&distance(k,p)<32&&clearPath('crypt',k,p)).sort((a,b)=>distance(k,a)-distance(k,b))[0];if(safe)return {goal:safe,foe,tactic:'evade'};}}
+ if(s.config.arena==='glacier'&&s.time>48){
+  let climb=glacierClimbs.get(k);if(!climb||s.tick<climb.next-3000){climb={next:120+k.id*70,stage:0,side:k.x<0?-1:1,active:false};glacierClimbs.set(k,climb);}
+  if(!climb.active&&s.tick>=climb.next&&k.y<1){climb.active=true;climb.stage=0;climb.side=k.x<0?-1:1;}
+  if(climb.active&&climb.stage>=3&&k.y<1)climb.stage=0;
+  if(climb.active){const x=climb.side*76,route=[{x,z:110,y:0},{x,z:94,y:0},{x,z:44,y:7},{x,z:-60,y:7},{x:climb.side*68,z:-76,y:7},{x:climb.side*26,z:-76,y:15.4},{x:0,z:-76,y:15.4}];let goal=route[climb.stage];if(distance(k,goal)<(climb.stage===1?3:5)&&Math.abs(k.y-goal.y)<2){climb.stage++;goal=route[climb.stage];}if(goal)return {goal,foe,tactic:'climb'};climb.active=false;climb.next=s.tick+1500;}
  }
  const close=enemies.reduce((a,b)=>distance(k,a)<distance(k,b)?a:b),fragile=enemies.length>1&&k.balloons===1&&!k.shield&&k.item!=='boost'&&k.ram<=0,pressure=fragile&&distance(k,close)<26;
  if(s.config.arena==='starcore'){
@@ -242,6 +251,8 @@ export function botInput(s:State,k:Kart):Input {
  const {goal,foe,tactic}=botGoal(s,k);if(foe===k)return idle();const wp=waypoint(s,k,goal),delta={x:wp.x-k.x,z:wp.z-k.z};let desired=Math.atan2(delta.x,delta.z);
  for(const o of obstacles(s.config.arena))if(distance(k,o)<o.r+5&&Math.abs(angleDiff(Math.atan2(o.x-k.x,o.z-k.z),k.angle))<1.2)desired+=angleDiff(Math.atan2(o.x-k.x,o.z-k.z),k.angle)>0?-.7:.7;
  for(const hazard of s.shots){if(Math.abs(hazard.y-k.y)>3)continue;const d=distance(k,hazard);if(hazard.kind==='mine'&&(hazard.age??0)<MINE_ARM_TIME)continue;if(d< (hazard.kind==='mine'?8:10)&&Math.abs(angleDiff(Math.atan2(hazard.x-k.x,hazard.z-k.z),k.angle))<.9)desired+=angleDiff(Math.atan2(hazard.x-k.x,hazard.z-k.z),k.angle)>0?-.85:.85;}
+ const icy=s.config.arena==='glacier'&&arenaSurface('glacier',k.x,k.z,k.y).grip<1;
+ const slip=icy&&Math.hypot(k.vx,k.vz)>3?clamp(angleDiff(Math.atan2(k.vx,k.vz),k.angle),-.7,.7):0;desired-=slip*.8;
  const error=angleDiff(desired,k.angle),aim=Math.abs(angleDiff(Math.atan2(foe.x-k.x,foe.z-k.z),k.angle)),range=distance(k,foe),sameLevel=Math.abs(k.y-foe.y)<3,visible=clearPath(s.config.arena,k,foe),diff=s.config.difficulty;
  const pace=diff==='easy'?.65:diff==='hard'?1:.85,ahead=Math.max(7,Math.abs(k.speed)*.65),edge=s.config.arena==='sky'&&ground('sky',k.x+Math.sin(k.angle)*ahead,k.z+Math.cos(k.angle)*ahead)< -10;
   const scale=speedSettings(s.config.speedClass).scale,hazardMap=s.config.arena==='starcore'||s.config.arena==='starfall'||s.config.arena==='glacier'||s.config.arena==='crypt'||s.config.arena==='depot'||s.config.arena==='sky'||s.config.arena==='castle'||s.config.arena==='neon'||s.config.arena==='ruins';
@@ -250,7 +261,7 @@ export function botInput(s:State,k:Kart):Input {
  const unsafe=!clearPath(s.config.arena,k,{x:aheadX,z:aheadZ,y:ground(s.config.arena,aheadX,aheadZ,k.y+.35)});
  const cruise=hazardMap?(s.config.arena==='sky'?.9:.7)/Math.sqrt(scale):pace,corner=clamp(1-Math.abs(error)*.85,.1,1);
  const arrival=s.config.arena==='starfall'&&s.ctf?.flags.some(f=>f.carrier===k.id)?clamp(distance(k,goal)/12,.25,1):1;
- const throttle=Math.min(pace,cruise,corner,arrival,unsafe?.13:1,edge?.1:1),desiredSpeed=20*scale*throttle;
+ const throttle=Math.min(pace,cruise,corner,arrival,icy?.42/scale:1,unsafe?.13:1,edge?.1:1),desiredSpeed=20*scale*throttle;
  const braking=k.speed>desiredSpeed+2&&(unsafe||Math.abs(error)>.65||arrival<.65);
  // Enclosed Yard lanes need only a steering horizon; open-edge maps retain full-run checks.
  const boostLook=31*scale*(s.config.arena==='yard'?.8:s.config.arena==='starfall'?1.1:2.1);
@@ -377,11 +388,15 @@ export function step(s:State,inputs:Record<number,Input>,dt=1/60) {
  const beforeReactor=reactorAt(s.config.duration-s.time);
  s.time=Math.max(0,s.time-dt);
  const reactor=reactorAt(s.config.duration-s.time);
+ const elapsed=s.config.duration-s.time,volcano=volcanoAt(elapsed),previousVolcano=volcanoAt(elapsed-dt),impacts=s.config.arena==='crypt'?volcano.rocks.filter(r=>r.remaining<=0&&r.remaining> -dt):[];
+ if(s.config.arena==='crypt'&&volcano.active&&(!previousVolcano.active||volcano.cycle!==previousVolcano.cycle)&&s.karts[0])emit(s,'volcano',{...s.karts[0],x:-260,y:0,z:-240});
+ for(const rock of impacts)if(s.karts[0])emit(s,'volcanoimpact',{...s.karts[0],x:rock.x,y:ground('crypt',rock.x,rock.z),z:rock.z});
  if(s.config.arena==='starcore'&&reactor.phase!==beforeReactor.phase&&reactor.phase!=='idle'&&s.karts[0])emit(s,reactor.phase==='charging'?'reactorcharge':'reactorbeam',{...s.karts[0],x:0,y:0,z:0});
  for(const b of s.boxes)b.respawn=Math.max(0,b.respawn-dt);
  for(const k of s.karts){drive(s,k,k.bot?botInput(s,k):inputs[k.id]??idle(),dt);if(k.balloons<=0)continue;
   for(const b of s.boxes)if(!k.item&&!k.roulette&&b.respawn<=0&&distance(k,b)<2.5&&Math.abs(k.y-b.y)<2){beginRoulette(s,k,b);b.respawn=6;}
   if(s.config.arena==='starcore'&&reactor.phase==='firing'&&Math.hypot(k.x,k.z)<REACTOR.dangerRadius&&k.reactorCycle!==reactor.cycle){k.reactorCycle=reactor.cycle;damage(s,k,k.id,{cause:'reactor',fromX:0,fromZ:0});}
+  for(const rock of impacts)if(distance(k,rock)<VOLCANO.radius&&Math.abs(k.y-ground('crypt',rock.x,rock.z))<4)damage(s,k,k.id,{cause:'volcano',fromX:rock.x,fromZ:rock.z});
   if(s.time<=45&&Math.hypot(k.x,k.z)>dangerRadius(s))damage(s,k,k.id,{cause:'ring'});
  }
  collideKarts(s);stepFootball(s,dt);
