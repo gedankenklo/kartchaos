@@ -1,7 +1,9 @@
-# KART CHAOS 64 v1.48.0
+# KART CHAOS 64 v1.49.1
 
-Extract this ZIP and upload its CONTENTS at your GitHub repository root, preserving folders. Merge/overwrite existing files, commit, and let Render rebuild. Refresh the game afterwards.
+Upload the extracted CONTENTS at your GitHub repository root, preserving folders. Merge/overwrite existing files, commit, and let Render rebuild. Refresh all game tabs afterwards.
 
-Results menus now ignore controller input for 0.65 seconds and require all buttons and sticks to return to neutral before accepting a new press. This prevents a late B item press from returning to the main menu, or A from accidentally advancing the results.
+Includes the complete v1.49 farm garage update, plus wider middle-deck approaches. Both upper ramps now have 12 meters of flat space behind their entrances, up from 4 meters. The middle deck extends 8 meters farther outward on every side. All four ground ramps join the new deck boundary without overlap.
 
-Music files and tracks.json are not included and remain untouched.
+13 focused checks passed, including all ramp directions/speed classes, connected navigation, floor-to-roof bot routes, pickups, cow collisions and the new flat approaches. Production build passed.
+
+No MP3s or tracks.json are included. Existing music and the quarry folder remain unchanged.

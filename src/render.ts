@@ -1,3 +1,4 @@
+import {FARM_POSTS} from './quarryFarm';
 import {harbourIceAt} from './newArenaRules';
 import {harbourIceGeometry} from './harbourReflection';
 import {createFortressCover} from './fortressCover';
@@ -76,7 +77,7 @@ export class World {
  mesh(geo:T.BufferGeometry,color:string,parent:T.Object3D,x=0,y=0,z=0):T.Mesh{const m=new T.Mesh(geo,material(color));m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;}
  cube(parent:T.Object3D,c:string,x:number,y:number,z:number,w:number,h:number,d:number){return this.mesh(new T.BoxGeometry(w,h,d),c,parent,x,y,z);}
  cylinder(parent:T.Object3D,c:string,x:number,y:number,z:number,r:number,h:number,n=10){return this.mesh(new T.CylinderGeometry(r,r,h,n),c,parent,x,y,z);}
- road(parent:T.Object3D,color:string,x:number,y:number,z:number,width:number,depth:number){const m=this.mesh(new T.PlaneGeometry(width,depth),color,parent,x,y,z);m.rotation.x=-Math.PI/2;m.castShadow=false;m.material=this.textured(color,this.map==='quarry'||this.map==='beach'?'sand':this.map==='depot'?'metal':this.map==='yard'?'stone':this.map==='sky'?'stone':'grass');return m;}
+ road(parent:T.Object3D,color:string,x:number,y:number,z:number,width:number,depth:number){const m=this.mesh(new T.PlaneGeometry(width,depth),color,parent,x,y,z);m.rotation.x=-Math.PI/2;m.castShadow=false;m.material=this.textured(color,this.map==='beach'?'sand':this.map==='quarry'?'stone':this.map==='depot'?'metal':this.map==='yard'?'stone':this.map==='sky'?'stone':'grass');return m;}
  ramp(parent:T.Object3D,r:Ramp,color:string){
   if(r.thickness){const geo=createRampSlab(r),top=geo.clone();top.setDrawRange(0,6);const slab=this.mesh(top,color,parent);slab.material=this.textured(color,'stone');geo.setDrawRange(6,30);const shell=this.mesh(geo,color,parent);shell.material=this.textured(color,'stone');shell.receiveShadow=false;return;}
   const point=(along:number,cross:number,y:number)=>r.axis==='x'?[along,y,cross]:[cross,y,along];
@@ -127,8 +128,8 @@ export class World {
    if(arena==='harbour')g.add(createHarbourDocks(this.artTrial));if(arena==='glacier')g.add(createGlacierStructures(this.artTrial));
    for(const b of arena==='harbour'||arena==='glacier'?[]:layout.blocks){const blockMesh=this.cube(g,b.color,b.x,b.height-(b.thickness??b.height)/2,b.z,b.width,b.thickness??b.height,b.depth);if(arena==='starfall'&&!b.driveable)blockMesh.receiveShadow=false;blockMesh.material=this.textured(b.color,arena==='yard'||arena==='harbour'?'wood':arena==='depot'||arena==='foundry'?'metal':'stone');if(arena==='beach'&&b.driveable&&!this.artTrial){const base=blockMesh.material as T.Material,top=createBoardwalkMaterial(false);blockMesh.material=[base,base,top,base,base,base];blockMesh.userData.ownedMaterials=[top];}
     for(const side of [-1,1]){
-     this.cube(g,arena==='yard'?'#e5d5ad':'#e9d4ae',b.x,b.height*.7,b.z+side*(b.depth/2+.025),b.width,.25,.04);
-     if(arena==='quarry')this.cube(g,'#9e725f',b.x,b.height*.35,b.z+side*(b.depth/2+.025),b.width,.28,.04);
+     this.cube(g,arena==='yard'?'#e5d5ad':'#e9d4ae',b.x,b.thickness?b.height-b.thickness*.5:b.height*.7,b.z+side*(b.depth/2+.025),b.width,.25,.04);
+     
      if(arena==='yard')for(const offset of [-.3,.3])this.cube(g,'#6d777a',b.x+offset*b.width,b.height/2,b.z+side*(b.depth/2+.05),.18,b.height,.08);
     }
    }
@@ -149,9 +150,15 @@ export class World {
    geometry.setAttribute('position',new T.Float32BufferAttribute(vertices,3));geometry.setAttribute('color',new T.Float32BufferAttribute(colors,3));geometry.computeVertexNormals();const surface=this.mesh(geometry,'#ffffff',g);surface.material=this.textured('#ffffff','metal',{vertexColors:true});surface.castShadow=false;
    for(let i=0;i<NEON_RIM_SHAPE.count;i++)placeNeonRimMarker(this.cube(g,i%2?'#ed9269':'#bba3e1',0,0,0,NEON_RIM_SHAPE.width,NEON_RIM_SHAPE.height,NEON_RIM_SHAPE.depth),i);
   }
-  for(const o of arena==='castle'||arena==='beach'||arena==='glacier'||arena==='fortress'?[]:layoutObstacles(arena)){this.cylinder(g,arena==='neon'?'#e5ac84':'#927da8',o.x,.8,o.z,o.r,1.6,8);this.cylinder(g,'#e4cfb1',o.x,1.7,o.z,o.r+.15,.3,8);}
+  for(const o of arena==='quarry'||arena==='castle'||arena==='beach'||arena==='glacier'||arena==='fortress'?[]:layoutObstacles(arena)){this.cylinder(g,arena==='neon'?'#e5ac84':'#927da8',o.x,.8,o.z,o.r,1.6,8);this.cylinder(g,'#e4cfb1',o.x,1.7,o.z,o.r+.15,.3,8);}
+  if(arena==='quarry'){
+   const pasture=this.road(g,'#91a975',0,.04,0,42,42);pasture.material=this.textured('#91a975','grass',{polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});
+   for(const p of FARM_POSTS)this.cube(g,'#6a766d',p.x,(p.bottom+p.height)/2,p.z,p.r*1.4,p.height-p.bottom,p.r*1.4);
+   // Raised painted bays avoid coplanar overlays on the deck tops.
+   for(const y of [6,12])for(const sign of [-1,1])for(const x of [-20,-10,10,20]){const z=sign*(y===6?43:29);const stripe=this.cube(g,'#e5d2a4',x,y+.045,z,.14,.06,6);stripe.castShadow=stripe.receiveShadow=false;}
+  }
   // Decorative landscape below the island.
-  for(let i=0;i<18;i++){const a=i*2.399,r=(isExpansion(arena)?ARENAS[arena].extent+10:47)+i%4*3;const {x,z}=arena==='fortress'?fortressTreePosition(i):{x:Math.sin(a)*r,z:Math.cos(a)*r};if(arena==='yard'){this.cube(g,'#9a8875',x,.5,z,1,4,1);this.cube(g,'#e8be6f',x,2.8,z,1.2,.6,1.2);}else if(arena==='depot'){this.cylinder(g,'#879b9d',x,-.5,z,.7,2,8);}else if(arena==='quarry'){this.cylinder(g,'#8fa17e',x,.5,z,.5,4,7);this.cube(g,'#8fa17e',x+.8,.5,z,1.5,.65,.65);this.cylinder(g,'#8fa17e',x+1.3,1.3,z,.32,1.8,7);}else if(!['starfall','glacier','crypt','starcore'].includes(arena)&&!isNewArena(arena)&&arena!=='neon'&&arena!=='sky'&&arena!=='castle'&&arena!=='beach'&&arena!=='stadium'){this.cylinder(g,'#a39079',x,0,z,.35,3,6);this.mesh(new T.ConeGeometry(2.6,6,6),i%2?'#91a97c':'#718e72',g,x,4,z);}}
+  for(let i=0;i<18;i++){const a=i*2.399,r=(isExpansion(arena)?ARENAS[arena].extent+10:47)+i%4*3;const {x,z}=arena==='fortress'?fortressTreePosition(i):{x:Math.sin(a)*r,z:Math.cos(a)*r};if(arena==='yard'){this.cube(g,'#9a8875',x,.5,z,1,4,1);this.cube(g,'#e8be6f',x,2.8,z,1.2,.6,1.2);}else if(arena==='depot'){this.cylinder(g,'#879b9d',x,-.5,z,.7,2,8);}else if(arena==='quarry'){this.cylinder(g,'#8e7754',x,1.5,z,.45,3,6);this.mesh(new T.IcosahedronGeometry(2.8,1),'#8da576',g,x,4,z);}else if(!['starfall','glacier','crypt','starcore'].includes(arena)&&!isNewArena(arena)&&arena!=='neon'&&arena!=='sky'&&arena!=='castle'&&arena!=='beach'&&arena!=='stadium'){this.cylinder(g,'#a39079',x,0,z,.35,3,6);this.mesh(new T.ConeGeometry(2.6,6,6),i%2?'#91a97c':'#718e72',g,x,4,z);}}
   if(arena==='castle'||arena==='beach'||arena==='stadium'||arena==='depot'){this.details=new ArenaDetails(arena);g.add(this.details);}
   if(this.artTrial){if(arena==='fortress')this.styleFortress(g);else this.styleArena(g,arena);applyToon(this.landscape!);}
   if(!this.artTrial){
@@ -187,7 +194,7 @@ export class World {
   if(isExpansion(arena)){
    if(arena!=='stadium'&&arena!=='depot'&&arena!=='starfall'&&arena!=='glacier'&&arena!=='crypt'&&arena!=='starcore'&&!isNewArena(arena)){
    for(const o of [...g.children])if(o instanceof T.Mesh&&o.geometry.type==='PlaneGeometry'&&o.position.y===0){g.remove(o);o.geometry.dispose();}
-   const e=ARENAS[arena].extent,base=arena==='yard'?'#d4c4a4':arena==='castle'?'#535163':arena==='beach'?'#d9c099':'#d6b687',v:number[]=[],colors:number[]=[];
+   const e=ARENAS[arena].extent,base=arena==='yard'?'#d4c4a4':arena==='castle'?'#535163':arena==='beach'?'#d9c099':arena==='quarry'?'#b9a579':'#d6b687',v:number[]=[],colors:number[]=[];
    for(let x=-e;x<e;x+=2)for(let z=-e;z<e;z+=2){if(arena==='castle'&&lavaAt(x+1,z+1))continue;const color=new T.Color(base);if(Math.abs(x+1)<5||Math.abs(z+1)<5)color.lerp(new T.Color('#f1e3bb'),.18);else if(Math.floor((x+e)/12)%2)color.multiplyScalar(.97);v.push(x,.02,z,x+2,.02,z+2,x+2,.02,z,x,.02,z,x,.02,z+2,x+2,.02,z+2);for(let n=0;n<6;n++)colors.push(color.r,color.g,color.b);}
    const geo=new T.BufferGeometry().setAttribute('position',new T.Float32BufferAttribute(v,3)).setAttribute('color',new T.Float32BufferAttribute(colors,3));geo.computeVertexNormals();const m=toonMaterial('#ffffff',new T.Color(0),0,T.FrontSide,true),floor=new T.Mesh(geo,m);floor.receiveShadow=true;g.add(floor);
    }

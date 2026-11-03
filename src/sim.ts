@@ -1,3 +1,4 @@
+import {FARM_POSTS,quarryCows} from './quarryFarm';
 import {FORTRESS_PROPS} from './fortressProps';
 import {ROUND_COUNTDOWN} from './arenaIntro';
 import {VOLCANO,volcanoAt} from './volcano';
@@ -50,10 +51,10 @@ export function ground(arena:Arena,x:number,z:number,referenceY=Infinity):number
  return h< -10?h:h*ARENA_HEIGHT[arena];
 }
 export function ceiling(arena:Arena,x:number,z:number,feet:number):number {
- if(arena==='glacier'){
+ if(arena==='glacier'||arena==='quarry'){
   const xLocal=x/ARENA_SCALE[arena],zLocal=z/ARENA_SCALE[arena],ys=ARENA_HEIGHT[arena],unders:number[]=[];
-  for(const b of EXPANSIONS.glacier.blocks)if(b.thickness&&Math.abs(xLocal-b.x)<=b.width/2&&Math.abs(zLocal-b.z)<=b.depth/2)unders.push((b.height-b.thickness)*ys);
-  for(const r of EXPANSIONS.glacier.ramps){const h=rampHeight(r,xLocal,zLocal);if(r.thickness&&h!==undefined)unders.push((h-r.thickness)*ys);}
+  for(const b of EXPANSIONS[arena].blocks)if(b.thickness&&Math.abs(xLocal-b.x)<=b.width/2&&Math.abs(zLocal-b.z)<=b.depth/2)unders.push((b.height-b.thickness)*ys);
+  for(const r of EXPANSIONS[arena].ramps){const h=rampHeight(r,xLocal,zLocal);if(r.thickness&&h!==undefined)unders.push((h-r.thickness)*ys);}
   return Math.min(Infinity,...unders.filter(h=>feet<h));
  }
  if(arena!=='fortress')return Infinity;
@@ -61,11 +62,11 @@ export function ceiling(arena:Arena,x:number,z:number,feet:number):number {
  return Math.min(Infinity,...FORT_BRIDGES.filter(b=>Math.abs(xLocal-b.x)<=b.width/2&&Math.abs(zLocal-b.z)<=b.depth/2&&feet<(b.y-b.thickness)*ARENA_HEIGHT.fortress).map(b=>(b.y-b.thickness)*ARENA_HEIGHT.fortress));
 }
 export function solidAt(arena:Arena,x:number,y:number,z:number,includeRim=true):boolean {
- if(arena==='glacier'){
+ if(arena==='glacier'||arena==='quarry'){
   const lx=x/ARENA_SCALE[arena],lz=z/ARENA_SCALE[arena],ly=y/ARENA_HEIGHT[arena];
   if(includeRim&&obstacles(arena).some(o=>y>=(o.bottom??0)&&y<(o.height??0)&&Math.hypot(x-o.x,z-o.z)<o.r))return true;
   if(expansionHeight(arena,lx,lz,-Infinity)>ly)return true;
-  return EXPANSIONS.glacier.blocks.some(b=>b.thickness&&Math.abs(lx-b.x)<=b.width/2&&Math.abs(lz-b.z)<=b.depth/2&&ly>=b.height-b.thickness&&ly<=b.height)||EXPANSIONS.glacier.ramps.some(r=>{const h=rampHeight(r,lx,lz);return r.thickness&&h!==undefined&&ly>=h-r.thickness&&ly<=h;});
+  return EXPANSIONS[arena].blocks.some(b=>b.thickness&&Math.abs(lx-b.x)<=b.width/2&&Math.abs(lz-b.z)<=b.depth/2&&ly>=b.height-b.thickness&&ly<=b.height)||EXPANSIONS[arena].ramps.some(r=>{const h=rampHeight(r,lx,lz);return r.thickness&&h!==undefined&&ly>=h-r.thickness&&ly<=h;});
  }
  if(arena!=='fortress')return ground(arena,x,z)>y||includeRim&&(arena==='castle'||arena==='beach')&&obstacles(arena).some(o=>y>=0&&y<(o.height??0)&&Math.hypot(x-o.x,z-o.z)<o.r)||includeRim&&arena==='neon'&&!!neonRimContact(x,z,0,y);
  const lx=x/ARENA_SCALE.fortress,lz=z/ARENA_SCALE.fortress;
@@ -73,10 +74,12 @@ export function solidAt(arena:Arena,x:number,y:number,z:number,includeRim=true):
  if(fortressSolidHeight(lx,lz)*ARENA_HEIGHT.fortress>y)return true;
  return FORT_BRIDGES.some(b=>Math.abs(lx-b.x)<=b.width/2&&Math.abs(lz-b.z)<=b.depth/2&&y>=(b.y-b.thickness)*ARENA_HEIGHT.fortress&&y<=b.y*ARENA_HEIGHT.fortress);
 }
+export function movingObstacles(s:State){return s.config.arena==='quarry'?quarryCows(s.tick/60).map(o=>({...o,x:o.x*ARENA_SCALE.quarry,z:o.z*ARENA_SCALE.quarry,r:o.r*ARENA_SCALE.quarry,height:o.height*ARENA_HEIGHT.quarry})):[];}
 export function obstacles(arena:Arena):{x:number;z:number;r:number;height?:number;bottom?:number}[] {
  return layoutObstacles(arena).map(o=>({x:o.x*ARENA_SCALE[arena],z:o.z*ARENA_SCALE[arena],r:o.r*ARENA_SCALE[arena],height:o.height===undefined?undefined:o.height*ARENA_HEIGHT[arena],bottom:(o.bottom??0)*ARENA_HEIGHT[arena]}));
 }
 export function layoutObstacles(arena:Arena):{x:number;z:number;r:number;height?:number;bottom?:number}[] {
+ if(arena==='quarry')return FARM_POSTS;
  if(arena==='fortress')return FORTRESS_PROPS;
  if(arena==='glacier')return GLACIER_PROPS;
  if(arena==='beach')return BEACH_PALMS;
@@ -87,6 +90,13 @@ export function layoutObstacles(arena:Arena):{x:number;z:number;r:number;height?
 export interface NavPoint {x:number;z:number;y:number;}
 export function nav(arena:Arena):NavPoint[] {
 
+ if(arena==='quarry'){
+  const points:NavPoint[]=[],scale=ARENA_SCALE.quarry,ys=ARENA_HEIGHT.quarry;
+  const add=(x:number,z:number,y:number)=>points.push({x:x*scale,z:z*scale,y:y*ys});
+  for(const y of [0,6,12])for(const x of (y===0?[-68,-52,-36,-18,0,18,36,52,68]:y===6?[-42,-28,0,28,42]:[-28,-18,0,18,28]))for(const z of (y===0?[-68,-52,-36,-18,0,18,36,52,68]:y===6?[-42,-28,0,28,42]:[-28,-18,0,18,28]))if(Math.abs(expansionHeight('quarry',x,z,y)-y)<.01)add(x,z,y);
+  for(const r of EXPANSIONS.quarry.ramps)for(const t of [-.15,0,.25,.5,.75,1,1.15]){const along=r.from+(r.to-r.from)*t,x=r.axis==='x'?along:r.cross,z=r.axis==='z'?along:r.cross,y=r.bottom+(r.top-r.bottom)*clamp(t,0,1);if(Math.abs(expansionHeight('quarry',x,z,y)-y)<.000001)add(x,z,y);}
+  return points.filter(p=>!obstacles(arena).some(o=>p.y+1.1>(o.bottom??0)&&p.y<(o.height??0)&&Math.hypot(p.x-o.x,p.z-o.z)<o.r+1.4));
+ }
  if(arena==='fortress'){
   const points:NavPoint[]=[{x:0,z:0,y:0}];
   for(const sign of [-1,1])for(const d of [7,FORT.center,FORT.center+FORT.half+3,FORT.extent-7])points.push({x:0,z:sign*d,y:0},{x:sign*d,z:0,y:0});
@@ -273,7 +283,7 @@ export function botInput(s:State,k:Kart):Input {
  }
  if(recovery){const backing=recovery.reverse&&recovery.remaining>1.5,error=angleDiff(recovery.heading,k.angle);return {gas:backing?-1:s.config.arena==='sky'?.45:.65,steer:clamp(error*1.8,-1,1)*(backing?-1:1),drift:false,hop:false,fire:false};}
  const {goal,foe,tactic}=botGoal(s,k);if(foe===k)return idle();const wp=waypoint(s,k,goal),delta={x:wp.x-k.x,z:wp.z-k.z};let desired=Math.atan2(delta.x,delta.z);
- for(const o of obstacles(s.config.arena))if(distance(k,o)<o.r+5&&Math.abs(angleDiff(Math.atan2(o.x-k.x,o.z-k.z),k.angle))<1.2)desired+=angleDiff(Math.atan2(o.x-k.x,o.z-k.z),k.angle)>0?-.7:.7;
+ for(const o of [...obstacles(s.config.arena),...movingObstacles(s)])if(distance(k,o)<o.r+5&&Math.abs(angleDiff(Math.atan2(o.x-k.x,o.z-k.z),k.angle))<1.2)desired+=angleDiff(Math.atan2(o.x-k.x,o.z-k.z),k.angle)>0?-.7:.7;
  for(const hazard of s.shots){if(Math.abs(hazard.y-k.y)>3)continue;const d=distance(k,hazard);if(hazard.kind==='mine'&&(hazard.age??0)<MINE_ARM_TIME)continue;if(d< (hazard.kind==='mine'?8:10)&&Math.abs(angleDiff(Math.atan2(hazard.x-k.x,hazard.z-k.z),k.angle))<.9)desired+=angleDiff(Math.atan2(hazard.x-k.x,hazard.z-k.z),k.angle)>0?-.85:.85;}
  const icy=arenaSurface(s.config.arena,k.x,k.z,k.y).grip<1;
  const slip=icy&&Math.hypot(k.vx,k.vz)>3?clamp(angleDiff(Math.atan2(k.vx,k.vz),k.angle),-.7,.7):0;desired-=slip*.8;
@@ -333,13 +343,13 @@ export function drive(s:State,k:Kart,input:Input,dt:number) {
   const scale=ARENA_SCALE[s.config.arena];
   {const limit=(ARENAS[s.config.arena].extent-1.25)*scale-1.1;if(Math.abs(nx)>limit){slide(Math.sign(nx),0);nx=clamp(nx,-limit,limit);}if(Math.abs(nz)>limit){slide(0,Math.sign(nz));nz=clamp(nz,-limit,limit);}}
  }
- for(const o of obstacles(s.config.arena)){const d=Math.hypot(nx-o.x,nz-o.z);if(d<o.r+1.1&&k.y+1.1>(o.bottom??0)&&k.y<(o.height??2)){const normalX=(nx-o.x)/(d||1),normalZ=(nz-o.z)/(d||1);slide(-normalX,-normalZ);nx=o.x+normalX*(o.r+1.15);nz=o.z+normalZ*(o.r+1.15);}}
+ for(const o of [...obstacles(s.config.arena),...movingObstacles(s)]){const d=Math.hypot(nx-o.x,nz-o.z);if(d<o.r+1.1&&k.y+1.1>(o.bottom??0)&&k.y<(o.height??2)){const normalX=(nx-o.x)/(d||1),normalZ=(nz-o.z)/(d||1);slide(-normalX,-normalZ);nx=o.x+normalX*(o.r+1.15);nz=o.z+normalZ*(o.r+1.15);}}
  if(s.config.arena==='neon'){const contact=neonRimContact(nx,nz,1.1,k.y+.7,.7);if(contact){const {normalX,normalZ}=contact;const into=k.vx*normalX+k.vz*normalZ;if(into<0){crash();k.vx-=1.45*into*normalX;k.vz-=1.45*into*normalZ;k.speed*=.6;}const push=k.pushX*normalX+k.pushZ*normalZ;if(push<0){k.pushX-=1.4*push*normalX;k.pushZ-=1.4*push*normalZ;}nx=contact.x;nz=contact.z;}}
 
  k.x=nx;k.z=nz;
  if(input.hop&&!k.hopHeld&&onGround)k.vy=7;
  k.hopHeld=input.hop;
- const roof=s.config.arena==='glacier'?ceiling(s.config.arena,k.x,k.z,k.y):Infinity;
+ const roof=s.config.arena==='glacier'||s.config.arena==='quarry'?ceiling(s.config.arena,k.x,k.z,k.y):Infinity;
  k.vy-=21*dt;k.y+=k.vy*dt;if(k.vy>0&&k.y+1.1>roof){k.y=roof-1.1;k.vy=0;}
  const h=ground(s.config.arena,k.x,k.z,k.y+.4);if(k.y<h&&(k.y>h-1.5)){k.y=h;k.vy=0;}
  if(k.y<(s.config.arena==='castle'||s.config.arena==='crypt'?-4:-14)){damage(s,k,k.id,{cause:s.config.arena==='castle'||s.config.arena==='crypt'?'lava':s.config.arena==='starcore'?'reactor':'fall'});k.x=0;k.z=s.config.arena==='starcore'?80:0;k.y=ground(s.config.arena,k.x,k.z)+1;k.vy=0;k.speed=0;k.boost=0;k.ram=0;k.vx=0;k.vz=0;k.pushX=0;k.pushZ=0;k.inv=3;emit(s,'fall',k);}
@@ -392,7 +402,7 @@ export function advanceRicochet(s:State,p:Shot,dt:number){
   const bz=blocked(ox,nz+Math.sign(vz)*radius)||blocked(ox+radius*.65,nz+Math.sign(vz)*radius)||blocked(ox-radius*.65,nz+Math.sign(vz)*radius);
   if(bx){vx=-vx;nx=ox;bounced=true;}if(bz){vz=-vz;nz=oz;bounced=true;}
   if(!bx&&!bz&&blocked(nx,nz)){vx=-vx;vz=-vz;nx=ox;nz=oz;bounced=true;}
-  for(const o of obstacles(arena)){const d=Math.hypot(nx-o.x,nz-o.z);if(p.y+radius>(o.bottom??0)&&p.y<(o.height??2.6)&&d<o.r+radius){const ax=d>.001?(nx-o.x)/d:-vx,az=d>.001?(nz-o.z)/d:-vz,dot=vx*ax+vz*az;if(dot<0){vx-=2*dot*ax;vz-=2*dot*az;bounced=true;}nx=o.x+ax*(o.r+radius+.02);nz=o.z+az*(o.r+radius+.02);}}
+  for(const o of [...obstacles(arena),...movingObstacles(s)]){const d=Math.hypot(nx-o.x,nz-o.z);if(p.y+radius>(o.bottom??0)&&p.y<(o.height??2.6)&&d<o.r+radius){const ax=d>.001?(nx-o.x)/d:-vx,az=d>.001?(nz-o.z)/d:-vz,dot=vx*ax+vz*az;if(dot<0){vx-=2*dot*ax;vz-=2*dot*az;bounced=true;}nx=o.x+ax*(o.r+radius+.02);nz=o.z+az*(o.r+radius+.02);}}
   if(arena==='neon'){const contact=neonRimContact(nx,nz,radius,p.y,radius);if(contact){const dot=vx*contact.normalX+vz*contact.normalZ;if(dot<0){vx-=2*dot*contact.normalX;vz-=2*dot*contact.normalZ;bounced=true;}nx=contact.x;nz=contact.z;}}
   p.x=nx;p.z=nz;p.angle=Math.atan2(vx,vz);if(bounced)rebound();
   const floor=ground(arena,p.x,p.z,p.y-.35);if(floor< -10){p.life=0;break;}if(floor<=p.y+.4)p.y=floor+.65;
@@ -433,7 +443,7 @@ export function step(s:State,inputs:Record<number,Input>,dt=1/60) {
   const ox=p.x,oz=p.z,velocity=p.kind==='mine'?0:38*speedSettings(s.config.speedClass).scale;
   p.x+=Math.sin(p.angle)*velocity*dt;p.z+=Math.cos(p.angle)*velocity*dt;
   if(p.kind==='mine')p.y=ground(s.config.arena,p.x,p.z,p.y-.4)+.4;
-  if(solidAt(s.config.arena,p.x,p.y+.15,p.z)||Math.abs(p.x)>arenaExtent(s.config.arena)+2||Math.abs(p.z)>arenaExtent(s.config.arena)+2){p.life=0;continue;}
+  if(solidAt(s.config.arena,p.x,p.y+.15,p.z)||movingObstacles(s).some(o=>p.y<o.height&&p.y>=0&&Math.hypot(p.x-o.x,p.z-o.z)<o.r+.3)||Math.abs(p.x)>arenaExtent(s.config.arena)+2||Math.abs(p.z)>arenaExtent(s.config.arena)+2){p.life=0;continue;}
   for(const k of s.karts){if((s.ball&&s.config.soccer||s.ctf)&&k.id!==p.owner&&soccerTeam(k)===soccerTeam(s.karts[p.owner]))continue;if((k.id===p.owner&&p.kind!=='mine')||(p.kind==='mine'&&(p.age??0)<MINE_ARM_TIME)||!k.balloons||Math.abs(k.y+1-p.y)>2)continue;
    const dx=p.x-ox,dz=p.z-oz,t=clamp(((k.x-ox)*dx+(k.z-oz)*dz)/(dx*dx+dz*dz||1),0,1);
    if(Math.hypot(k.x-ox-dx*t,k.z-oz-dz*t)<1.8){damage(s,k,p.owner,{cause:p.kind,fromX:p.kind==='mine'?p.x:k.x-Math.sin(p.angle)*5,fromZ:p.kind==='mine'?p.z:k.z-Math.cos(p.angle)*5});p.life=0;break;}

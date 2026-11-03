@@ -70,7 +70,7 @@ test('powersliding creates substantial real side slip rather than just faster st
 test('countersteering reduces slip and release restores grip with a turbo',()=>{const s=match(),k=s.karts[0];k.angle=0;k.speed=20;k.vz=20;for(let i=0;i<66;i++)drive(s,k,{...idle(),gas:1,steer:.7,drift:true},1/60);const slip=k.driftSlip;for(let i=0;i<15;i++)drive(s,k,{...idle(),gas:1,steer:-.7,drift:true},1/60);assert.ok(k.driftSlip<slip-.1);drive(s,k,{...idle(),gas:1},1/60);assert.ok(k.boost>0);for(let i=0;i<20;i++)drive(s,k,{...idle(),gas:1},1/60);assert.ok(Math.abs(k.driftSlip)<.025);});
 test('selected drivers survive state creation and bots use remaining characters',()=>{const s=createState({...config,humans:2,bots:6,drivers:[4,3]});assert.equal(s.karts[0].driver,4);assert.equal(s.karts[1].driver,3);assert.equal(s.karts[0].id,0);assert.equal(s.karts[1].id,1);assert.equal(new Set(s.karts.map(k=>k.driver)).size,8);assert.deepEqual(normalizeDrivers([99,-1,'2',6],4),[0,1,2,6]);assert.deepEqual(createState({...config,drivers:[4]}).config.drivers,[4]);});
 test('all sixteen arenas have safe starting positions and valid item and navigation surfaces',()=>{assert.equal(ARENA_IDS.length,16);for(const arena of ARENA_IDS){const s=createState({...config,arena,bots:7});for(const k of s.karts){assert.ok(k.y>=0);assert.equal(ground(arena,k.x,k.z,k.y),k.y);for(const other of s.karts)if(k.id!==other.id)assert.ok(Math.hypot(k.x-other.x,k.z-other.z)>4);}for(const b of s.boxes)assert.equal(ground(arena,b.x,b.z,b.y+.1),b.y);for(const p of nav(arena))assert.equal(ground(arena,p.x,p.z,p.y+.1),p.y);}});
-test('new arenas offer increasing sizes and connected bot navigation',()=>{assert.ok(arenaExtent('yard')<arenaExtent('depot')&&arenaExtent('quarry')<arenaExtent('depot'));for(const arena of ['yard','depot','quarry'] as const){const graph=navGraph(arena),seen=new Set([0]),queue=[0];while(queue.length){const i=queue.shift()!;for(const e of graph.edges[i])if(!seen.has(e.to)){seen.add(e.to);queue.push(e.to);}}for(let i=0;i<graph.points.length;i++)assert.ok(seen.has(i),arena+' isolated '+JSON.stringify(graph.points[i]));}});
+test('new arenas offer increasing sizes and connected bot navigation',()=>{assert.ok(arenaExtent('yard')<arenaExtent('depot')&&arenaExtent('quarry')>arenaExtent('depot'));for(const arena of ['yard','depot','quarry'] as const){const graph=navGraph(arena),seen=new Set([0]),queue=[0];while(queue.length){const i=queue.shift()!;for(const e of graph.edges[i])if(!seen.has(e.to)){seen.add(e.to);queue.push(e.to);}}for(let i=0;i<graph.points.length;i++)assert.ok(seen.has(i),arena+' isolated '+JSON.stringify(graph.points[i]));}});
 test('each new arena ramp reaches its deck continuously',()=>{for(const arena of ['depot','quarry'] as const)for(const r of EXPANSIONS[arena].ramps){const scale=ARENAS[arena].scale,h=ARENAS[arena].height;for(let i=0;i<=20;i++){const t=i/20,p=r.from+(r.to-r.from)*t,x=(r.axis==='x'?p:r.cross)*scale,z=(r.axis==='z'?p:r.cross)*scale;assert.ok(Math.abs(ground(arena,x,z)-(r.bottom+(r.top-r.bottom)*t)*h)<.0001,arena+' ramp mismatch');}}});
 
 test('ramming transfers persistent momentum without popping balloons, and turbo hits harder',()=>{
@@ -576,3 +576,58 @@ test('Ruins summit is reachable from either front ramp and the rear, with workin
  }
 });
 test('Ruins middle ramp has a broad flat approach terrace and rear incline is uninterrupted',()=>{for(let x=-18;x<=18;x++)for(const z of [-3,-4,-5])assert.equal(ground('ruins',x*2,z*2),7.5);for(let z=-59;z<=-26;z+=.1){const a=ground('ruins',0,z*2),b=ground('ruins',0,(z+.1)*2);assert.ok(b>=a-.001&&b-a<.1,'rear ramp has a hidden step at '+z);}const graph=navGraph('ruins');assert.ok(graph.points.some(p=>p.y===15&&clearPath('ruins',p,{x:0,z:-52,y:15})));});
+
+import {quarryCows,FARM_POSTS} from '../src/quarryFarm';
+test('farm garage has three floors, clear underpasses and solid deck slabs',()=>{
+ for(const y of [0,6,12])assert.equal(ground('quarry',52,0,y*1.4),y*1.4);
+ assert.equal(solidAt('quarry',52,1,0),false);
+ assert.equal(solidAt('quarry',52,8.1,0),true);
+ assert.equal(solidAt('quarry',52,10,0),false);
+ assert.equal(solidAt('quarry',52,16.5,0),true);
+ assert.ok(Math.abs(ceiling('quarry',52,0,0)-5.4*1.4)<.001);
+ const s=createState({...config,arena:'quarry'}),k=s.karts[0];
+ Object.assign(k,{x:0,z:0,y:0,angle:Math.PI/2});
+ for(let i=0;i<300;i++)drive(s,k,{...idle(),gas:1},1/60);
+ assert.ok(k.x>80,'ground driver must pass underneath both decks');assert.equal(k.y,0);
+});
+test('farm garage ramps drive up and down at every speed class',()=>{
+ for(const speedClass of [50,100,150] as const)for(const r of EXPANSIONS.quarry.ramps)for(const down of [false,true]){
+  const s=createState({...config,arena:'quarry',speedClass}),k=s.karts[0],from=down?r.to:r.from,to=down?r.from:r.to,sign=Math.sign(to-from),bottom=down?r.top:r.bottom,target=(down?r.bottom:r.top)*1.4;
+  Object.assign(k,{x:(r.axis==='x'?from:r.cross)*2,z:(r.axis==='z'?from:r.cross)*2,y:bottom*1.4,angle:r.axis==='x'?sign*Math.PI/2:sign>0?0:Math.PI});
+  let reached=false;for(let i=0;i<1000;i++){drive(s,k,{...idle(),gas:.5},1/60);if(((r.axis==='x'?k.x:k.z)/2-to)*sign>.3){reached=true;assert.ok(Math.abs(k.y-target)<(down?.6:.15),JSON.stringify({speedClass,r,down,y:k.y,target}));break;}}
+  assert.ok(reached,JSON.stringify({speedClass,r,down}));assert.equal(k.balloons,3);
+ }
+});
+test('farm pickups have broad margins on their own level and bot access on all floors',()=>{
+ const s=createState({...config,arena:'quarry'}),graph=navGraph('quarry');
+ assert.equal(new Set(s.boxes.map(b=>Math.round(b.y))).size,3);
+ for(const b of s.boxes){for(let i=0;i<24;i++){const a=i*Math.PI/12;assert.ok(Math.abs(ground('quarry',b.x+Math.cos(a)*4,b.z+Math.sin(a)*4,b.y)-b.y)<.01,'pickup margin');}assert.ok(graph.points.some(p=>Math.abs(p.y-b.y)<.1&&clearPath('quarry',p,b)),'pickup route');}
+});
+test('strolling cow collision follows the exact visual path, stays grounded and blocks carts',()=>{
+ const s=createState({...config,arena:'quarry'}),life=new ArenaLife('quarry');
+ for(const time of [0,1,17,83,240]){s.tick=time*60;life.update(999,true,s);for(const cow of quarryCows(time)){assert.equal(ground('quarry',cow.x*2,cow.z*2,0),0);const model=life.actors.find(a=>a.kind==='farmCow'&&a.root.userData.cowId===cow.id)!.root;assert.ok(model.visible);assert.ok(Math.hypot(model.position.x-cow.x*2,model.position.z-cow.z*2)<.001);assert.ok(FARM_POSTS.every(p=>Math.hypot(p.x-cow.x,p.z-cow.z)>p.r+cow.r));}}
+ s.tick=600;const cow=quarryCows(10)[0],k=s.karts[0];Object.assign(k,{x:cow.x*2-7,z:cow.z*2,y:0,angle:Math.PI/2});for(let i=0;i<90;i++)drive(s,k,{...idle(),gas:1},1/60);assert.ok(k.x<cow.x*2-3,'cow must block the kart');life.dispose();
+});
+
+test('ricochet pods rebound off strolling farm cows below the decks',()=>{
+ const s=createState({...config,arena:'quarry'});s.tick=600;s.karts.forEach(k=>{k.x=150;k.z=150;});const cow=quarryCows(10)[0];const p={id:99,owner:0,kind:'bolt' as const,x:cow.x*2-7,z:cow.z*2,y:.65,angle:Math.PI/2,life:8,age:1,bounces:0};
+ for(let i=0;i<30&&!p.bounces;i++)advanceRicochet(s,p,1/60);assert.ok(p.bounces>0);assert.ok(Math.sin(p.angle)<0);
+});
+test('farm bots route from ground to the roof rather than driving into deck edges',()=>{
+ for(const speedClass of [50,100,150] as const){
+ const s=createState({...config,arena:'quarry',speedClass}),k=s.karts[1],foe=s.karts[0];s.phase='playing';s.boxes.forEach(b=>b.respawn=9999);k.item='shield';Object.assign(k,{x:0,z:150,y:0,angle:Math.PI,vx:0,vz:0,speed:0});Object.assign(foe,{x:36,z:52,y:16.8});let reached=false;
+ for(let i=0;i<7200;i++){s.tick++;drive(s,k,{...botInput(s,k),fire:false},1/60);if(k.y>16.6){reached=true;break;}}
+ assert.ok(reached,'roof route '+speedClass);assert.equal(k.balloons,3);
+ }
+});
+
+test('farm roof ramps have twelve meters of flat middle-deck approach space',()=>{
+ const layout=EXPANSIONS.quarry,scale=ARENA_SCALE.quarry,ys=ARENA_HEIGHT.quarry;
+ for(const r of layout.ramps.filter(r=>r.bottom===6)){
+  const sign=Math.sign(r.from),edge=54;
+  assert.equal((edge-Math.abs(r.from))*scale,12);
+  for(let d=0;d<=5.5;d+=.25)for(const x of [-10,-5,0,5,10])assert.ok(Math.abs(ground('quarry',x*scale,(r.from+sign*d)*scale,6*ys)-6*ys)<.00001,'flat turning apron');
+  const approach={x:r.cross*scale,z:(r.from+sign*5)*scale,y:6*ys},mouth={x:r.cross*scale,z:r.from*scale,y:6*ys};
+  assert.ok(clearPath('quarry',approach,mouth)&&clearPath('quarry',mouth,approach));
+ }
+});

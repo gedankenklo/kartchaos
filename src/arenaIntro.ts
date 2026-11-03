@@ -7,7 +7,7 @@ const tips:Record<Arena,[string,string]>={
  neon:['BANK, BOUNCE, BATTLE','Ricochets rebound from the rim blocks. Watch the open outer edge.'],
  yard:['KEEP MOVING','Use the containers for cover, then circle around for a clear shot.'],
  depot:['STEAL THEIR FLAG. BRING IT HOME.','Your flag must be home to capture. Every rival loses one balloon.'],
- quarry:['TAKE THE TERRACES','Use the broad ramps to change levels and set up an ambush.'],
+ quarry:['FARMYARD FLOORS','Four broad ramps lead to the middle deck. Climb again at either end for the roof. Watch for strolling cows below!'],
  castle:['MIND THE LAVA','Cross the causeways carefully. Falling into lava costs a balloon.'],
  beach:['SAND, SURF, CROSSFIRE','Take the ramp entrances onto the boardwalks. Palms provide solid cover.'],
  stadium:['SCORE A GOAL. POP RIVAL BALLOONS.','Teams are assigned randomly. Own goals cost your team a balloon each.'],

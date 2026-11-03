@@ -1,3 +1,4 @@
+import {quarryCows} from './quarryFarm';
 import {soccerTeam,teamColor} from './football';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import * as T from 'three';
@@ -18,6 +19,24 @@ export class ArenaLife extends T.Group {
    }
   }
   if(arena==='quarry'){
+   for(const cow of quarryCows(0)){
+    const root=actor('farmCow',cow.id,0,0,0);root.userData.cowId=cow.id;root.scale.set(info.scale,info.height,info.scale);
+    this.box(root,'#f2e8d5',0,1.45,0,1.6,1.35,2.5);
+    for(let i=0;i<3;i++)this.box(root,'#453d3b',(i%2?-.81:.81),1.5+(i%2)*.25,-.65+i*.6,.05,.7,.75);
+    this.box(root,'#f2e8d5',0,2,1.4,1.15,1.1,.9);this.box(root,'#cf9b88',0,1.7,1.92,1,.45,.3);
+    for(const side of [-1,1]){this.box(root,'#453d3b',side*.42,2.15,1.87,.12,.14,.08);this.box(root,'#ede1bf',side*.4,2.7,1.35,.18,.4,.18);this.box(root,'#e7c7ae',side*.76,2.27,1.3,.5,.25,.3);
+     for(const z of [-.8,.8]){const leg=this.box(root,'#eee2cc',side*.56,.48,z,.35,.95,.35);leg.name='cowLeg';leg.userData.phase=side*z;this.box(leg,'#49413a',0,-.38,0,.38,.2,.38);}}
+    this.box(root,'#56453a',0,1.15,-1.48,.15,1.2,.15);
+   }
+   // Barns, silos and pasture fences remain beyond the collision boundary.
+   for(const sign of [-1,1]){
+    const barn=new T.Group();barn.position.set(sign*(e+30),0,sign*55);barn.rotation.y=-sign*.3;this.add(barn);
+    this.box(barn,'#9c5546',0,7,0,26,14,20);this.box(barn,'#e5cf9b',0,5,10.08,9,10,.15);this.box(barn,'#725b47',0,4.5,10.2,7,9,.15);
+    for(const side of [-1,1]){const roof=this.box(barn,'#58665d',side*7,16,0,16,1,24);roof.rotation.z=-side*.48;this.box(barn,'#f2dcad',side*11,7,10.15,.5,14,.2);}
+    const silo=new T.Mesh(new T.CylinderGeometry(5,5,21,12),this.mat('#a7aba0'));silo.position.set(sign*(e+42),10.5,sign*15);this.add(silo);const cap=new T.Mesh(new T.ConeGeometry(5.5,5,12),this.mat('#6f7c77'));cap.position.copy(silo.position).y=23.5;this.add(cap);
+    for(let i=0;i<13;i++){const x=-e-10+i*(e*2+20)/12,z=sign*(e+12);this.box(this,'#a38e66',x,2,z,.65,4,.65);if(i<12)for(const y of [1.3,2.8])this.box(this,'#d6bb85',x+(e*2+20)/24,y,z,(e*2+20)/12,.35,.3);}
+   }
+
    for(let i=0;i<3;i++){const positions=new Float32Array(150*3);const material=new T.PointsMaterial({map:glowTexture(),color:'#b28e64',size:1.7,transparent:true,opacity:.36,depthWrite:false});this.owned.add(material);const points=new T.Points(new T.BufferGeometry().setAttribute('position',new T.BufferAttribute(positions,3)),material);points.name='dustDevil';points.position.set(Math.sin(i*2.1+.5)*(e+55),0,Math.cos(i*2.1+.5)*(e+55));points.frustumCulled=false;this.dust.push(points);this.add(points);}
    for(let i=0;i<5;i++){const weed=actor('tumbleweed',i*1.7,Math.SQRT2*e+12+i%2*13,-1.5*info.height+1.7,.018);const material=new T.MeshStandardMaterial({color:'#a5875a',wireframe:true});this.owned.add(material);weed.add(new T.Mesh(new T.IcosahedronGeometry(1.7,1),material));for(let ring=0;ring<3;ring++){const twig=new T.Mesh(new T.TorusGeometry(1.45,.07,4,14),this.mat('#b99e6a'));twig.rotation.set(ring,ring*1.3,ring*.4);weed.add(twig);}}
   }
@@ -48,7 +67,8 @@ export class ArenaLife extends T.Group {
  colossus(root:T.Group){this.ellipsoid(root,'#526f68',0,16,0,8,13,6);this.ellipsoid(root,'#607e72',0,30,2,5,6,5);this.box(root,'#6d8979',0,28.5,7,6,3,6);for(const side of [-1,1]){const leg=new T.Group();leg.name='monsterLeg';leg.userData.side=side;leg.position.set(side*4,8,0);this.box(leg,'#45635d',0,-3,0,4.5,11,5);this.box(leg,'#45635d',0,-8,3,5,2,8);root.add(leg);this.box(root,'#5d796d',side*8,18,3,3,9,3);this.ellipsoid(root,'#f0d288',side*2,31.5,6.2,.65,.6,.3);}for(let i=0;i<7;i++){const spike=new T.Mesh(new T.ConeGeometry(2.2,6,3),this.mat('#91a58e'));spike.position.set(0,9+i*3,-5);spike.rotation.x=-.8;root.add(spike);}const tail=this.ellipsoid(root,'#4d6d63',0,7,-14,4,3,14);tail.rotation.x=-.2;}
  seaCreature(root:T.Group,whale:boolean){const size=whale?4:1;this.ellipsoid(root,whale?'#526e83':'#77a7b7',0,0,0,1.1*size,.8*size,3.4*size);const fin=new T.Mesh(new T.ConeGeometry(.8*size,1.8*size,3),this.mat('#567e94'));fin.position.set(0,.9*size,-.5*size);root.add(fin);for(const side of [-1,1]){const tail=this.ellipsoid(root,'#5c8195',side*.9*size,0,-3*size,1.4*size,.18*size,.75*size);tail.rotation.y=-side*.3;}}
  update(now:number,reduced=false,state?:State){const time=reduced?0:now,e=ARENAS[this.arena].extent*ARENAS[this.arena].scale;
-  for(const [actorIndex,actor] of this.actors.entries()){const allowed=!reduced||actorIndex<2||actor.kind==='harborColossus'||actor.kind==='towerGhost';actor.root.visible=allowed;const a=actor.seed+time*actor.speed,root=actor.root;root.position.set(Math.sin(a)*actor.radius,actor.y+Math.sin(time*.8+actor.seed)*.3,Math.cos(a)*actor.radius);root.rotation.y=a+(actor.speed>=0?Math.PI/2:-Math.PI/2);
+  for(const [actorIndex,actor] of this.actors.entries()){const allowed=!reduced||actorIndex<2||actor.kind==='harborColossus'||actor.kind==='towerGhost'||actor.kind==='farmCow';actor.root.visible=allowed;const a=actor.seed+time*actor.speed,root=actor.root;root.position.set(Math.sin(a)*actor.radius,actor.y+Math.sin(time*.8+actor.seed)*.3,Math.cos(a)*actor.radius);root.rotation.y=a+(actor.speed>=0?Math.PI/2:-Math.PI/2);
+   if(actor.kind==='farmCow'){const cow=quarryCows(state?.config.arena==='quarry'?state.tick/60:time)[root.userData.cowId],info=ARENAS.quarry;root.position.set(cow.x*info.scale,0,cow.z*info.scale);root.rotation.y=cow.angle;root.children.filter(c=>c.name==='cowLeg').forEach(leg=>leg.rotation.x=Math.sin((state?.config.arena==='quarry'?state.tick/60:time)*2.5+leg.userData.phase)*.2);}
    if(actor.kind==='towerGhost'){const orbit=time*.24+actor.seed,radius=5+Math.sin(actor.seed)*.6;root.position.copy(root.userData.anchor);root.position.x+=Math.cos(orbit)*radius;root.position.z+=Math.sin(orbit)*radius;root.position.y+=Math.sin(time*1.1+actor.seed)*1.2;root.rotation.y=-orbit;root.rotation.z=reduced?0:Math.sin(orbit)*.12;}
    if(actor.kind==='harborColossus'){root.position.y=actor.y+Math.sin(time*1.3)*.45;root.children.filter(child=>child.name==='monsterLeg').forEach(leg=>leg.rotation.x=Math.sin(time*1.3+leg.userData.side*Math.PI/2)*.22);root.rotation.z=Math.sin(time*1.3)*.025;}
    if(actor.kind==='skyBeast')root.children.filter(child=>child.name==='wing').forEach(wing=>wing.rotation.z=Math.sin(time*1.6+actor.seed)*.32*wing.userData.side);
