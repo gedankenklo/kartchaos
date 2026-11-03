@@ -1,4 +1,4 @@
-import {FARM_POSTS,quarryCows} from './quarryFarm';
+import {FARM_POSTS,FARM_TREES,FARM_HAY,quarryCows} from './quarryFarm';
 import {FORTRESS_PROPS} from './fortressProps';
 import {ROUND_COUNTDOWN} from './arenaIntro';
 import {VOLCANO,volcanoAt} from './volcano';
@@ -79,7 +79,7 @@ export function obstacles(arena:Arena):{x:number;z:number;r:number;height?:numbe
  return layoutObstacles(arena).map(o=>({x:o.x*ARENA_SCALE[arena],z:o.z*ARENA_SCALE[arena],r:o.r*ARENA_SCALE[arena],height:o.height===undefined?undefined:o.height*ARENA_HEIGHT[arena],bottom:(o.bottom??0)*ARENA_HEIGHT[arena]}));
 }
 export function layoutObstacles(arena:Arena):{x:number;z:number;r:number;height?:number;bottom?:number}[] {
- if(arena==='quarry')return FARM_POSTS;
+ if(arena==='quarry')return [...FARM_POSTS,...FARM_TREES,...FARM_HAY];
  if(arena==='fortress')return FORTRESS_PROPS;
  if(arena==='glacier')return GLACIER_PROPS;
  if(arena==='beach')return BEACH_PALMS;
@@ -207,6 +207,7 @@ export function findWaypoint(s:State,k:Kart,goal:{x:number;z:number;y?:number}) 
  let i=end;while(previous[i]>0)i=previous[i];if(previous[i]===0)return nodes[i];const reachable=links[0].map(edge=>nodes[edge.to]).sort((a,b)=>(distance(a,goal)+distance(k,a)*.3)-(distance(b,goal)+distance(k,b)*.3));return reachable[0]??k;
 }
 const fortressRegroup=new WeakMap<Kart,{since:number;goal:NavPoint|null}>();
+const quarryClimbs=new WeakMap<Kart,{next:number;stage:number;side:number;active:boolean;until:number}>();
 const glacierClimbs=new WeakMap<Kart,{next:number;stage:number;side:number;active:boolean}>();
 const retreatWindows=new WeakMap<Kart,{until:number;next:number}>();
 const retreatGoals=new WeakMap<Kart,{tick:number;goal:NavPoint}>();
@@ -243,6 +244,12 @@ export function botGoal(s:State,k:Kart){
   if(regroup.goal)return {goal:regroup.goal,foe,tactic:'regroup'};
  }
  if(s.config.arena==='crypt'){const threat=volcanoAt(s.config.duration-s.time).rocks.find(r=>r.remaining>0&&r.remaining<3&&distance(k,r)<VOLCANO.radius+5&&Math.abs(k.y-ground('crypt',r.x,r.z))<4);if(threat){const safe=navGraph('crypt').points.filter(p=>distance(p,threat)>VOLCANO.radius+8&&distance(k,p)<32&&clearPath('crypt',k,p)).sort((a,b)=>distance(k,a)-distance(k,b))[0];if(safe)return {goal:safe,foe,tactic:'evade'};}}
+ if(s.config.arena==='quarry'&&s.time>60&&s.karts.filter(o=>o.balloons>0).length>2){
+  let climb=quarryClimbs.get(k);if(!climb||s.tick<climb.next-5000){climb={next:240+k.id*85,stage:0,side:k.id%2?1:-1,active:false,until:0};quarryClimbs.set(k,climb);}
+  if(!climb.active&&s.tick>=climb.next&&k.y<1){climb.active=true;climb.stage=0;climb.until=s.tick+2700;}
+  if(climb.active&&s.tick>climb.until){climb.active=false;climb.next=s.tick+600;}
+  if(climb.active){const sign=climb.side,x=(k.id%3-1)*8,route=[{x,z:sign*150,y:0},{x,z:sign*108,y:8.4},{x,z:sign*96,y:8.4},{x,z:sign*66,y:16.8},{x:sign*52,z:sign*52,y:16.8},{x:-sign*52,z:sign*52,y:16.8}];let goal=route[climb.stage];if(distance(k,goal)<4&&Math.abs(k.y-goal.y)<1.2){climb.stage++;goal=route[climb.stage];}if(goal)return {goal,foe,tactic:'climb'};climb.active=false;climb.next=s.tick+1200+k.id*45;}
+ }
  if(s.config.arena==='glacier'&&s.time>48){
   let climb=glacierClimbs.get(k);if(!climb||s.tick<climb.next-3000){climb={next:120+k.id*70,stage:0,side:k.x<0?-1:1,active:false};glacierClimbs.set(k,climb);}
   if(!climb.active&&s.tick>=climb.next&&k.y<1){climb.active=true;climb.stage=0;climb.side=k.x<0?-1:1;}

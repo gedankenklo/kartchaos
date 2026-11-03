@@ -1,4 +1,4 @@
-import {FARM_POSTS} from './quarryFarm';
+import {FARM_POSTS,FARM_TREES,FARM_HAY} from './quarryFarm';
 import {harbourIceAt} from './newArenaRules';
 import {harbourIceGeometry} from './harbourReflection';
 import {createFortressCover} from './fortressCover';
@@ -11,7 +11,7 @@ import {IceReflection} from './iceReflection';
 import {glacierIceAt} from './glacierSurface';
 import {createGlacierStructures} from './glacierStructures';
 import {createHarbourDocks} from './harbourDocks';
-import {createRampSlab} from './rampSlab';
+import {createRampSlab,createRampWedge} from './rampSlab';
 import {suddenDeathPulse} from './suddenDeath';
 import {extraFloor,stationMesh,ExtraArenaScenery} from './extraArenaVisuals';
 import {FlagScene} from './flagScene';
@@ -79,6 +79,7 @@ export class World {
  cylinder(parent:T.Object3D,c:string,x:number,y:number,z:number,r:number,h:number,n=10){return this.mesh(new T.CylinderGeometry(r,r,h,n),c,parent,x,y,z);}
  road(parent:T.Object3D,color:string,x:number,y:number,z:number,width:number,depth:number){const m=this.mesh(new T.PlaneGeometry(width,depth),color,parent,x,y,z);m.rotation.x=-Math.PI/2;m.castShadow=false;m.material=this.textured(color,this.map==='beach'?'sand':this.map==='quarry'?'stone':this.map==='depot'?'metal':this.map==='yard'?'stone':this.map==='sky'?'stone':'grass');return m;}
  ramp(parent:T.Object3D,r:Ramp,color:string){
+  if(this.map==='quarry'&&!r.thickness){const m=this.mesh(createRampWedge(r),color,parent);m.material=this.textured(color,'stone');return;}
   if(r.thickness){const geo=createRampSlab(r),top=geo.clone();top.setDrawRange(0,6);const slab=this.mesh(top,color,parent);slab.material=this.textured(color,'stone');geo.setDrawRange(6,30);const shell=this.mesh(geo,color,parent);shell.material=this.textured(color,'stone');shell.receiveShadow=false;return;}
   const point=(along:number,cross:number,y:number)=>r.axis==='x'?[along,y,cross]:[cross,y,along];
   const a=point(r.from,r.cross-r.width/2,r.bottom),b=point(r.to,r.cross-r.width/2,r.top),c=point(r.to,r.cross+r.width/2,r.top),d=point(r.from,r.cross+r.width/2,r.bottom);
@@ -153,12 +154,13 @@ export class World {
   for(const o of arena==='quarry'||arena==='castle'||arena==='beach'||arena==='glacier'||arena==='fortress'?[]:layoutObstacles(arena)){this.cylinder(g,arena==='neon'?'#e5ac84':'#927da8',o.x,.8,o.z,o.r,1.6,8);this.cylinder(g,'#e4cfb1',o.x,1.7,o.z,o.r+.15,.3,8);}
   if(arena==='quarry'){
    const pasture=this.road(g,'#91a975',0,.04,0,42,42);pasture.material=this.textured('#91a975','grass',{polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});
+   for(const bale of FARM_HAY){this.cube(g,'#c69c48',bale.x,1.1,bale.z,4.4,2.2,3.6).material=this.textured('#c69c48','grass');for(const x of [-1.3,1.3])this.cube(g,'#856e40',bale.x+x,1.14,bale.z,.18,2.3,3.7);}
    for(const p of FARM_POSTS)this.cube(g,'#6a766d',p.x,(p.bottom+p.height)/2,p.z,p.r*1.4,p.height-p.bottom,p.r*1.4);
    // Raised painted bays avoid coplanar overlays on the deck tops.
    for(const y of [6,12])for(const sign of [-1,1])for(const x of [-20,-10,10,20]){const z=sign*(y===6?43:29);const stripe=this.cube(g,'#e5d2a4',x,y+.045,z,.14,.06,6);stripe.castShadow=stripe.receiveShadow=false;}
   }
   // Decorative landscape below the island.
-  for(let i=0;i<18;i++){const a=i*2.399,r=(isExpansion(arena)?ARENAS[arena].extent+10:47)+i%4*3;const {x,z}=arena==='fortress'?fortressTreePosition(i):{x:Math.sin(a)*r,z:Math.cos(a)*r};if(arena==='yard'){this.cube(g,'#9a8875',x,.5,z,1,4,1);this.cube(g,'#e8be6f',x,2.8,z,1.2,.6,1.2);}else if(arena==='depot'){this.cylinder(g,'#879b9d',x,-.5,z,.7,2,8);}else if(arena==='quarry'){this.cylinder(g,'#8e7754',x,1.5,z,.45,3,6);this.mesh(new T.IcosahedronGeometry(2.8,1),'#8da576',g,x,4,z);}else if(!['starfall','glacier','crypt','starcore'].includes(arena)&&!isNewArena(arena)&&arena!=='neon'&&arena!=='sky'&&arena!=='castle'&&arena!=='beach'&&arena!=='stadium'){this.cylinder(g,'#a39079',x,0,z,.35,3,6);this.mesh(new T.ConeGeometry(2.6,6,6),i%2?'#91a97c':'#718e72',g,x,4,z);}}
+  for(let i=0;i<18;i++){const a=i*2.399,r=(isExpansion(arena)?ARENAS[arena].extent+10:47)+i%4*3;const {x,z}=arena==='fortress'?fortressTreePosition(i):arena==='quarry'?FARM_TREES[i]:{x:Math.sin(a)*r,z:Math.cos(a)*r};if(arena==='yard'){this.cube(g,'#9a8875',x,.5,z,1,4,1);this.cube(g,'#e8be6f',x,2.8,z,1.2,.6,1.2);}else if(arena==='depot'){this.cylinder(g,'#879b9d',x,-.5,z,.7,2,8);}else if(arena==='quarry'){this.cylinder(g,'#8e7754',x,1.5,z,.45,3,6);this.mesh(new T.IcosahedronGeometry(2.8,1),'#8da576',g,x,4,z);}else if(!['starfall','glacier','crypt','starcore'].includes(arena)&&!isNewArena(arena)&&arena!=='neon'&&arena!=='sky'&&arena!=='castle'&&arena!=='beach'&&arena!=='stadium'){this.cylinder(g,'#a39079',x,0,z,.35,3,6);this.mesh(new T.ConeGeometry(2.6,6,6),i%2?'#91a97c':'#718e72',g,x,4,z);}}
   if(arena==='castle'||arena==='beach'||arena==='stadium'||arena==='depot'){this.details=new ArenaDetails(arena);g.add(this.details);}
   if(this.artTrial){if(arena==='fortress')this.styleFortress(g);else this.styleArena(g,arena);applyToon(this.landscape!);}
   if(!this.artTrial){

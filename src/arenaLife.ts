@@ -1,4 +1,4 @@
-import {quarryCows} from './quarryFarm';
+import {quarryCows,quarryChickens} from './quarryFarm';
 import {soccerTeam,teamColor} from './football';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import * as T from 'three';
@@ -27,6 +27,11 @@ export class ArenaLife extends T.Group {
     for(const side of [-1,1]){this.box(root,'#453d3b',side*.42,2.15,1.87,.12,.14,.08);this.box(root,'#ede1bf',side*.4,2.7,1.35,.18,.4,.18);this.box(root,'#e7c7ae',side*.76,2.27,1.3,.5,.25,.3);
      for(const z of [-.8,.8]){const leg=this.box(root,'#eee2cc',side*.56,.48,z,.35,.95,.35);leg.name='cowLeg';leg.userData.phase=side*z;this.box(leg,'#49413a',0,-.38,0,.38,.2,.38);}}
     this.box(root,'#56453a',0,1.15,-1.48,.15,1.2,.15);
+   }
+   for(const chicken of quarryChickens(0)){
+    const root=actor('farmChicken',chicken.id,0,0,0);root.userData.chickenId=chicken.id;
+    this.ellipsoid(root,'#f7edda',0,.65,0,.48,.55,.65);this.ellipsoid(root,'#f7edda',0,1.12,.4,.3,.35,.3);this.box(root,'#d86249',0,1.45,.4,.12,.25,.3);this.box(root,'#e9b34b',0,1.08,.72,.15,.12,.24);
+    for(const sign of [-1,1]){this.box(root,'#dfab48',sign*.2,.16,0,.07,.32,.07);const wing=this.box(root,'#dfd1b6',sign*.48,.7,0,.15,.5,.65);wing.name='chickenWing';wing.userData.side=sign;}
    }
    // Barns, silos and pasture fences remain beyond the collision boundary.
    for(const sign of [-1,1]){
@@ -67,7 +72,8 @@ export class ArenaLife extends T.Group {
  colossus(root:T.Group){this.ellipsoid(root,'#526f68',0,16,0,8,13,6);this.ellipsoid(root,'#607e72',0,30,2,5,6,5);this.box(root,'#6d8979',0,28.5,7,6,3,6);for(const side of [-1,1]){const leg=new T.Group();leg.name='monsterLeg';leg.userData.side=side;leg.position.set(side*4,8,0);this.box(leg,'#45635d',0,-3,0,4.5,11,5);this.box(leg,'#45635d',0,-8,3,5,2,8);root.add(leg);this.box(root,'#5d796d',side*8,18,3,3,9,3);this.ellipsoid(root,'#f0d288',side*2,31.5,6.2,.65,.6,.3);}for(let i=0;i<7;i++){const spike=new T.Mesh(new T.ConeGeometry(2.2,6,3),this.mat('#91a58e'));spike.position.set(0,9+i*3,-5);spike.rotation.x=-.8;root.add(spike);}const tail=this.ellipsoid(root,'#4d6d63',0,7,-14,4,3,14);tail.rotation.x=-.2;}
  seaCreature(root:T.Group,whale:boolean){const size=whale?4:1;this.ellipsoid(root,whale?'#526e83':'#77a7b7',0,0,0,1.1*size,.8*size,3.4*size);const fin=new T.Mesh(new T.ConeGeometry(.8*size,1.8*size,3),this.mat('#567e94'));fin.position.set(0,.9*size,-.5*size);root.add(fin);for(const side of [-1,1]){const tail=this.ellipsoid(root,'#5c8195',side*.9*size,0,-3*size,1.4*size,.18*size,.75*size);tail.rotation.y=-side*.3;}}
  update(now:number,reduced=false,state?:State){const time=reduced?0:now,e=ARENAS[this.arena].extent*ARENAS[this.arena].scale;
-  for(const [actorIndex,actor] of this.actors.entries()){const allowed=!reduced||actorIndex<2||actor.kind==='harborColossus'||actor.kind==='towerGhost'||actor.kind==='farmCow';actor.root.visible=allowed;const a=actor.seed+time*actor.speed,root=actor.root;root.position.set(Math.sin(a)*actor.radius,actor.y+Math.sin(time*.8+actor.seed)*.3,Math.cos(a)*actor.radius);root.rotation.y=a+(actor.speed>=0?Math.PI/2:-Math.PI/2);
+  for(const [actorIndex,actor] of this.actors.entries()){const allowed=!reduced||actorIndex<2||actor.kind==='harborColossus'||actor.kind==='towerGhost'||actor.kind==='farmCow'||actor.kind==='farmChicken';actor.root.visible=allowed;const a=actor.seed+time*actor.speed,root=actor.root;root.position.set(Math.sin(a)*actor.radius,actor.y+Math.sin(time*.8+actor.seed)*.3,Math.cos(a)*actor.radius);root.rotation.y=a+(actor.speed>=0?Math.PI/2:-Math.PI/2);
+   if(actor.kind==='farmChicken'){const t=state?.config.arena==='quarry'?state.tick/60:time,c=quarryChickens(t,state?.config.arena==='quarry'?state.karts:[])[root.userData.chickenId];root.position.set(c.x,c.y,c.z);root.rotation.y=c.angle;root.children.filter(o=>o.name==='chickenWing').forEach(w=>w.rotation.z=c.running?Math.sin(t*24)*.7*w.userData.side:0);}
    if(actor.kind==='farmCow'){const cow=quarryCows(state?.config.arena==='quarry'?state.tick/60:time)[root.userData.cowId],info=ARENAS.quarry;root.position.set(cow.x*info.scale,0,cow.z*info.scale);root.rotation.y=cow.angle;root.children.filter(c=>c.name==='cowLeg').forEach(leg=>leg.rotation.x=Math.sin((state?.config.arena==='quarry'?state.tick/60:time)*2.5+leg.userData.phase)*.2);}
    if(actor.kind==='towerGhost'){const orbit=time*.24+actor.seed,radius=5+Math.sin(actor.seed)*.6;root.position.copy(root.userData.anchor);root.position.x+=Math.cos(orbit)*radius;root.position.z+=Math.sin(orbit)*radius;root.position.y+=Math.sin(time*1.1+actor.seed)*1.2;root.rotation.y=-orbit;root.rotation.z=reduced?0:Math.sin(orbit)*.12;}
    if(actor.kind==='harborColossus'){root.position.y=actor.y+Math.sin(time*1.3)*.45;root.children.filter(child=>child.name==='monsterLeg').forEach(leg=>leg.rotation.x=Math.sin(time*1.3+leg.userData.side*Math.PI/2)*.22);root.rotation.z=Math.sin(time*1.3)*.025;}

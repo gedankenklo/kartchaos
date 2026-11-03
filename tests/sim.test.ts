@@ -631,3 +631,27 @@ test('farm roof ramps have twelve meters of flat middle-deck approach space',()=
   assert.ok(clearPath('quarry',approach,mouth)&&clearPath('quarry',mouth,approach));
  }
 });
+
+import {FARM_TREES,FARM_HAY,quarryChickens} from '../src/quarryFarm';
+import {createRampWedge} from '../src/rampSlab';
+test('farm ground ramps have closed back faces with outward winding and solid collision',()=>{
+ for(const r of EXPANSIONS.quarry.ramps.filter(r=>!r.thickness)){
+  const geometry=createRampWedge(r),p=geometry.getAttribute('position'),edges=new Map<string,number>();
+  const key=(i:number)=>[p.getX(i),p.getY(i),p.getZ(i)].join(',');
+  for(let i=0;i<p.count;i+=3)for(const [a,b] of [[i,i+1],[i+1,i+2],[i+2,i]]){const k=[key(a),key(b)].sort().join('|');edges.set(k,(edges.get(k)??0)+1);}
+  assert.ok([...edges.values()].every(n=>n===2),'closed wedge');
+  const sign=Math.sign(r.to-r.from),origin=new T.Vector3(r.axis==='x'?r.to+sign*3:r.cross,3,r.axis==='z'?r.to+sign*3:r.cross),direction=new T.Vector3(r.axis==='x'?-sign:0,0,r.axis==='z'?-sign:0),mesh=new T.Mesh(geometry,new T.MeshBasicMaterial());mesh.updateMatrixWorld();assert.ok(new T.Raycaster(origin,direction).intersectObject(mesh).length>0,'visible back');
+  assert.ok(solidAt('quarry',(r.axis==='x'?r.to:r.cross)*2,3,(r.axis==='z'?r.to:r.cross)*2));geometry.dispose();(mesh.material as T.Material).dispose();
+ }
+});
+test('farm trees and hay bales have solid ground collision without blocking upper decks',()=>{
+ const inside=FARM_TREES.filter(p=>Math.abs(p.x)<79&&Math.abs(p.z)<79);assert.ok(inside.length>0);assert.equal(FARM_HAY.length,8);
+ for(const p of [...inside,...FARM_HAY]){const x=p.x*2,z=p.z*2;assert.ok(solidAt('quarry',x,1,z));assert.equal(solidAt('quarry',x,18,z),false);}
+ const p=FARM_HAY[0],s=createState({...config,arena:'quarry'}),k=s.karts[0];Object.assign(k,{x:p.x*2-12,z:p.z*2,y:0,angle:Math.PI/2});for(let i=0;i<120;i++)drive(s,k,{...idle(),gas:1},1/60);assert.ok(k.x<p.x*2-p.r*2,'hay blocks driving');
+});
+test('farm chickens dodge current and predicted kart positions instead of becoming obstacles',()=>{
+ const base=quarryChickens(3),bird=base[0],k={x:bird.x,z:bird.z,y:0,vx:35,vz:0,balloons:3},escaped=quarryChickens(3,[k]);
+ assert.ok(escaped[0].running);for(const c of escaped)assert.ok(Math.hypot(c.x-k.x,c.z-k.z)>=5.99);
+ assert.deepEqual(quarryChickens(3,[{...k,y:8.4}]),base,'birds ignore overhead drivers');
+ const life=new ArenaLife('quarry'),s=createState({...config,arena:'quarry'});Object.assign(s.karts[0],k);s.tick=180;life.update(3,true,s);assert.equal(life.actors.filter(a=>a.kind==='farmChicken'&&a.root.visible).length,8);life.dispose();
+});
