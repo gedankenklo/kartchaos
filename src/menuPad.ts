@@ -7,9 +7,21 @@ export class GamepadSignals {
   if((dx||dy)&&(old.direction!==key||now>=old.repeat)){actions.push({kind:'move',dx,dy});old.repeat=now+(old.direction!==key?.3:.12);}old.direction=key;old.buttons=buttons;
  }for(const id of this.states.keys())if(!present.has(id))this.states.delete(id);return actions;}
 }
+// A newly opened menu must not consume a late gameplay press or a held control.
+export class MenuInputGuard {
+ enabled=false;until=0;armed=false;
+ accept(enabled:boolean,now:number,pads:readonly (Gamepad|null)[]){
+  if(!enabled){this.enabled=false;this.armed=false;return false;}
+  if(!this.enabled){this.enabled=true;this.until=now+.65;this.armed=false;}
+  if(this.armed)return true;
+  const neutral=pads.every(p=>!p?.connected||(!p.buttons.some(b=>b.pressed||b.value>.55)&&!p.axes.some(a=>Math.abs(a)>.55)));
+  if(now>=this.until&&neutral)this.armed=true;
+  return false;
+ }
+}
 type Options={back:()=>void;pause:()=>void;beforeAction:()=>void};
 export class GamepadMenu {
- signals=new GamepadSignals();focused:HTMLElement|null=null;lastScope:HTMLElement|null=null;seenScopes=new WeakSet<HTMLElement>();key='';using=false;layer:HTMLElement|null=null;hint:HTMLElement;
+ signals=new GamepadSignals();guard=new MenuInputGuard();focused:HTMLElement|null=null;lastScope:HTMLElement|null=null;seenScopes=new WeakSet<HTMLElement>();key='';using=false;layer:HTMLElement|null=null;hint:HTMLElement;
  constructor(public options:Options){this.hint=document.createElement('div');this.hint.id='controllerHint';this.hint.className='controller-hint';this.hint.textContent='🎮 D-pad / stick: move · A: select · B: back · LB / RB: next · Start: pause';this.hint.hidden=true;document.body.appendChild(this.hint);document.addEventListener('pointerdown',()=>{this.using=false;this.focused?.classList.remove('controller-focus');});}
  scope(){return this.layer??document.querySelector<HTMLElement>('#overlay .modal')??document.querySelector<HTMLElement>('#app')!;}
  candidates(){return Array.from(this.scope().querySelectorAll<HTMLElement>('button,a[href],select,input')).filter(el=>!el.hasAttribute('disabled')&&!el.closest('[hidden],[inert]')&&el.getBoundingClientRect().width>0&&el.getBoundingClientRect().height>0&&getComputedStyle(el).visibility!=='hidden'&&!(el instanceof HTMLInputElement&&el.type==='hidden'));}
@@ -26,6 +38,6 @@ export class GamepadMenu {
  openKeyboard(el:HTMLInputElement){let draft=el.value,upper=el.id==='roomCode';const key=this.identity(el);const panel=this.makeLayer(el.id==='roomCode'?'Enter room code':'Enter server address'),display=document.createElement('output'),keys=document.createElement('div');display.className='pad-keyboard-value';display.textContent=draft||' ';panel.appendChild(display);keys.className='pad-keyboard';panel.appendChild(keys);
   const render=()=>{keys.replaceChildren();for(const token of [...(upper?'1234567890QWERTYUIOPASDFGHJKLZXCVBNM':'1234567890qwertyuiopasdfghjklzxcvbnm'),':','/','.','-','_','?','&','=','Shift','Space','Delete','Done','Cancel']){const b=document.createElement('button');b.type='button';b.textContent=token;b.dataset.padKey=token;if(token.length>1)b.className='pad-key-wide';b.onclick=()=>{if(token==='Cancel'){this.closeLayer();return;}if(token==='Done'){el.value=draft;this.layer?.remove();this.layer=null;this.key=key;el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));this.focused=null;this.ensure();return;}if(token==='Delete')draft=draft.slice(0,-1);else if(token==='Shift'){upper=!upper;render();this.ensure();return;}else if(draft.length<(el.maxLength>0?el.maxLength:512))draft+=token==='Space'?' ':token;display.textContent=draft||' ';};keys.appendChild(b);}};render();this.ensure();
  }
- update(enabled:boolean,playing:boolean,now:number,pads:readonly (Gamepad|null)[]=Array.from(navigator.getGamepads?.()??[])){const present=pads.some(p=>p?.connected);this.hint.hidden=!present||!enabled;if(!present){this.focused?.classList.remove('controller-focus');this.using=false;}const actions=this.signals.poll(pads,now);if(enabled&&this.using)this.ensure();for(const action of actions){if(action.kind==='start'){this.options.beforeAction();if(playing){if(enabled){if(this.layer)this.closeLayer();else this.options.back();}else this.options.pause();}else{this.using=true;const launch=this.scope().querySelector<HTMLElement>('.battle-button');if(launch)launch.click();else this.options.back();}return;}if(!enabled)continue;this.using=true;this.ensure();if(action.kind==='move')this.move(action.dx,action.dy);else if(action.kind==='confirm')this.activate();else if(action.kind==='back'){this.options.beforeAction();if(this.layer)this.closeLayer();else this.options.back();}else if(action.kind==='next'||action.kind==='previous'){const all=this.ensure(),i=all.indexOf(this.focused!);this.focus(all[(i+(action.kind==='next'?1:-1)+all.length)%all.length]);}}
+ update(enabled:boolean,playing:boolean,now:number,pads:readonly (Gamepad|null)[]=Array.from(navigator.getGamepads?.()??[])){const present=pads.some(p=>p?.connected);this.hint.hidden=!present||!enabled;if(!present){this.focused?.classList.remove('controller-focus');this.using=false;}const actions=this.signals.poll(pads,now),accept=this.guard.accept(enabled,now,pads);if(enabled&&!accept)return;if(enabled&&this.using)this.ensure();for(const action of actions){if(action.kind==='start'){this.options.beforeAction();if(playing){if(enabled){if(this.layer)this.closeLayer();else this.options.back();}else this.options.pause();}else{this.using=true;const launch=this.scope().querySelector<HTMLElement>('.battle-button');if(launch)launch.click();else this.options.back();}return;}if(!enabled)continue;this.using=true;this.ensure();if(action.kind==='move')this.move(action.dx,action.dy);else if(action.kind==='confirm')this.activate();else if(action.kind==='back'){this.options.beforeAction();if(this.layer)this.closeLayer();else this.options.back();}else if(action.kind==='next'||action.kind==='previous'){const all=this.ensure(),i=all.indexOf(this.focused!);this.focus(all[(i+(action.kind==='next'?1:-1)+all.length)%all.length]);}}
  }
 }
