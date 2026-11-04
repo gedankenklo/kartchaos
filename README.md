@@ -1,191 +1,199 @@
 # KART CHAOS 64
 
-An original browser balloon battle game. No accounts, no racing, no borrowed game assets. Procedural low-poly karts, scenery and synthesized sound.
+A browser kart battle game developed by **Benjamin Luikenga**. Drift, collect items and pop your rivals' balloons across **16 arenas**, from compact container yards to multi-storey farm garages and space citadels.
 
-## Run
+**Current version: 1.50.0**
 
-Requires Node.js 22 or later.
+[Play KART CHAOS 64](https://kartchaos.onrender.com/)
+
+## What's in the game
+
+- **16 arenas** with ramps, elevated routes, cover, animated scenery and map-specific hazards.
+- **Eight selectable animal drivers**, each with a distinct look, voice and victory animation.
+- **Solo with bots**, **local split-screen for up to four players**, and **private online rooms** with mixed local and remote players, up to eight humans and bots combined.
+- **50cc, 100cc and 150cc**, powersliding, mini-turbos, hops and Turbo Juice rams.
+- **Six items**, a stoppable item roulette, and glowing held-item models visible beside rivals' karts.
+- **Single rounds**, map shuffle between rounds, and a four-round **Chaos Cup** with cumulative standings and a final podium.
+- **Soccer battle** on Floodlight Stadium and **Capture the Flag** on Tide Depot and Starfall Citadels. These rules activate automatically with the arena.
+- **Original** and **Soft Toon** art styles, randomized day/night lighting, reflections on icy surfaces and beach puddles, and independent music, engine and effects volume controls.
+- Keyboard rebinding, gamepad assignment, controller-operated menus, spectator switching and round statistics.
+
+This is a balloon battle game. A racing mode is not currently included.
+
+## How to play
+
+Start with three balloons. Collect an item box, stop its roulette with the fire button, then press again to use the item. Hits remove balloons and briefly protect the victim from further damage. The last surviving kart—or team on team arenas—wins.
+
+Hold drift while accelerating and steering to slide through a turn. Countersteer to adjust the slide; build a drift charge and release for a mini-turbo. Ordinary kart contact pushes opponents. The **Turbo Juice item** also enables damaging rams while its ram effect is active.
+
+An arena introduction explains the map before each round. In solo, acknowledge it when ready. In local or online multiplayer, every human driver must acknowledge before the countdown starts. The final 45 seconds bring sudden death with a shrinking danger ring, a translucent warning wall and pulsing sound/visual cues.
+
+Choose a driver through the player buttons in Match Setup or the lobby's driver selector. The crew is **Rook** (fox), **Bolt** (raccoon), **Mango** (duck), **Plum** (rabbit), **Mint** (frog), **Peach** (cat), **Skip** (dog) and **Pip** (bear).
+
+### Controls
+
+| Action | Keyboard — Player 1 | Standard gamepad |
+| --- | --- | --- |
+| Accelerate | W | Right trigger |
+| Brake / reverse | S | Left trigger |
+| Steer | A / D | Left stick |
+| Drift | Shift | X / LB |
+| Hop | Space | A |
+| Stop roulette / use item | E | B / RB |
+| Pause / menu | Escape | Start |
+
+Hold brake after stopping to engage reverse. Keyboard layouts for all four players are shown and rebindable in Settings. Player 2 defaults to arrow keys, right Shift, Numpad 0 for hop, and Enter for fire. Use the input setup panel to check or explicitly assign controllers.
+
+Menus support D-pad/stick navigation, A to select, B to go back, and LB/RB to cycle focus. Results preselect the next-round action and require fresh controller input after the transition, preventing a late item-button press from leaving the results screen.
+
+After elimination, switch the watched driver using your steering keys, controller LB/RB or D-pad left/right, or the on-screen arrows. The camera, item display and engine audio follow that driver. Three-player split-screen uses the fourth tile for an arena broadcast.
+
+### Items
+
+| Item | Effect |
+| --- | --- |
+| Ricochet Pod | Bounces off solid surfaces, expires after a limited lifetime/rebounds, and can hit its owner after bouncing. |
+| Seeker | A guided projectile that pursues a rival. |
+| Mine | A trap that arms after a short delay and can hit anyone, including its owner. |
+| Turbo Juice | A burst of speed with a temporary damaging ram effect. |
+| Bubble Shield | Temporary protection, with an orbiting glow and active hum. |
+| Shockwave | A short-range area attack with expanding energy rings, sound and camera shake. |
+
+## The 16 arenas
+
+| Arena | Battle rules | Layout and features |
+| --- | --- | --- |
+| The Fortress | Balloon battle | Four coloured blocks, multiple tiers, lower and upper bridges, open underpasses and stone cover around the outer lanes. |
+| Sky Platforms | Balloon battle | Floating platforms and broad bridges. Open edges make shoving rivals off especially useful; airships cruise outside. |
+| Neon Bowl | Balloon battle | Banked circular arena with solid ricochet bumpers, open outer edges and a distant skyline with passing spacecraft. |
+| Copper Yard | Balloon battle | Compact container lanes and close-range cover, with spectators cheering from outside. |
+| Tide Depot | Capture the Flag | Pirate-themed coastal bases, an inlet, bridge crossings and raised flank routes, with offshore boats and a roaming sea monster. |
+| Rift Quarry | Balloon battle | A large farm-themed garage: ground floor, middle deck, roof, six ramps and open underpasses. Solid cows, trees and hay bales, plus chickens that dodge karts. |
+| Ember Keep | Balloon battle | Castle causeways, raised decks and open lava pits. Sunset/night lighting, circling rooftop ghosts and flying beasts. |
+| Sunbreak Beach | Balloon battle | Sand lanes, boardwalks, solid palms and reflective puddles with splashes. Boats, jet-skis and marine wildlife offshore. |
+| Floodlight Stadium | Soccer battle | A football pitch with tall stands, spectators, fictional advertising, survivor scoreboards, a pushable ball and goal fireworks. |
+| Clockwork Foundry | Balloon battle | Industrial routes, an elevated horseshoe and furnace decks. Conveyor belts push karts with or against their direction. |
+| Frostbite Harbour | Balloon battle | Slippery reflective ice, raised docks, ramps and a tall lookout. Dock surfaces provide normal grip. |
+| Overgrown Ruins | Balloon battle | Temple terraces, a summit route and ravine crossings, with connected front and rear ramp approaches. |
+| Starfall Citadels | Capture the Flag | Large opposing space citadels, elevated crossings and several routes between bases, surrounded by a space battle. |
+| Glacier Slide | Balloon battle | Slippery reflective base ice, grippy ramps and upper decks, open underpasses, solid snowmen and a central Christmas tree. |
+| Cinder Crypt | Balloon battle | Haunted towers and connected raised routes above lava. A volcano launches falling rocks whose growing shadows warn of impact. |
+| Starcore Sphere | Balloon battle | A reactor station with normal kart gravity, an open central shaft and a periodically charging superlaser. Leave the warning zone before it fires. |
+
+**Soccer battle:** Drivers receive random blue/orange teams. Goals pop one balloon from every surviving driver on the conceding team; own goals therefore cost the scorer's team balloons. The score is a bonus tally, while survival decides victory. The ball resets at midfield after a goal. Bots still collect items and battle.
+
+**Capture the Flag:** Take the opposing flag back to your base while your own flag is home. Captures pop rival balloons. Hits and Turbo Juice rams can make a carrier drop the flag. The last surviving team wins.
+
+All arenas participate in map shuffle and Chaos Cup selection. Most maps randomly choose day or night for a round; Ember Keep and Cinder Crypt choose sunset or night; the two space arenas stay at night. Appearance settings do not change shared collision rules.
+
+## Play online
+
+1. Select **Online** and create a private room.
+2. Use **Copy invite** to share its join link. Friends can also join with the six-character room code.
+3. Choose drivers and confirm readiness in the lobby.
+4. The host starts the battle. Each driver then acknowledges the arena introduction.
+5. The host advances rounds or starts a rematch.
+
+The production game automatically uses the server hosting the page. Manually entering a server address is only needed for an advanced setup with a separately hosted client. Each browser can bring local players, subject to the combined eight-participant limit.
+
+The server owns combat and match results. It runs the shared simulation at 60 Hz and sends snapshots at 20 Hz, using compact updates, processed input acknowledgements, local movement prediction and buffered remote interpolation. An online status indicator reports connection delay or a busy server. Disconnected seats have a reconnect grace period before bot takeover.
+
+## Custom music
+
+Generated music is available without audio files. To use your own MP3s, place them directly in the corresponding folder under `public/music/`:
+
+| Folder | Scene |
+| --- | --- |
+| `fortress` | The Fortress |
+| `sky` | Sky Platforms |
+| `neon` | Neon Bowl |
+| `yard` | Copper Yard |
+| `depot` | Tide Depot |
+| `quarry` | Rift Quarry — including the farm garage |
+| `castle` | Ember Keep |
+| `beach` | Sunbreak Beach |
+| `stadium` | Floodlight Stadium |
+| `foundry` | Clockwork Foundry |
+| `harbour` | Frostbite Harbour |
+| `ruins` | Overgrown Ruins |
+| `starfall` | Starfall Citadels |
+| `glacier` | Glacier Slide |
+| `crypt` | Cinder Crypt |
+| `starcore` | Starcore Sphere |
+| `title` | Main menu, setup and lobby |
+| `pause` | Pause screen |
+
+For example: `public/music/quarry/Farmyard.mp3`.
+
+Each arena round chooses a **random starting MP3**. Subsequent tracks play in alphabetical filename order and loop. A single file repeats. Empty folders or unavailable tracks fall back to generated music. Leave **Music selection** on **Auto** to use the folder tracks; explicitly selecting a generated track overrides them.
+
+`scripts/scan-music.mjs` discovers files before development and production builds. Rebuild after adding or deleting MP3s. The script regenerates `public/music/tracks.json`; you do not need to edit it. Music defaults to 10% for a fresh browser, and saved volume preferences take priority.
+
+For GitHub updates, merge the supplied update files into the repository without deleting existing music. Incremental update ZIPs exclude MP3s and `tracks.json`. Folder names remain stable across arena redesigns.
+
+## Run locally
+
+Requires **Node.js 22 or later**.
 
 ```sh
 npm ci
 npm run dev
 ```
 
-Open the printed Vite URL. Quick Play runs entirely in the browser. For production and online rooms:
+Open the Vite URL printed in the terminal. Solo and couch gameplay run in the browser.
+
+To build and run the combined production game and online server:
 
 ```sh
 npm run build
 npm start
 ```
 
-Open http://localhost:3000. In Online, enter `ws://localhost:3000`, create a room, ready up, and start. Other browsers can join with the six-character room code. Each browser can bring 1–4 local players, up to eight combined humans and bots. Set bot count before creating a room. Every participant must be ready; the host starts and rematches.
+Open `http://localhost:3000`. This server serves both the built game and WebSocket rooms. `PORT` can override the default. For friends on other devices, use a reachable server address rather than sharing a localhost link.
 
-## Play
+## GitHub and Render deployment
 
-WASD drive · S brake/reverse · Shift drift · Space hop · E use item · R recover locally · Escape menu. S brakes to a stop; keep holding briefly to engage reverse. Steering builds progressively, with tighter low-speed turns and gentler high-speed steering. Releasing the throttle retains momentum; glancing wall contact slides rather than bouncing the kart backward. Hold W + Shift while steering to hop into a powerslide. The kart faces into the corner while its velocity slides outward; countersteer to reduce the slip angle. Hold for one second, then release Shift for a mini-turbo. The drift has visible countersteering, wheel sparks and fading skid marks. The chase camera eases through turns and shortens its arm around obstructions instead of abruptly climbing over walls. Collect violet boxes. Hits remove one balloon with a brief invulnerability period. Last survivor wins; the last 45 seconds bring a shrinking danger ring. Falling in Sky Platforms costs one balloon and returns the kart to the center.
+Upload the project contents at the repository root, preserving folders. Update client and server files together. Keep your existing `public/music/` files when merging updates.
 
-The original animal crew includes Rook the fox, Bolt the raccoon, Mango the duck, Plum the rabbit, Mint the frog, Peach the cat, Skip the dog and Pip the bear. They wear team-color pilot caps and drive rounded club karts with animated steering, spinning wheels, body lean and trailing scarves. Use **Choose driver** in the main menu or click a player row in Match Setup. Preview a character, choose the local player slot, and confirm **Drive as**. Choices are saved in this browser and applied to local matches, room creation, joining, and rematches. Multiple players may choose the same character. Bots use unclaimed characters where possible. Online driver changes between rounds reset readiness for that client.
+Create a Node web service connected to the GitHub repository, using:
 
-Use Couch mode for up to four viewports. All four keyboard layouts are visible and rebindable in Settings. Player 2 defaults to arrows, right Shift, Numpad 0, Enter. A gamepad automatically maps to each local slot; explicit assignment is also available. Triggers drive/brake, stick steers, A hops, X/LB drifts, B/RB fires. Keyboard rollover can limit simultaneous keys; gamepads are recommended for four players.
+| Setting | Value |
+| --- | --- |
+| Build command | `npm ci && npm run build` |
+| Start command | `npm start` |
+| Health check | `/health` |
+| Port | Render supplies `PORT` automatically |
+| Server instances | **1** |
 
-## Battle arenas
+Rooms live in memory in one server process. Multiple independent instances need shared room coordination before they can be used safely. A restart or deployment removes existing rooms. Opening an online menu does not pause the shared battle; pausing a local match does.
 
-All six are selectable for solo, couch and online battles. Size labels appear on the selection cards; every arena supports up to eight participants.
+A Render **workspace subscription** and the game's **compute plan** are separate settings. A paid game-server compute plan can be used with a Hobby workspace. For always-on hosting, select paid compute for the service. The supplied `render.yaml` template currently specifies `plan: free`; if you manage the service through Blueprint syncing, align that setting with your intended compute plan before syncing it.
 
-| Arena | Size | Layout |
-| --- | --- | --- |
-| Copper Yard | Small · 85 m | Crate-lined lanes, compact crossfire, broad central turning space. |
-| Sky Platforms | Medium · 115 m span | Floating islands and wide bridges with dangerous edges. |
-| Tide Depot | Medium · 136 m | Two offset raised piers, four long ramps and broad ground channels. |
-| Neon Bowl | Large · 148 m diameter | Banked circle, obstacles and a raised central platform. |
-| Rift Quarry | Large · 208 m | Three asymmetrical terraces, six ramp approaches and wide desert valleys. |
-| The Fortress | Extra large · 230 m | Four two-tier blocks, eight ramps and four true overpasses. |
+HTTPS clients use secure WebSockets (`wss://`). The regular combined deployment handles this automatically. A separately hosted client can point its advanced connection settings at the game server.
 
-The new arena definitions in `src/arenas.ts` are shared by physics, rendering, pickups and bots. Automated checks validate safe spawns, connected navigation and continuous ramps. Browser checks verify all new previews and selected characters in actual split-screen play.
-
-## Deploy to Render
-
-Commit this folder to your own GitHub repository and create a Render Blueprint from `render.yaml`, or create a Node web service manually:
-
-* Build: `npm ci && npm run build`
-* Start: `npm start`
-* Node: 22
-* Health: `/health`
-* `PORT`: supplied by Render; defaults to 3000 locally.
-
-HTTPS pages require the `wss://` address of the deployed service. The same service serves the built client and WebSockets. No third-party backend keys are required. For a separately hosted static client, enter the Render service's `wss://` URL in its Online lobby. Invitation URLs include the server address and room code.
-
-Rooms live in memory in a **single server instance**. Do not horizontally scale without adding shared room coordination. Free hosting may sleep: the first connection can require waiting for the server to wake. Server restarts remove rooms. Ping/pong heartbeats detect dead connections; clients attempt reconnect with the private session token. Disconnected drivers wait 15 seconds before bots take over; empty rooms expire after a minute. Pausing a local match freezes it; opening an online menu does not freeze the shared match.
-
-## Architecture
-
-* `src/sim.ts`: shared fixed 60 Hz deterministic vehicle, terrain, combat, items, navigation, AI, match rules.
-* `src/arenas.ts`: six-arena catalog, dimensions, new terrain layouts, item placements and navigation surfaces.
-* `src/terrain.ts`: shared solid blocks, ramps, bridge slabs and floor surfaces; height-aware support and navigation distinguish overpasses from underpasses.
-* `src/render.ts`: Three.js procedural world, kart models, follow cameras, split-screen, particles.
-* `src/characters.ts`: original driver and kart models, batched static details, animation, and the 3D crew portrait viewer.
-* `src/input.ts`: keyboard rebinding and gamepad assignment.
-* `src/audio.ts`: original synthesized engine and action sounds.
-* `src/network.ts`: room client, reconnect, sequenced inputs, local prediction and authoritative replay.
-* `server/index.ts`: Node HTTP + WebSocket rooms, 60 Hz authoritative simulation, 20 Hz snapshots, readiness, heartbeat, reconnect, rematch.
-* `src/main.ts`, `style.css`: menus and HUD.
-
-All combat and item decisions are server-owned in online mode. Client movement prediction never decides damage. The client snaps simulation to each authoritative snapshot then replays unacknowledged inputs. The renderer smooths remote vehicle transforms between snapshots and follows with smoothed cameras.
-
-## Scope and limits
-
-This release is a playable implementation, not a claim of production networking maturity. It includes six arenas, six items, three bot difficulties, 2–8 participants, up to four couch players, and mixed online/couch room support. Fortress is now approximately 230 metres across, with four large two-tier blocks, four bridges, eight ramps, an open central cross, and broad outer corridors. The blocks have 57.6-metre-wide lower terraces at 9 metres high, 28.8-metre-wide upper terraces at 16.5 metres high, and distinctive pastel colors for orientation. Ground corridors between blocks are 38.4 metres wide. All four bridges support traffic on top and underneath; karts, projectiles, mines, item pickups, cameras and bots distinguish these two floors. Bots can navigate to every upper terrace. Karts and driving speed retain their original scale. Sky Platforms is 1.8 times wider and deeper than the first release; Neon Bowl is twice as wide and deep. Sky uses non-overlapping floor tiles, while Neon uses one continuous radial surface matching its physical slope, eliminating the overlapping surfaces and floor self-shadow artifacts in the first release. Sky Platforms remains a single-height layout; Neon Bowl has banked edges and a raised center, but no tunnels. Terrain uses custom arcade physics rather than Rapier.
-
-**Remaining work:** historical lag-compensated hit rewind, persistent rooms, touch driving controls, music, advanced bot defensive tactics, multi-level Sky Platforms, and Neon Bowl tunnels. Online uses live authoritative projectile collisions and bounded steering seekers, not historical hit rewind. Remote transforms use exponential interpolation rather than a timestamped snapshot buffer. Reconciliation approximates acknowledgments for held inputs rather than a full server-tick input queue, so high latency can produce visible corrections. Four physical controllers and real wide-area network conditions require further hardware testing. Driver choices, keyboard bindings and server address persist in this browser; other settings reset on reload.
-
-## Verification
+## Development and verification
 
 ```sh
 npm test
 npm run build
-npx tsx --test tests/network.test.ts
 ```
 
-`network.test.ts` expects `npm start` running at port 3000 (or the address in `TEST_SERVER`). It opens independent WebSocket clients and verifies rooms, mixed local participants, readiness, authority, movement, selected driver synchronization, new arena hosting, and reconnect. `tests/soak.ts` runs complete eight-bot battles in all six arenas and checks that they finish with valid positions.
+For real WebSocket integration checks, start the production server in another terminal, then run:
 
-Arena polish: Quarry ramp approaches are separated; Depot piers are shorter with generous ramp approach space. Balloon tethers connect rear chassis mounts to animated balloon knots. Arena-specific skies, mountains, clouds, coastal water, a sunset skyline and floating islands surround battles. Kart collisions transfer momentum, with stronger turbo shoves; ordinary bumps do not directly remove balloons, but Turbo Juice rams and falling off Sky Platforms do.
+```sh
+npm run test:online
+```
 
-Balloons now use damped spring motion: they lean outward in turns, trail acceleration and turbo, react to bumps, and settle while their tethers remain attached. Item boxes start a 2.4-second slowing roulette; fire stops it after a short wind-up, and a separate new press uses the prize. Rolls and stop timing run in the shared authoritative simulation. World-projected procedural grass, sand, masonry, metal panels and wood grain add detail without overlapping floor geometry; karts also have subtle paint and tire detail.
+Online tests use port 3000 by default; `TEST_SERVER` can select another WebSocket endpoint. Additional bot-navigation scenarios are available with `npm run test:navigation`. Browser fixtures in `tests/` are served by Vite for visual and interaction checks.
 
-Battle feedback polish: spectator HUD and engine audio follow the same surviving kart, with speed-sensitive pitch and volume. Balloons are smaller with roughly half-length tethers and constrained turn sway. Fortress upper terraces leave a 9.6 m bypass at each ramp entrance. Shockwave emits a dedicated event for three cyan/violet expanding rings and a translucent energy shell with a deep impact sound. Collected boxes shatter at their own positions; during the final 0.65 seconds of cooldown they grow back with an overshoot and glow, becoming collectible at full size.
+| Area | Main files |
+| --- | --- |
+| Shared driving, combat and bots | `src/sim.ts`, `src/terrain.ts`, `src/arenas.ts` |
+| Rendering, characters and scenery | `src/render.ts`, `src/characters.ts`, `src/arenaLife.ts` and arena-specific visual modules |
+| Soccer, CTF and cups | `src/football.ts`, `src/captureFlag.ts`, `src/championship.ts` |
+| Keyboard, controllers and menus | `src/input.ts`, `src/menuPad.ts`, `src/main.ts`, `src/style.css` |
+| Generated sound and MP3 playback | `src/audio.ts`, `src/arenaMusic.ts`, `scripts/scan-music.mjs` |
+| Online prediction, snapshots and interpolation | `src/network.ts`, `src/networkInputs.ts`, `src/networkSnapshots.ts`, `src/networkMotion.ts` |
+| Authoritative HTTP/WebSocket server | `server/index.ts` |
 
-Gloss and ricochet update: balloons have glossy clearcoat and slight translucency. Enable Shuffle maps between rounds below the arena cards or on the results screen; the first arena remains your selection, and rematches draw a non-repeating shuffled pool. Online hosts control this setting for everyone. Ricochet Pod replaces the basic rocket: a spinning green pod bounces off blocks, perimeter walls and circular bumpers, follows decks/ramps, drops off Sky edges, expires after eight seconds (or twelve rebounds), and can hit its owner after a bounce. Each animal driver has a distinct synthesized reaction voice for damage, wall impacts and kart contact; preview it using Hear in the driver selector.
-
-Soft toon art trial: use Art style in the header or pause menu to compare Original and Soft toon. Try Fortress + Rook selects the prototype arena/driver. The trial adds banded lighting, a warm/cool palette, lightly beveled Fortress blocks, grass borders and cream paths, a painted club crest, ramp edge markings, plus subtle Rook outlines, chunkier wheels/head proportions and a contact shadow. Balloons keep their glossy latex material. The other five arenas and seven drivers retain their existing assets. The choice is saved per browser and changes no shared gameplay or collision data.
-
-Full soft-toon rollout: all six arenas and eight drivers now share the approved shading, outlines and character proportions. Raised decks use brighter tops and contrasting side faces. Cream lip markings and dark edge bands mark exposed ledges while shared platforms, bridge joins and ramp entrances remain open. Each arena retains its own palette. Item boxes are rounded glossy translucent cubes with raised question marks; pickup plays the existing chime and drops sixteen fading glass-like shards, with no flash sphere, expanding ring or cloud. Respawn growth remains. The Original/Soft toon appearance switch now applies across the whole game.
-
-50cc preserves the original pace; 100cc is 35% faster and 150cc is 75% faster, with stronger steering response, grip and braking. Weapons scale with engine class. Choose Speed in setup or between rounds; online hosts control it. Turbo Juice allows two seconds of forward ram damage, respecting shields and invulnerability. Ordinary bumps and drift boosts only shove. Controller menus use D-pad/stick, A select, B back, LB/RB focus cycling and Start pause/resume, with controller dropdowns and an on-screen text keyboard. Held menu buttons are blocked from driving until released. Both art styles remain; confirmation reflects the selected style. Item boxes have iridescent glass, reflections, glowing cores and orbiting sparkles; pickup remains shards and sound only.
-
-Menu browser checks: run the Vite development server and open `/tests/menu-browser.html`. The fixture exercises production GamepadMenu with simulated pad signals and reports selection, text entry, modal focus and pause/back results. Physical controller hardware is still a separate playtest.
-
-Round feedback: the last balloon emits one authoritative eliminated event. Karts spin, rise and shrink over 1.15 seconds with a small star burst, ring and knockout sound; the local camera holds briefly before spectating. Reduced motion uses a simple shrink without spin or lift. Rematches clear the animation. Drift audio layers filtered tire noise and a restrained squeal over the engine, follows actual slip and speed, and fades on release, airtime, pause or mute. Original maps now use lower sun/ambient lighting and filmic highlight compression; Soft Toon lighting is unchanged. For deterministic visual/audio QA, use the Vite dev server at `/tests/feedback-browser.html`.
-
-Spectator switching: after elimination, use your assigned left/right steering keys (P1 A/D, P2 arrows by default), controller LB/RB or D-pad left/right, or on-screen previous/next arrows. Each local view keeps its own target. Camera, item HUD, engine and tire audio follow that selection; eliminated targets are skipped and rematches clear choices. This is local viewing only and sends no extra gameplay input to rivals.
-
-Chaos Cup and battle polish: select Battle format → Chaos Cup for four different arenas, starting with your selected map. The same drivers return each round, points carry forward (10/7/5/4/3/2/1/0 by survival order), and the final screen shows animated podium drivers. Cup ties use round wins, then successful hits. Online hosts advance the shared cup; roster changes wait until it ends. Disconnected seats remain in the cup with bot takeover after the reconnect grace period. Ordinary single rounds and map shuffle remain available.
-
-Hits now identify attacker and shield absorption. Successful hits get a brief local impact burst, balloon-pop sound, confirmation chime and “You hit …” feedback; local damage gets a short edge flash. Eight distinct idle/victory gestures and a Preview victory pose button add personality without changing handling. Arena atmosphere adds drifting clouds, quarry dust, yard leaves and flags, Fortress pennants, Depot water ripples and pulsing Neon signs. Reduced motion keeps the new scenery still.
-
-Settings now has independent Music, Engine and Effects & voices sliders saved per browser, plus an eight-second music preview. Each arena has an original quiet procedural soundtrack. Master mute silences every channel. Mines arm after 0.65 seconds, visibly pulse, and can then hit anyone, including their owner. Self damage grants no KO credit. Bots now lead shots, hold fire behind cover, avoid mines and projectiles, route to cover/height when threatened on their last balloon, and return inside the sudden-death ring.
-
-QA fixtures: `/tests/cup-browser.html` exercises all four rounds using shared scoring/podium markup and real driver portraits; `/tests/feedback-browser.html` previews impacts, elimination, scenery and tire audio under Vite. These fixtures are not included in the production bundle.
-
-Nine-arena update: Ember Keep is a 240 m dark castle arena with four open lava pits, raised stone decks and wide causeways. Falling into lava costs a balloon and returns you to the central courtyard. Sunbreak Beach spans 248 m with long sand lanes, low boardwalks, palms, parasols and a water horizon. Floodlight Stadium spans 256 m with a night pitch, goals, stands, floodlights and small sideline obstacles. Its optional football is pushed by karts, rebounds from walls, and is authoritative online. Crossing a goal mouth below the bar adds to the bonus Blue/Orange tally and triggers fireworks; after two seconds the ball resets stationary at midfield. Goals do not change balloon-battle victory or cup points. All nine maps participate in shuffle and cup selection.
-
-Music now has 27 original arrangements, three per arena. Auto rotates arrangements while playing; Settings → Music selection lets you choose any track or advance with Next music track. The music preference is saved. Setup controls use aligned labels and full-width selectors. Victory arms now point outward from the shoulders rather than rotating inward through the face; animated hand clearance is checked for all eight drivers.
-
-Stadium bowl and floor repair: pitch stripes, field markings, and the center circle are now painted into a single mipmapped turf surface, with no stacked floor decals. Beach boardwalk grain and plank seams are painted on the existing deck top faces; the almost coplanar cap panels and stripes have been removed in Original and Soft Toon. Stadium seating now rises through twelve tiers to a roof rim at 32 m, with more than 3,000 instanced spectators and 44 m floodlights. Thirty-two perimeter boards use an atlas of eight fictional sponsors: Turbo Juice, Bubble Co., Rook Racing, Mango Fizz, Plum Power, Pitstop 64, Neon Tires, and Chaos Club. Decorative stands, spectators and signs stay outside the playable pitch and do not obstruct the chase camera. Owned painted textures and stadium materials are released on map/style changes.
-
-Preview depth fix: the overhead arena camera now fits its near and far clipping planes to the complete padded arena bounds on each view angle. This restores precision between the distant turf, foundation, thin trim and crowd surfaces during preview rotation. The close-up driving cameras retain their existing settings. Tests cover stadium corners across the orbit and separation of the pitch from its foundation in a 24-bit depth buffer.
-
-## Custom MP3 soundtrack (v1.2.0)
-
-Add MP3s directly to `public/music/<arena>/` and rebuild. Arena folders are fortress,
-sky, neon, yard, depot, quarry, castle, beach and stadium. Files are discovered by
-`scripts/scan-music.mjs` automatically before development or production builds.
-In Auto music mode, each arena plays its MP3s in filename order on repeat. Empty
-folders or failed MP3s fall back to generated music. Explicit generated-track
-selections still override Auto. See `public/music/README.md` for the folder mapping.
-
-Version 1.16: twelve arenas, including a redesigned Foundry horseshoe and furnace cross, asymmetric Harbour ice basin and L-shaped docks, and a stepped Ruins temple with two ravine crossings. Scenery is visible in rotating previews. Music folder names remain foundry, harbour and ruins.
-
-Version 1.17: Foundry upper platform 16 m, Harbour lookout 14 m, Ruins temple 15 m. Ruins water and ramp footprints are separate. Results preselect the next-round action instead of restoring the speed selector; intentional picker focus is preserved.
-
-Version 1.18: Fortress pickups have 4.5 m supporting-surface clearance. Stadium team markers are wider flat football-style rings with daylight-stable colour and a dark border, projected to the ground beneath jumping karts.
-
-Version 1.19: Neon rim markers are solid shared-shape bumpers for karts and ricochets. Combat cards are no longer clipped by score notices, name the weapon, stay visible longer, and update without restarting animations. Client prediction cannot advance authoritative feedback event IDs. Own late projectile confirmations survive elimination.
-
-Version 1.20: all six held items have small 3D models behind and beside each kart, visible to rivals after roulette settles. Existing item HUD is unchanged. Displays clear on use/elimination/results and respect reduced motion. Fortress upper bridge outer edges align with upper platform edges; underpasses and ramp bypass lanes remain clear.
-
-Version 1.21: Foundry conveyors push at 10 m/s instead of 3.5 m/s. Stripe motion matches their physical velocity. Both directions, all speed classes and airborne isolation are checked.
-
-Version 1.22: Fortress extent grows to 64 layout units (307 m across), adding 19.2 m of ground on every side around the existing blocks and ramps. Pines follow the shared boundary and keep their canopies outside.
-
-Version 1.23: held items sway with a bounded damped spring in response to turning, acceleration, braking, bumps and landings. They settle naturally and stay still in reduced-motion mode. Rotation and the existing HUD are retained.
-
-
-v1.24: solid Ember Keep lamp posts and Fortress perimeter chase recovery.
-
-
-v1.25: offshore sea traffic and cleaner kart self-shadowing.
-
-
-v1.26: restored kart self-shadows, interpolated display poses and solid beach palms.
-
-
-v1.27: final-duel aggression, Yard turbo use and held-item pop/jiggle.
-
-
-# KART CHAOS 64 — v1.28 Tide Depot pirate Capture the Flag
-
-Upload these contents into your existing GitHub repository root, merging folders. Keep existing MP3s. Commit and let Render rebuild with the current settings. Both client and server source must be updated together.
-
-Tide Depot keeps its name and public/music/depot soundtrack folder. The arena is rebuilt as a 232-metre pirate cove: blue and orange forts, tropical palms, sailing boats, an inlet with three bridge crossings, long approaches and elevated flank lookouts. Both art styles and day/night variants remain.
-
-
-Capture the enemy flag and return it to your base while your flag is home. Captures pop rival balloons; hits and Turbo Juice drop the flag. Team victory rules apply.
-
-
-v1.29: results-screen Shuffle maps is reachable by controller and highlights the full row.
-
-
-## v1.30
-
-Four new arenas: Starfall Citadels (CTF), Glacier Slide, Cinder Crypt and Starcore Sphere. Music defaults to 10%, preserving saved settings. New MP3 folders are starfall, glacier, crypt and starcore.
-
-
-v1.31: dramatic sudden-death intro and synchronized recurring audio/visual warning pulse.
-
-
-## v1.32 arena redesigns
-Starcore Sphere now uses normal station driving with a reactor basin and raised outer ring; its name and starcore music folder are unchanged. Glacier Slide has stronger ice sliding and connected terraces. Cinder Crypt has a new asymmetric layout and Ember Keep-style animated lava. Starfall Citadels has tiered towers, elevated crossings and a surrounding space battle.
-
-
-## v1.33 connected Crypt and reactor hazard
-Cinder Crypt now has a continuous outer route, four ramp-and-bridge approaches across a lava moat, and two connected summit ramps. Starcore Sphere has an open reactor shaft and a periodic superlaser: five seconds of warning followed by a two-second blast. Keep clear of the marked central danger zone. Both names and music folders are unchanged.
+Current limitations include in-memory rooms, a single-server room architecture, no historical hit rewind, and no touch driving controls. Controller hardware, browser performance and internet conditions still benefit from real-player testing. Large-map performance and online capacity should be measured under the intended player and bot load.
