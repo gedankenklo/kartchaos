@@ -2,7 +2,7 @@
 
 A browser kart battle game developed by **Benjamin Luikenga**. Drift, collect items and pop your rivals' balloons across **16 arenas**, from compact container yards to multi-storey farm garages and space citadels.
 
-**Current version: 1.50.0**
+**Current version: 1.51.0**
 
 [Play KART CHAOS 64](https://kartchaos.onrender.com/)
 
@@ -170,6 +170,12 @@ Rooms live in memory in one server process. Multiple independent instances need 
 A Render **workspace subscription** and the game's **compute plan** are separate settings. A paid game-server compute plan can be used with a Hobby workspace. For always-on hosting, select paid compute for the service. The supplied `render.yaml` template currently specifies `plan: free`; if you manage the service through Blueprint syncing, align that setting with your intended compute plan before syncing it.
 
 HTTPS clients use secure WebSockets (`wss://`). The regular combined deployment handles this automatically. A separately hosted client can point its advanced connection settings at the game server.
+
+## Rift Quarry performance update (v1.51)
+
+Bot path probes reuse static collision shapes, moving cow shapes are calculated once per room tick, and fixed navigation destinations reuse bounded connection caches. Navigation searches reuse graph edges instead of copying the graph for every query. Farm animals are calculated once per display update. Chickens are local scenery and add no synchronized network state.
+
+A local 30-second benchmark with seven bots at 150cc reduced average Rift Quarry simulation time from about 5.30 ms to 0.88 ms per step, with the 95th percentile falling from 43.85 ms to 6.27 ms. Network throughput and final kart positions matched the previous run. These are local measurements, not a guarantee of Render latency or capacity.
 
 ## Development and verification
 

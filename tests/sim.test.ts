@@ -655,3 +655,9 @@ test('farm chickens dodge current and predicted kart positions instead of becomi
  assert.deepEqual(quarryChickens(3,[{...k,y:8.4}]),base,'birds ignore overhead drivers');
  const life=new ArenaLife('quarry'),s=createState({...config,arena:'quarry'});Object.assign(s.karts[0],k);s.tick=180;life.update(3,true,s);assert.equal(life.actors.filter(a=>a.kind==='farmChicken'&&a.root.visible).length,8);life.dispose();
 });
+
+import {movingObstacles} from '../src/sim';
+test('cow collision caches follow each room clock independently and survive tick resets',()=>{
+ const a=createState({...config,arena:'quarry'}),b=createState({...config,arena:'quarry'});
+ for(const tick of [0,600,601,1200,0]){a.tick=tick;b.tick=120;const first=movingObstacles(a);movingObstacles(b);const expected=quarryCows(tick/60);for(const cow of first){assert.ok(Math.abs(cow.x-expected[cow.id].x*2)<.00001);assert.ok(Math.abs(cow.z-expected[cow.id].z*2)<.00001);}assert.deepEqual(movingObstacles(a),first);}
+});

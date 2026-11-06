@@ -74,9 +74,18 @@ export function solidAt(arena:Arena,x:number,y:number,z:number,includeRim=true):
  if(fortressSolidHeight(lx,lz)*ARENA_HEIGHT.fortress>y)return true;
  return FORT_BRIDGES.some(b=>Math.abs(lx-b.x)<=b.width/2&&Math.abs(lz-b.z)<=b.depth/2&&y>=(b.y-b.thickness)*ARENA_HEIGHT.fortress&&y<=b.y*ARENA_HEIGHT.fortress);
 }
-export function movingObstacles(s:State){return s.config.arena==='quarry'?quarryCows(s.tick/60).map(o=>({...o,x:o.x*ARENA_SCALE.quarry,z:o.z*ARENA_SCALE.quarry,r:o.r*ARENA_SCALE.quarry,height:o.height*ARENA_HEIGHT.quarry})):[];}
-export function obstacles(arena:Arena):{x:number;z:number;r:number;height?:number;bottom?:number}[] {
- return layoutObstacles(arena).map(o=>({x:o.x*ARENA_SCALE[arena],z:o.z*ARENA_SCALE[arena],r:o.r*ARENA_SCALE[arena],height:o.height===undefined?undefined:o.height*ARENA_HEIGHT[arena],bottom:(o.bottom??0)*ARENA_HEIGHT[arena]}));
+type Obstacle={x:number;z:number;r:number;height?:number;bottom?:number};
+// Layout props never move. Path probes must reuse their world-space shapes.
+const obstacleCache=new Map<Arena,Obstacle[]>();
+const cowCache=new WeakMap<State,{tick:number;objects:ReturnType<typeof quarryCows>}>();
+export function movingObstacles(s:State){
+ if(s.config.arena!=='quarry')return [];
+ const cached=cowCache.get(s);if(cached?.tick===s.tick)return cached.objects;
+ const objects=quarryCows(s.tick/60).map(o=>({...o,x:o.x*ARENA_SCALE.quarry,z:o.z*ARENA_SCALE.quarry,r:o.r*ARENA_SCALE.quarry,height:o.height*ARENA_HEIGHT.quarry}));
+ cowCache.set(s,{tick:s.tick,objects});return objects;
+}
+export function obstacles(arena:Arena):Obstacle[] {
+ let result=obstacleCache.get(arena);if(!result){result=layoutObstacles(arena).map(o=>({x:o.x*ARENA_SCALE[arena],z:o.z*ARENA_SCALE[arena],r:o.r*ARENA_SCALE[arena],height:o.height===undefined?undefined:o.height*ARENA_HEIGHT[arena],bottom:(o.bottom??0)*ARENA_HEIGHT[arena]}));obstacleCache.set(arena,result);}return result;
 }
 export function layoutObstacles(arena:Arena):{x:number;z:number;r:number;height?:number;bottom?:number}[] {
  if(arena==='quarry')return [...FARM_POSTS,...FARM_TREES,...FARM_HAY];
@@ -182,8 +191,8 @@ export function useItem(s:State,k:Kart) {
 }
 export function clearPath(arena:Arena,a:{x:number;z:number;y?:number},b:{x:number;z:number;y?:number}) {
  let prev=a.y??ground(arena,a.x,a.z);
- const careful=arena==='beach'||arena==='crypt',steps=Math.ceil(distance(a,b)/(careful?.6:1.8));
- for(let i=1;i<=steps;i++){const x=a.x+(b.x-a.x)*i/steps,z=a.z+(b.z-a.z)*i/steps,h=ground(arena,x,z,prev+.35);if(arena==='fortress'&&Math.max(Math.abs(x),Math.abs(z))>(ARENAS[arena].extent-1.25)*ARENA_SCALE[arena]-1.1||h< -10||Math.abs(h-prev)>(careful?.8:1.6)||arena==='neon'&&neonRimContact(x,z,1.4,h+.5,.5)||obstacles(arena).some(o=>h+1.1>(o.bottom??0)&&h<(o.height??2)&&Math.hypot(x-o.x,z-o.z)<o.r+1.4))return false;prev=h;}return Math.abs(prev-(b.y??ground(arena,b.x,b.z)))<1.6;
+ const props=obstacles(arena),careful=arena==='beach'||arena==='crypt',steps=Math.ceil(distance(a,b)/(careful?.6:1.8));
+ for(let i=1;i<=steps;i++){const x=a.x+(b.x-a.x)*i/steps,z=a.z+(b.z-a.z)*i/steps,h=ground(arena,x,z,prev+.35);if(arena==='fortress'&&Math.max(Math.abs(x),Math.abs(z))>(ARENAS[arena].extent-1.25)*ARENA_SCALE[arena]-1.1||h< -10||Math.abs(h-prev)>(careful?.8:1.6)||arena==='neon'&&neonRimContact(x,z,1.4,h+.5,.5)||props.some(o=>h+1.1>(o.bottom??0)&&h<(o.height??2)&&Math.hypot(x-o.x,z-o.z)<o.r+1.4))return false;prev=h;}return Math.abs(prev-(b.y??ground(arena,b.x,b.z)))<1.6;
 }
 const routes=new WeakMap<Kart,{tick:number;goalX:number;goalZ:number;goalY:number;point:{x:number;z:number}}>();
 function waypoint(s:State,k:Kart,goal:{x:number;z:number;y?:number}) {
@@ -192,19 +201,26 @@ function waypoint(s:State,k:Kart,goal:{x:number;z:number;y?:number}) {
 }
 const navigation=new Map<Arena,{points:NavPoint[];edges:{to:number;cost:number}[][]}>();
 export function navGraph(arena:Arena){let graph=navigation.get(arena);if(!graph){const points=nav(arena),edges=points.map(()=>[] as {to:number;cost:number}[]);for(let i=0;i<points.length;i++)for(let j=i+1;j<points.length;j++)if(clearPath(arena,points[i],points[j])&&clearPath(arena,points[j],points[i])){const cost=distance(points[i],points[j]);edges[i].push({to:j,cost});edges[j].push({to:i,cost});}graph={points,edges};navigation.set(arena,graph);}return graph;}
+// Fixed pickups and patrol destinations share their graph connections across replans.
+// Exact coordinate keys preserve routing; the bound prevents moving targets growing memory.
+const goalConnections=new Map<Arena,Map<string,number[]>>();
 export function findWaypoint(s:State,k:Kart,goal:{x:number;z:number;y?:number}) {
- if(clearPath(s.config.arena,k,goal))return goal;
- const graph=navGraph(s.config.arena),nodes=[{x:k.x,z:k.z,y:k.y},...graph.points,goal],end=nodes.length-1;
- const links=nodes.map(()=>[] as {to:number;cost:number}[]);
- graph.edges.forEach((edges,i)=>links[i+1]=edges.map(e=>({to:e.to+1,cost:e.cost})));
- for(let j=1;j<end;j++){if(clearPath(s.config.arena,k,nodes[j]))links[0].push({to:j,cost:distance(k,nodes[j])});if(clearPath(s.config.arena,nodes[j],goal))links[j].push({to:end,cost:distance(nodes[j],goal)});}
+ const arena=s.config.arena;if(clearPath(arena,k,goal))return goal;
+ const graph=navGraph(arena),nodes=[{x:k.x,z:k.z,y:k.y},...graph.points,goal],end=nodes.length-1;
+ let cache=goalConnections.get(arena);if(!cache){cache=new Map();goalConnections.set(arena,cache);}
+ const key=goal.x+','+goal.z+','+(goal.y??ground(arena,goal.x,goal.z));let targetCosts=cache.get(key);
+ if(!targetCosts){targetCosts=graph.points.map(p=>clearPath(arena,p,goal)?distance(p,goal):Infinity);if(cache.size>=64)cache.delete(cache.keys().next().value!);cache.set(key,targetCosts);}
+ const source:{to:number;cost:number}[]=[];
+ for(let j=1;j<end;j++)if(clearPath(arena,k,nodes[j]))source.push({to:j,cost:distance(k,nodes[j])});
  const costs=nodes.map(()=>Infinity),previous=nodes.map(()=>-1),done=new Set<number>();costs[0]=0;
+ const relax=(u:number,j:number,cost:number)=>{const c=costs[u]+cost;if(!done.has(j)&&c<costs[j]){costs[j]=c;previous[j]=u;}};
  for(let n=0;n<nodes.length;n++){
   let u=-1;for(let j=0;j<nodes.length;j++)if(!done.has(j)&&(u<0||costs[j]<costs[u]))u=j;
   if(u===end||u<0||!Number.isFinite(costs[u]))break;done.add(u);
-  for(const edge of links[u]){const j=edge.to,c=costs[u]+edge.cost;if(!done.has(j)&&c<costs[j]){costs[j]=c;previous[j]=u;}}
+  if(u===0){for(const edge of source)relax(u,edge.to,edge.cost);}
+  else {for(const edge of graph.edges[u-1])relax(u,edge.to+1,edge.cost);if(Number.isFinite(targetCosts[u-1]))relax(u,end,targetCosts[u-1]);}
  }
- let i=end;while(previous[i]>0)i=previous[i];if(previous[i]===0)return nodes[i];const reachable=links[0].map(edge=>nodes[edge.to]).sort((a,b)=>(distance(a,goal)+distance(k,a)*.3)-(distance(b,goal)+distance(k,b)*.3));return reachable[0]??k;
+ let i=end;while(previous[i]>0)i=previous[i];if(previous[i]===0)return nodes[i];const reachable=source.map(edge=>nodes[edge.to]).sort((a,b)=>(distance(a,goal)+distance(k,a)*.3)-(distance(b,goal)+distance(k,b)*.3));return reachable[0]??k;
 }
 const fortressRegroup=new WeakMap<Kart,{since:number;goal:NavPoint|null}>();
 const quarryClimbs=new WeakMap<Kart,{next:number;stage:number;side:number;active:boolean;until:number}>();
