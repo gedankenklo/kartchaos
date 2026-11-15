@@ -1,18 +1,13 @@
-# KART CHAOS 64 v1.51.0 - Rift Quarry performance
+# KART CHAOS 64 v1.52.0 - Arcade interface
 
-Extract this ZIP and upload its CONTENTS at the GitHub repository root, preserving folders. Merge/overwrite, commit, and let Render rebuild. Refresh every player's game tab. Client and server changes are included.
+Extract this ZIP and upload its CONTENTS at the GitHub repository root, preserving folders. Merge/overwrite, commit, and let Render rebuild. Refresh all player tabs after deployment.
 
-The chickens are local scenery and are not sent as network state. The main measured bottleneck was repeated obstacle-list allocation during bot path probes. Static collision shapes are now reused, cow collision shapes are calculated once per room tick, fixed navigation destinations reuse a bounded connection cache, and searches reuse graph edges. Each animal flock is calculated once per rendered update rather than once per animal.
+- Bold arcade menu and HUD: larger controls, heavy type, strong outlines and clear contrast.
+- Real driver thumbnails, a large live arena preview, previous/next arrows, four arena cards at a time, and an all-16-arena picker.
+- All existing options retained: solo, couch, online rooms/invites, 1-4 local players, 50/100/150cc, bots/skill, round length, Chaos Cup, shuffle, both art styles, audio, key bindings and controller assignment. Controller setup is under Controls & Controllers / Settings and remains in the online lobby.
+- Larger balloon roster, clock, item panel, speed display and spectator controls. Responsive layouts for narrow screens and split-screen.
+- Briefing buttons avoid needless replacement while players are reading.
 
-Local 30-second benchmark, Rift Quarry, one human plus seven bots, 150cc:
-- Mean simulation step: 5.297 ms before, 0.882 ms after (about 83% less work).
-- 95th percentile: 43.851 ms before, 6.267 ms after.
-- Largest observed step: 98.06 ms before, 16.39 ms after.
-- Cold navigation graph: 2362.9 ms before, 536.6 ms after.
-- Snapshot throughput: unchanged at 52.9 KiB/s in this workload. Final kart positions matched before/after across six benchmark workloads.
+Validation: 282 automated tests, 10 live-server multiplayer tests, 25 browser controller-menu checks, production build, desktop/narrow menu and solo/four-player briefing checks. No physical gamepad was available for a new hardware test; controller mappings and gameplay input are retained.
 
-These are local measurements, not measurements of your Render instance or browser frame rate. Live online results still depend on server capacity, concurrent rooms and network conditions.
-
-Validation: 281 tests passed, production build passed. Three 120-second Quarry navigation runs passed: all four bots reached the roof at 50/100/150cc, no falls, longest stalls below 0.5 seconds. A real two-client Quarry compact-protocol test passed, including movement, applied input acknowledgements, keyframes and reconnection.
-
-All farm scenery, collisions and upper-deck bot routes remain. No MP3s or tracks.json are included; existing music stays untouched.
+99 files: below GitHub's 100-file browser upload limit. No MP3s or generated music/ tracks.json manifest are included. Existing music files stay in the repository. The build scans those folders again automatically. Do not delete the repository before uploading.

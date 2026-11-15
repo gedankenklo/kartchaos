@@ -23,3 +23,15 @@ test('neutral transition still ignores a new button press during the grace perio
  assert.equal(guard.accept(true,3,[pad(1)]),false);
 });
 
+
+import {ARENA_IDS} from '../src/arenas';
+import {arenaPage,adjacentArena,arenaCard,hudBalloons} from '../src/arcadeUi';
+test('arcade arena pages cover every arena and arrows wrap in both directions',()=>{
+ const pages=ARENA_IDS.filter((_,i)=>i%4===0).flatMap(arenaPage);
+ assert.deepEqual(pages,ARENA_IDS);
+ for(const arena of ARENA_IDS){assert.ok(arenaPage(arena).includes(arena));assert.equal(adjacentArena(adjacentArena(arena,1),-1),arena);}
+ assert.equal(adjacentArena(ARENA_IDS[0],-1),ARENA_IDS.at(-1));
+ assert.equal(adjacentArena(ARENA_IDS.at(-1)!,1),ARENA_IDS[0]);
+ assert.match(arenaCard('glacier','glacier'),/aria-pressed="true"/);
+ assert.equal((hudBalloons(1).match(/class="hud-balloon lost"/g)||[]).length,2);
+});
