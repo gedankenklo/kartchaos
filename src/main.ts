@@ -50,7 +50,7 @@ let previewRect:DOMRect|undefined,frameTime=performance.now(),acc=0,hudTime=0;
 let podiumPortraits:DriverPortrait[]=[];let portrait:DriverPortrait|null=null,crewId=0,selectorSlot=0,returnToRoom=false;
 let endpoint=defaultServerAddress(location.href);
 let code=new URLSearchParams(location.search).get('room')??'';
-const iconSound=()=>sound.enabled?'◖))':'◖×';
+const iconSound=()=>`<svg class="sound-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4 6 8H3v8h3l5 4Z"/>${sound.enabled?'<path d="M15 8a6 6 0 0 1 0 8M18 4a11 11 0 0 1 0 16"/>':'<path d="m16 9 5 6m0-6-5 6"/>'}</svg>`;
 function esc(s:string){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));}
 function preview(){state=createState({...config,humans:1,bots:5});state.karts.forEach((k,i)=>{const a=i/6*Math.PI*2+.5;k.x=Math.sin(a)*11*ARENA_SCALE[config.arena];k.z=Math.cos(a)*11*ARENA_SCALE[config.arena];k.y=ground(config.arena,k.x,k.z);k.angle=a+1.8;if(config.arena==='fortress'){const p=[[0,-14,0],[-13,5,0],[20,0,6],[-12,-20,6],[-23,23,11],[23,23,11]][i];k.x=p[0]*ARENA_SCALE.fortress;k.z=p[1]*ARENA_SCALE.fortress;k.y=p[2]*1.5;}});world.reset();}
 function header(){return `<header class="mast"><a href="#" class="brand" data-action="home"><span class="brand-symbol">K<span>✦</span></span><span>KART CHAOS <b>64</b><small>BALLOON BATTLE CLUB</small></span></a><span class="arcade-motto">MAKE SOME TROUBLE.</span><nav><button class="navlink art-link" data-action="art" aria-label="Compare art styles"><span>✦</span> Art style</button><button class="navlink crew-link" data-action="crew" aria-label="Choose your driver"><span>☺</span> Drivers</button><button class="navlink" data-action="help">How to play <span>↗</span></button><button class="icon-button" data-action="settings" aria-label="Settings">⚙</button><button class="icon-button" data-action="sound" aria-label="Toggle sound">${iconSound()}</button><button class="icon-button" data-action="fullscreen" aria-label="Fullscreen">⛶</button></nav></header>`;}
@@ -170,7 +170,7 @@ document.addEventListener('click',async e=>{
  case 'pause':openModal('pause');break;
  case 'close':closeModal();break;
  case 'online':openModal('online');break;
- case 'sound':sound.enabled=!sound.enabled;document.querySelectorAll('[data-action="sound"]').forEach(b=>b.textContent=iconSound());break;
+ case 'sound':sound.enabled=!sound.enabled;document.querySelectorAll('[data-action="sound"]').forEach(b=>b.innerHTML=iconSound());break;
  case 'fullscreen':if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen().catch(()=>toast('Fullscreen is unavailable in this browser view.'));break;
  case 'leave':net.disconnect();home();break;
  case 'rematch':if(net.state){if(net.room?.host){net.pending=[];net.seq=0;net.send({type:'start'});}else toast('Waiting for the host to start the next round.');}else start(true);break;

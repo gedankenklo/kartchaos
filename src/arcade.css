@@ -40,3 +40,5 @@ button,select,input{font:inherit}button{transition:transform .12s,background .12
 .arcade-home .driver-choice:not(:only-child)>b{right:9px;top:8px}
 @media(max-height:800px) and (min-width:1001px){.arcade-home .driver-choice:not(:only-child){grid-template-rows:62px auto;min-height:130px;padding:10px;gap:7px}.arcade-home .driver-choice:not(:only-child) .setup-driver-portrait{height:62px;width:80px}.arcade-home .driver-choice:not(:only-child)>span{font-size:23px}}
 .arcade-home .driver-choice:not(:only-child)>i{grid-column:auto;grid-row:auto}
+
+[data-action="sound"]{display:inline-flex;align-items:center;justify-content:center;padding:0;line-height:1}.sound-icon{display:block;width:23px;height:23px;flex:none;pointer-events:none}
