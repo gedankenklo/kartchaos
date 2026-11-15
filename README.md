@@ -2,7 +2,7 @@
 
 A browser kart battle game developed by **Benjamin Luikenga**. Drift, collect items and pop your rivals' balloons across **16 arenas**, from compact container yards to multi-storey farm garages and space citadels.
 
-**Current version: 1.52.0**
+**Current version: 1.52.1**
 
 [Play KART CHAOS 64](https://kartchaos.onrender.com/)
 

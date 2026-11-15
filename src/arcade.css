@@ -29,3 +29,14 @@ button,select,input{font:inherit}button{transition:transform .12s,background .12
 @media(max-width:700px){.mast nav{flex-wrap:wrap;justify-content:flex-start;gap:6px}.mast .navlink{padding:9px 7px;font-size:11px}.mast .icon-button{width:31px;height:36px}.arcade-home footer{display:flex;gap:12px;flex-wrap:wrap}}
 
 #app[data-players="4"] #roster,#app[data-players="3"] #roster{gap:3px;width:140px}#app[data-players="4"] .driver,#app[data-players="3"] .driver{min-height:23px;padding:1px 4px 1px 1px}#app[data-players="4"] .driver i,#app[data-players="3"] .driver i{width:18px;height:18px;font-size:15px}#app[data-players="4"] .driver span,#app[data-players="3"] .driver span{font-size:13px}
+
+/* Multi-player cards reserve a full line for every driver name. */
+.arcade-home .local-driver-list{gap:14px;margin-bottom:20px}
+.arcade-home .driver-choice:not(:only-child){grid-template-columns:minmax(0,1fr);grid-template-rows:80px auto;gap:8px;padding:12px;min-height:154px;text-align:center;white-space:normal}
+.arcade-home .driver-choice:not(:only-child) .setup-driver-portrait{grid-column:1;grid-row:1;justify-self:center;width:94px;height:80px;margin:0;max-width:100%}
+.arcade-home .driver-choice:not(:only-child)>i{position:absolute;left:9px;top:9px;min-width:27px;padding:2px 4px;font-size:17px;margin:0}
+.arcade-home .driver-choice:not(:only-child)>span{grid-column:1;grid-row:2;min-width:0;width:100%;padding:0 4px;font-size:25px;line-height:1.08;white-space:normal}
+.arcade-home .driver-choice:not(:only-child) small{display:block;margin-top:5px;font-size:10px}
+.arcade-home .driver-choice:not(:only-child)>b{right:9px;top:8px}
+@media(max-height:800px) and (min-width:1001px){.arcade-home .driver-choice:not(:only-child){grid-template-rows:62px auto;min-height:130px;padding:10px;gap:7px}.arcade-home .driver-choice:not(:only-child) .setup-driver-portrait{height:62px;width:80px}.arcade-home .driver-choice:not(:only-child)>span{font-size:23px}}
+.arcade-home .driver-choice:not(:only-child)>i{grid-column:auto;grid-row:auto}
